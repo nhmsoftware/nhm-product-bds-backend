@@ -25,5 +25,25 @@ use OpenApi\Attributes as OA;
 )]
 abstract class BaseController
 {
-    use AuthorizesRequests, HandleApi,  ValidatesRequests;
+    use AuthorizesRequests, HandleApi, ValidatesRequests;
+
+    /**
+     * Phân giải ServiceReturn thành JsonResponse
+     */
+    protected function resolveServiceReturn(\App\Core\DTOs\ServiceReturn $serviceReturn): \Illuminate\Http\JsonResponse
+    {
+        if (!$serviceReturn->success) {
+            return response()->json([
+                'success' => false,
+                'message' => $serviceReturn->message,
+                'data' => $serviceReturn->data
+            ], $serviceReturn->code);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $serviceReturn->message,
+            'data' => $serviceReturn->data
+        ], $serviceReturn->code);
+    }
 }
