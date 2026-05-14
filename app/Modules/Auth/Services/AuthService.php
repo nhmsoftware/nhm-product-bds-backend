@@ -2,12 +2,12 @@
 
 namespace App\Modules\Auth\Services;
 
-use App\Core\DTOs\ServiceReturn;
 use App\Core\Services\BaseService;
-use App\Modules\Auth\DTO\RegisterDTO;
+use App\Core\Services\ServiceReturn;
 use App\Modules\Auth\DTO\ForgotPasswordDTO;
-use App\Modules\Auth\DTO\VerifyOtpDTO;
+use App\Modules\Auth\DTO\RegisterDTO;
 use App\Modules\Auth\DTO\ResetPasswordDTO;
+use App\Modules\Auth\DTO\VerifyOtpDTO;
 use App\Modules\Auth\Events\UserRegistered;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Interfaces\AuthServiceInterface;
@@ -23,6 +23,10 @@ final class AuthService extends BaseService implements AuthServiceInterface
     }
 
     /**
+     * Đăng ký tài khoản người dùng mới (UC-01).
+     * 
+     * @param RegisterDTO $dto
+     * @return ServiceReturn
      * @throws \Throwable
      */
     public function register(RegisterDTO $dto): ServiceReturn
@@ -58,6 +62,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
         }, useTransaction: true);
     }
 
+    /**
+     * Đăng nhập hệ thống và cấp JWT token (UC-02).
+     * 
+     * @param \App\Modules\Auth\DTO\LoginDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
     public function login(\App\Modules\Auth\DTO\LoginDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
@@ -87,7 +98,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             // 5. Tạo token (Sử dụng JWT)
             $token = auth('api')->login($user);
-            
+
             $this->validate($token !== false, 'Không thể tạo phiên đăng nhập.', 500);
 
             return $this->success([
@@ -99,6 +110,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
         });
     }
 
+    /**
+     * Yêu cầu gửi mã OTP quên mật khẩu (UC-03).
+     * 
+     * @param ForgotPasswordDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
     public function forgotPassword(ForgotPasswordDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
@@ -113,7 +131,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             // 3. Tạo OTP (6 chữ số)
             $otp = (string) rand(100000, 999999);
-            
+
             // 4. Lưu Cache (hết hạn sau 5 phút)
             Cache::put("otp:{$dto->username}", $otp, now()->addMinutes(5));
             Cache::put($cooldownKey, true, now()->addSeconds(60));
@@ -121,11 +139,18 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             // 5. Gửi OTP (Giả lập qua log hoặc gọi service gửi SMS/Email)
             // \Log::info("OTP for {$dto->username}: {$otp}");
-            
+
             return $this->success(null, 'Mã OTP đã được gửi.');
         });
     }
 
+    /**
+     * Xác thực mã OTP người dùng nhập (UC-03).
+     * 
+     * @param VerifyOtpDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
     public function verifyOtp(VerifyOtpDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
@@ -140,7 +165,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
             if ($storedOtp !== $dto->otp) {
                 $attempts++;
                 Cache::put($attemptKey, $attempts, now()->addMinutes(5));
-                
+
                 $this->validate($attempts < 5, 'Bạn đã nhập sai OTP quá 5 lần. Vui lòng gửi lại OTP mới.', 400);
                 $this->throw('Mã OTP không hợp lệ.', 400);
             }
@@ -149,6 +174,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
         });
     }
 
+    /**
+     * Đặt lại mật khẩu mới sau khi xác thực OTP thành công (UC-03).
+     * 
+     * @param ResetPasswordDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
     public function resetPassword(ResetPasswordDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
@@ -180,6 +212,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
         }, useTransaction: true);
     }
 
+    /**
+     * Đăng xuất hệ thống và vô hiệu hóa token (UC-05).
+     * 
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
     public function logout(): ServiceReturn
     {
         return $this->execute(function () {
@@ -189,7 +227,10 @@ final class AuthService extends BaseService implements AuthServiceInterface
     }
 
     /**
-     * Helper tìm user qua email hoặc phone
+     * Helper tìm user qua email hoặc phone.
+     * 
+     * @param string $username
+     * @return \App\Modules\Auth\Models\User|null
      */
     private function findUserByUsername(string $username)
     {
@@ -200,7 +241,9 @@ final class AuthService extends BaseService implements AuthServiceInterface
     }
 
     /**
-     * Tự động sinh mã nhân viên: ví dụ STAFF-XXXXX
+     * Tự động sinh mã nhân viên: ví dụ STAFF-XXXXX.
+     * 
+     * @return string
      */
     private function generateStaffCode(): string
     {

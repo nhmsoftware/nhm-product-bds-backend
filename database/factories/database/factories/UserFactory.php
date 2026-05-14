@@ -1,15 +1,13 @@
 <?php
 
-namespace Database\Factories;
 
-use App\Models\User;
+namespace Database\Factories\database\factories;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-/**
- * @extends Factory<User>
- */
+
 class UserFactory extends Factory
 {
     /**
@@ -38,7 +36,7 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'email_verified_at' => null,
         ]);
     }

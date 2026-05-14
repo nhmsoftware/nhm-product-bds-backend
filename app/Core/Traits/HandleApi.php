@@ -52,7 +52,24 @@ trait HandleApi
         ], $code);
     }
     /**
+     * Xử lý lỗi validation từ FormRequest.
+     * 
+     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        $errors = $validator->errors()->toArray();
+        throw new \Illuminate\Http\Exceptions\HttpResponseException(
+            $this->sendValidation('Dữ liệu không hợp lệ.', $errors)
+        );
+    }
+
+    /**
      * Định dạng tiền tệ VNĐ.
+     * 
+     * @param float|int $amount
+     * @return string
      */
     protected function formatVnd(float|int $amount): string
     {
@@ -60,7 +77,10 @@ trait HandleApi
     }
 
     /**
-     * Định dạng ngày tháng Việt Nam.
+     * Định dạng ngày tháng Việt Nam (d/m/Y).
+     * 
+     * @param \DateTimeInterface|string $date
+     * @return string
      */
     protected function formatDate(\DateTimeInterface|string $date): string
     {
@@ -70,3 +90,4 @@ trait HandleApi
         return $date->format('d/m/Y');
     }
 }
+

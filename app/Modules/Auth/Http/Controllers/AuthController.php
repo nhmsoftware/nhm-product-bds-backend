@@ -19,7 +19,6 @@ final class AuthController extends BaseController
     #[OA\Post(
         path: '/api/v1/auth/register',
         summary: 'Đăng ký tài khoản mới (UC-01)',
-        tags: ['Auth'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -33,6 +32,7 @@ final class AuthController extends BaseController
                 ]
             )
         ),
+        tags: ['Auth'],
         responses: [
             new OA\Response(
                 response: 201,
@@ -57,18 +57,28 @@ final class AuthController extends BaseController
             new OA\Response(response: 422, description: 'Dữ liệu không hợp lệ hoặc Email/SĐT đã tồn tại'),
         ]
     )]
+    /**
+     * Đăng ký tài khoản mới (UC-01).
+     * 
+     * @param RegisterRequest $request
+     * @return JsonResponse
+     * @throws \Throwable
+     */
     public function register(RegisterRequest $request): JsonResponse
     {
         $dto = RegisterDTO::fromRequest($request);
         $result = $this->authService->register($dto);
 
-        return $this->resolveServiceReturn($result);
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 
     #[OA\Post(
         path: '/api/v1/auth/login',
         summary: 'Đăng nhập hệ thống (UC-02)',
-        tags: ['Auth'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -80,6 +90,7 @@ final class AuthController extends BaseController
                 ]
             )
         ),
+        tags: ['Auth'],
         responses: [
             new OA\Response(
                 response: 200,
@@ -106,18 +117,28 @@ final class AuthController extends BaseController
             new OA\Response(response: 404, description: 'Tài khoản không tồn tại'),
         ]
     )]
+    /**
+     * Đăng nhập hệ thống (UC-02).
+     * 
+     * @param \App\Modules\Auth\Http\Requests\LoginRequest $request
+     * @return JsonResponse
+     * @throws \Throwable
+     */
     public function login(\App\Modules\Auth\Http\Requests\LoginRequest $request): JsonResponse
     {
         $dto = \App\Modules\Auth\DTO\LoginDTO::fromRequest($request);
         $result = $this->authService->login($dto);
 
-        return $this->resolveServiceReturn($result);
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 
     #[OA\Post(
         path: '/api/v1/auth/forgot-password',
         summary: 'Yêu cầu quên mật khẩu - Gửi OTP (UC-03)',
-        tags: ['Auth'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -127,24 +148,35 @@ final class AuthController extends BaseController
                 ]
             )
         ),
+        tags: ['Auth'],
         responses: [
             new OA\Response(response: 200, description: 'Mã OTP đã được gửi.'),
             new OA\Response(response: 404, description: 'Tài khoản không tồn tại'),
             new OA\Response(response: 429, description: 'Vui lòng đợi 60 giây trước khi yêu cầu mã mới'),
         ]
     )]
+    /**
+     * Yêu cầu quên mật khẩu (UC-03).
+     * 
+     * @param \App\Modules\Auth\Http\Requests\ForgotPasswordRequest $request
+     * @return JsonResponse
+     * @throws \Throwable
+     */
     public function forgotPassword(\App\Modules\Auth\Http\Requests\ForgotPasswordRequest $request): JsonResponse
     {
         $dto = \App\Modules\Auth\DTO\ForgotPasswordDTO::fromRequest($request);
         $result = $this->authService->forgotPassword($dto);
 
-        return $this->resolveServiceReturn($result);
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 
     #[OA\Post(
         path: '/api/v1/auth/verify-otp',
         summary: 'Xác thực mã OTP (UC-03)',
-        tags: ['Auth'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -155,23 +187,34 @@ final class AuthController extends BaseController
                 ]
             )
         ),
+        tags: ['Auth'],
         responses: [
             new OA\Response(response: 200, description: 'Xác thực OTP thành công'),
             new OA\Response(response: 400, description: 'Mã OTP không hợp lệ hoặc đã hết hạn'),
         ]
     )]
+    /**
+     * Xác thực mã OTP (UC-03).
+     * 
+     * @param \App\Modules\Auth\Http\Requests\VerifyOtpRequest $request
+     * @return JsonResponse
+     * @throws \Throwable
+     */
     public function verifyOtp(\App\Modules\Auth\Http\Requests\VerifyOtpRequest $request): JsonResponse
     {
         $dto = \App\Modules\Auth\DTO\VerifyOtpDTO::fromRequest($request);
         $result = $this->authService->verifyOtp($dto);
 
-        return $this->resolveServiceReturn($result);
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 
     #[OA\Post(
         path: '/api/v1/auth/reset-password',
         summary: 'Đặt lại mật khẩu mới (UC-03)',
-        tags: ['Auth'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -184,24 +227,36 @@ final class AuthController extends BaseController
                 ]
             )
         ),
+        tags: ['Auth'],
         responses: [
             new OA\Response(response: 200, description: 'Đổi mật khẩu thành công'),
             new OA\Response(response: 400, description: 'Dữ liệu không hợp lệ hoặc mật khẩu trùng mật khẩu cũ'),
         ]
     )]
+    /**
+     * Đặt lại mật khẩu mới (UC-03).
+     * 
+     * @param \App\Modules\Auth\Http\Requests\ResetPasswordRequest $request
+     * @return JsonResponse
+     * @throws \Throwable
+     */
     public function resetPassword(\App\Modules\Auth\Http\Requests\ResetPasswordRequest $request): JsonResponse
     {
         $dto = \App\Modules\Auth\DTO\ResetPasswordDTO::fromRequest($request);
         $result = $this->authService->resetPassword($dto);
 
-        return $this->resolveServiceReturn($result);
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 
     #[OA\Post(
         path: '/api/v1/auth/logout',
         summary: 'Đăng xuất hệ thống (UC-05)',
-        tags: ['Auth'],
         security: [['bearerAuth' => []]],
+        tags: ['Auth'],
         responses: [
             new OA\Response(
                 response: 200,
@@ -216,10 +271,20 @@ final class AuthController extends BaseController
             new OA\Response(response: 401, description: 'Chưa đăng nhập hoặc phiên đã hết hạn'),
         ]
     )]
+    /**
+     * Đăng xuất hệ thống (UC-05).
+     * 
+     * @return JsonResponse
+     * @throws \Throwable
+     */
     public function logout(): JsonResponse
     {
         $result = $this->authService->logout();
 
-        return $this->resolveServiceReturn($result);
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 }

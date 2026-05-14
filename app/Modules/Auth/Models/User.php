@@ -9,6 +9,23 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
+use OpenApi\Attributes as OA;
+
+#[OA\Schema(
+    schema: 'User',
+    title: 'User Model',
+    description: 'Thông tin người dùng',
+    properties: [
+        new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'uuid-string'),
+        new OA\Property(property: 'staff_code', type: 'string', example: 'ST-ABCXYZ'),
+        new OA\Property(property: 'name', type: 'string', example: 'Nguyen Van A'),
+        new OA\Property(property: 'email', type: 'string', format: 'email', example: 'nguyenvana@example.com'),
+        new OA\Property(property: 'phone', type: 'string', example: '0901234567'),
+        new OA\Property(property: 'role', type: 'string', example: 'agent'),
+        new OA\Property(property: 'avatar', type: 'string', nullable: true),
+        new OA\Property(property: 'is_active', type: 'boolean', example: true),
+    ]
+)]
 class User extends Authenticatable implements JWTSubject
 {
     use HasFactory, Notifiable, SoftDeletes, HasUuids;
