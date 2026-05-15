@@ -5,6 +5,7 @@ namespace App\Modules\Planning\Http\Controllers;
 use App\Core\Controller\BaseController;
 use App\Modules\Planning\DTO\PlanningListDTO;
 use App\Modules\Planning\Http\Requests\GetPlanningListRequest;
+use App\Modules\Planning\Http\Requests\SearchPlanningRequest;
 use App\Modules\Planning\Interfaces\PlanningServiceInterface;
 use Illuminate\Http\JsonResponse;
 use OpenApi\Attributes as OA;
@@ -13,7 +14,7 @@ final class PlanningController extends BaseController
 {
     /**
      * PlanningController constructor.
-     * 
+     *
      * @param PlanningServiceInterface $planningService
      */
     public function __construct(
