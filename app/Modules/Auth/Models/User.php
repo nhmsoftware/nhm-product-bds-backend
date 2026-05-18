@@ -23,6 +23,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'phone', type: 'string', example: '0901234567'),
         new OA\Property(property: 'role', type: 'string', example: 'agent'),
         new OA\Property(property: 'avatar', type: 'string', nullable: true),
+        new OA\Property(property: 'address', type: 'string', nullable: true, example: '123 Đường ABC, Quận 1, TP. HCM'),
         new OA\Property(property: 'is_active', type: 'boolean', example: true),
     ]
 )]
@@ -38,6 +39,7 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'role',
         'avatar',
+        'address',
         'fcm_token',
         'is_active',
     ];
@@ -71,5 +73,13 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    /**
+     * Quan hệ tới chi tiết hồ sơ nhân sự.
+     */
+    public function employeeProfile()
+    {
+        return $this->hasOne(EmployeeProfile::class, 'user_id');
     }
 }

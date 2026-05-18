@@ -56,4 +56,59 @@ interface AuthServiceInterface
      * @return ServiceReturn
      */
     public function logout(): ServiceReturn;
+
+    /**
+     * Lấy thông tin hồ sơ cá nhân của người dùng (UC-030).
+     * 
+     * @param string $userId
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function getProfile(string $userId): ServiceReturn;
+
+    /**
+     * Cập nhật thông tin hồ sơ cá nhân của người dùng (UC-031).
+     * 
+     * @param \App\Modules\Auth\DTO\UpdateProfileDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function updateProfile(\App\Modules\Auth\DTO\UpdateProfileDTO $dto): ServiceReturn;
+
+    /**
+     * Thay đổi mật khẩu tài khoản của người dùng (UC-032).
+     * 
+     * @param \App\Modules\Auth\DTO\ChangePasswordDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function changePassword(\App\Modules\Auth\DTO\ChangePasswordDTO $dto): ServiceReturn;
+
+    /**
+     * Lấy thông tin hồ sơ nhân sự cá nhân (UC-033).
+     * 
+     * @param string $userId
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function getEmployeeProfile(string $userId): ServiceReturn;
+
+    /**
+     * Cập nhật thông tin hồ sơ nhân sự cá nhân (UC-034).
+     * 
+     * @param \App\Modules\Auth\DTO\UpdateEmployeeProfileDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function updateEmployeeProfile(\App\Modules\Auth\DTO\UpdateEmployeeProfileDTO $dto): ServiceReturn;
+
+    /**
+     * Tải lên tài liệu hồ sơ nhân sự (UC-035).
+     * 
+     * @param \App\Modules\Auth\DTO\UploadEmployeeDocumentDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function uploadEmployeeDocument(\App\Modules\Auth\DTO\UploadEmployeeDocumentDTO $dto): ServiceReturn;
 }
+

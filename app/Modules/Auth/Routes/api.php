@@ -16,5 +16,18 @@ Route::prefix('v1/auth')->group(function () {
     // Các route yêu cầu đăng nhập
     Route::middleware('auth:api')->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
+        // UC-030: Xem hồ sơ cá nhân
+        Route::get('profile', [AuthController::class, 'profile'])->name('auth.profile');
+        // UC-031: Cập nhật hồ sơ cá nhân
+        Route::put('profile', [AuthController::class, 'updateProfile'])->name('auth.updateProfile');
+        // UC-032: Thay đổi mật khẩu
+        Route::put('change-password', [AuthController::class, 'changePassword'])->name('auth.changePassword');
+        // UC-033: Xem hồ sơ cá nhân nhân sự
+        Route::get('employee-profile', [AuthController::class, 'employeeProfile'])->name('auth.employeeProfile');
+        // UC-034: Cập nhật hồ sơ cá nhân nhân sự
+        Route::put('employee-profile', [AuthController::class, 'updateEmployeeProfile'])->name('auth.updateEmployeeProfile');
+        // UC-035: Tải lên tài liệu hồ sơ nhân sự
+        Route::post('employee-profile/documents', [AuthController::class, 'uploadEmployeeDocument'])->name('auth.uploadEmployeeDocument');
     });
 });
+
