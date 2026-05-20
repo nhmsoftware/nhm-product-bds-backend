@@ -6225,6 +6225,107 @@
                         "bearerAuth": []
                     }
                 ]
+            },
+            "post": {
+                "tags": [
+                    "News"
+                ],
+                "summary": "Chỉnh sửa bài viết nội bộ (UC-065)",
+                "description": "Chỉnh sửa bài viết nội bộ do chính mình tạo.",
+                "operationId": "3ed5bb7001611b65cc4c8085eb92e2e3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của bài viết nội bộ",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "content"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "description": "Tiêu đề bài viết (không bắt buộc)",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "content": {
+                                        "description": "Nội dung bài viết",
+                                        "type": "string"
+                                    },
+                                    "thumbnail": {
+                                        "description": "Ảnh đại diện/ảnh đính kèm bài viết (jpeg, png, jpg, gif, svg, tối đa 2MB)",
+                                        "type": "string",
+                                        "format": "binary",
+                                        "nullable": true
+                                    },
+                                    "_method": {
+                                        "description": "Spoof method (PUT/PATCH) if using multipart/form-data",
+                                        "type": "string",
+                                        "nullable": true,
+                                        "default": "PUT"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật bài viết thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cập nhật bài viết thành công."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/News"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập"
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền chỉnh sửa bài viết này"
+                    },
+                    "404": {
+                        "description": "Bài viết không tồn tại"
+                    },
+                    "422": {
+                        "description": "Vui lòng nhập nội dung bài viết"
+                    },
+                    "500": {
+                        "description": "Không thể cập nhật bài viết"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/news/internal/{id}/comments": {
