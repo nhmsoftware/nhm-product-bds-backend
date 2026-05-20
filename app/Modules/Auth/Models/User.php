@@ -24,6 +24,9 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'role', type: 'string', example: 'agent'),
         new OA\Property(property: 'avatar', type: 'string', nullable: true),
         new OA\Property(property: 'address', type: 'string', nullable: true, example: '123 Đường ABC, Quận 1, TP. HCM'),
+        new OA\Property(property: 'department', type: 'string', nullable: true, example: 'Kinh doanh', description: 'Phòng ban của nhân viên'),
+        new OA\Property(property: 'job_position', type: 'string', nullable: true, example: 'Nhân viên kinh doanh', description: 'Vị trí công việc'),
+        new OA\Property(property: 'area', type: 'string', nullable: true, example: 'Miền Nam', description: 'Khu vực quản lý/khu vực làm việc'),
         new OA\Property(property: 'is_active', type: 'boolean', example: true),
     ]
 )]
@@ -40,6 +43,9 @@ class User extends Authenticatable implements JWTSubject
         'role',
         'avatar',
         'address',
+        'department',
+        'job_position',
+        'area',
         'fcm_token',
         'is_active',
     ];

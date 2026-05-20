@@ -49,5 +49,14 @@ interface NewsRepositoryInterface extends BaseRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getRelatedNews(News $news, int $limit = 4);
+
+    /**
+     * Lấy danh sách tin tức nội bộ phân trang theo scope quyền hạn của User.
+     * 
+     * @param \App\Modules\Auth\Models\User $user
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getInternalNewsFeed(\App\Modules\Auth\Models\User $user, int $perPage = 10): LengthAwarePaginator;
 }
 

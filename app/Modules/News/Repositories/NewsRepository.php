@@ -103,5 +103,31 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
                            ->limit($limit)
                            ->get();
     }
+
+    /**
+     * Lấy danh sách tin tức nội bộ phân trang theo scope quyền hạn của User.
+     * 
+     * @param \App\Modules\Auth\Models\User $user
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getInternalNewsFeed(\App\Modules\Auth\Models\User $user, int $perPage = 10): LengthAwarePaginator
+    {
+        $query = $this->model->where('is_published', true);
+
+        if (in_array($user->role, ['agent', 'broker'], true)) {
+            // Employee (agent) or Team Leader (broker): Chỉ xem bài viết thuộc phòng ban của mình
+            $query->where('department', $user->department);
+        } elseif ($user->role === 'admin') {
+            // Director (admin): Xem bài viết của tất cả phòng ban thuộc khu vực mình quản lý
+            $query->where('area', $user->area);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+
+        return $query->with('author')
+                     ->orderBy('published_at', 'desc')
+                     ->paginate($perPage);
+    }
 }
 

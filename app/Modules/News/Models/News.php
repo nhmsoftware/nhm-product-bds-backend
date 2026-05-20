@@ -20,6 +20,8 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'content', type: 'string'),
         new OA\Property(property: 'thumbnail', type: 'string', nullable: true),
         new OA\Property(property: 'category', type: 'string'),
+        new OA\Property(property: 'department', type: 'string', nullable: true),
+        new OA\Property(property: 'area', type: 'string', nullable: true),
         new OA\Property(property: 'likes_count', type: 'integer'),
         new OA\Property(property: 'published_at', type: 'string', format: 'date-time'),
     ]
@@ -37,6 +39,8 @@ class News extends Model
         'content',
         'thumbnail',
         'category',
+        'department',
+        'area',
         'author_id',
         'is_published',
         'is_featured',
@@ -50,4 +54,9 @@ class News extends Model
         'likes_count' => 'integer',
         'published_at' => 'datetime',
     ];
+
+    public function author(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Auth\Models\User::class, 'author_id');
+    }
 }

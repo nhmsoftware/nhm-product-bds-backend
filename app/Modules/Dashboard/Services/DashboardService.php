@@ -7,11 +7,14 @@ use App\Core\Services\ServiceReturn;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Dashboard\DTO\ViewDashboardDTO;
 use App\Modules\Dashboard\Interfaces\DashboardServiceInterface;
+use App\Modules\Attendance\Interfaces\AttendanceRepositoryInterface;
+use Carbon\Carbon;
 
 final class DashboardService extends BaseService implements DashboardServiceInterface
 {
     public function __construct(
         private readonly AuthRepositoryInterface $authRepository,
+        private readonly AttendanceRepositoryInterface $attendanceRepository
     ) {
     }
 
@@ -29,6 +32,10 @@ final class DashboardService extends BaseService implements DashboardServiceInte
             $user = $this->authRepository->findById($dto->userId);
             $this->validate($user, 'Người dùng không tồn tại.', 404);
             $this->validate($user->is_active, 'Tài khoản của bạn đã bị khóa.', 403);
+
+            // Truy vấn thông tin chấm công thực tế của ngày hôm nay
+            $today = Carbon::today()->toDateString();
+            $attendance = $this->attendanceRepository->findByUserAndDate($user->id, $today);
 
             // Mocking data for modules not yet implemented
             $data = [
@@ -48,8 +55,8 @@ final class DashboardService extends BaseService implements DashboardServiceInte
                 ],
                 'quick_actions' => [
                     'attendance' => [
-                        'has_checked_in' => false,
-                        'last_check_in' => null,
+                        'has_checked_in' => $attendance !== null,
+                        'last_check_in' => $attendance && $attendance->check_in_at ? $attendance->check_in_at->toDateTimeString() : null,
                     ],
                     'application' => [
                         'status' => 'none',
