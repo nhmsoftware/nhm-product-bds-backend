@@ -91,4 +91,12 @@ interface NewsServiceInterface
      * @return ServiceReturn
      */
     public function likeInternalPost(string $newsId, string $userId): ServiceReturn;
+
+    /**
+     * Xóa bài viết nội bộ.
+     * 
+     * @param \App\Modules\News\DTO\DeleteInternalPostDTO $dto
+     * @return ServiceReturn
+     */
+    public function deleteInternalPost(\App\Modules\News\DTO\DeleteInternalPostDTO $dto): ServiceReturn;
 }

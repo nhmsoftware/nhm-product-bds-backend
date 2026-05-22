@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Leave\Models;
+
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 use App\Modules\Auth\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,7 +12,23 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OpenApi\Attributes as OA;
-
+use App\Modules\Leave\Models\Enums\RequestStatus;/**
+ * Class LeaveRequest
+ *
+ * @property string $id
+ * @property string $user_id
+ * @property LeaveType $leave_type
+ * @property \Illuminate\Support\Carbon|null $start_date
+ * @property \Illuminate\Support\Carbon|null $end_date
+ * @property string $reason
+ * @property RequestStatus $status
+ * @property string $rejection_reason
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read User|null $user
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'LeaveRequest',
     title: 'LeaveRequest Model',
@@ -53,7 +73,11 @@ class LeaveRequest extends Model
         'user_id' => 'string',
         'start_date' => 'date:Y-m-d',
         'end_date' => 'date:Y-m-d',
+        'leave_type' => \App\Modules\Leave\Enums\LeaveType::class,
+        'status' => RequestStatus::class,
     ];
+
+    // ─── Relationships ───────────────────────────────────────────
 
     /**
      * Thiết lập quan hệ liên kết với Model User (Nhân viên).
@@ -61,7 +85,37 @@ class LeaveRequest extends Model
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function user()
-    {
+    : BelongsTo {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function setLeaveTypeAttribute($value)
+    {
+        if ($value === null) {
+            $this->attributes['leave_type'] = null;
+            return;
+        }
+        $this->attributes['leave_type'] = $value instanceof \App\Modules\Leave\Enums\LeaveType ? $value->value : \App\Modules\Leave\Enums\LeaveType::deserialize($value)->value;
+    }
+
+    public function setStatusAttribute($value)
+    {
+        if ($value === null) {
+            $this->attributes['status'] = null;
+            return;
+        }
+        $this->attributes['status'] = $value instanceof RequestStatus ? $value->value : RequestStatus::deserialize($value)->value;
+    }
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        if (isset($array['leave_type']) && $this->leave_type instanceof \App\Modules\Leave\Enums\LeaveType) {
+            $array['leave_type'] = $this->leave_type->serialize();
+        }
+        if (isset($array['status']) && $this->status instanceof RequestStatus) {
+            $array['status'] = $this->status->serialize();
+        }
+        return $array;
     }
 }

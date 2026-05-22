@@ -7,6 +7,8 @@ use App\Core\Repository\BaseRepository;
 use App\Modules\Leave\Interfaces\LeaveRequestRepositoryInterface;
 use App\Modules\Leave\Models\LeaveRequest;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Modules\Leave\Models\Enums\RequestStatus;
+use App\Modules\Auth\Models\Enums\UserRole;
 
 /**
  * Repository xử lý các tương tác trực tiếp với cơ sở dữ liệu cho Model LeaveRequest.
@@ -36,7 +38,7 @@ final class LeaveRequestRepository extends BaseRepository implements LeaveReques
     {
         return $this->query()
             ->where('user_id', $userId)
-            ->where('status', '!=', 'rejected')
+            ->where('status', '!=', RequestStatus::REJECTED->value)
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->where('start_date', '<=', $endDate)
                       ->where('end_date', '>=', $startDate);
@@ -60,12 +62,22 @@ final class LeaveRequestRepository extends BaseRepository implements LeaveReques
 
         // Lọc theo loại nghỉ phép
         if (!empty($filters['leave_type'])) {
-            $query->where('leave_type', $filters['leave_type']);
+            try {
+                $enum = \App\Modules\Leave\Enums\LeaveType::deserialize($filters['leave_type']);
+                $query->where('leave_type', $enum->value);
+            } catch (\InvalidArgumentException $e) {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         // Lọc theo trạng thái xử lý
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            try {
+                $enum = RequestStatus::deserialize($filters['status']);
+                $query->where('status', $enum->value);
+            } catch (\InvalidArgumentException $e) {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         // Sắp xếp
@@ -86,7 +98,7 @@ final class LeaveRequestRepository extends BaseRepository implements LeaveReques
     {
         $query = $this->query()
             ->whereHas('user', function ($q) {
-                $q->where('role', 'agent');
+                $q->where('role', UserRole::AGENT->value);
             })
             ->with(['user.employeeProfile']);
 
@@ -94,12 +106,22 @@ final class LeaveRequestRepository extends BaseRepository implements LeaveReques
 
         // Lọc theo loại nghỉ phép
         if (!empty($filters['leave_type'])) {
-            $query->where('leave_type', $filters['leave_type']);
+            try {
+                $enum = \App\Modules\Leave\Enums\LeaveType::deserialize($filters['leave_type']);
+                $query->where('leave_type', $enum->value);
+            } catch (\InvalidArgumentException $e) {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         // Lọc theo trạng thái xử lý
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            try {
+                $enum = RequestStatus::deserialize($filters['status']);
+                $query->where('status', $enum->value);
+            } catch (\InvalidArgumentException $e) {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         // Sắp xếp

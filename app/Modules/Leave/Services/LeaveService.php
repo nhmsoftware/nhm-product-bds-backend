@@ -12,6 +12,8 @@ use App\Modules\Leave\Events\LeaveRequestCreated;
 use App\Modules\Leave\Events\LeaveRequestRejected;
 use App\Modules\Leave\Interfaces\LeaveRequestRepositoryInterface;
 use App\Modules\Leave\Interfaces\LeaveServiceInterface;
+use App\Modules\Leave\Models\Enums\RequestStatus;
+use App\Modules\Auth\Models\Enums\UserRole;
 
 /**
  * Service xử lý toàn bộ logic nghiệp vụ (Business Logic) liên quan đến yêu cầu nghỉ phép.
@@ -139,19 +141,19 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
             $this->validate($leaveRequest->user_id === $userId, 'Bạn không có quyền hủy yêu cầu nghỉ phép này.', 403);
 
             // 4. Kiểm tra trạng thái yêu cầu nghỉ phép
-            if ($leaveRequest->status === 'approved') {
+            if ($leaveRequest->status === RequestStatus::APPROVED) {
                 // A1: Yêu cầu nghỉ phép đã được duyệt
                 $this->validate(false, 'Không thể hủy yêu cầu đã được duyệt.', 400);
             }
 
-            if ($leaveRequest->status === 'rejected' || $leaveRequest->status === 'cancelled') {
-                // A2: Yêu cầu nghỉ phép đã bị từ chối hoặc đã được hủy trước đó
+            if ($leaveRequest->status === RequestStatus::REJECTED || $leaveRequest->status === RequestStatus::CANCELLED) {
+                // A2: Yêu cầu nghỉ phép đã được xử lý trước đó
                 $this->validate(false, 'Yêu cầu nghỉ phép đã được xử lý.', 400);
             }
 
             // 5. Cập nhật trạng thái yêu cầu nghỉ phép thành "cancelled" (Đã hủy)
             $updated = $this->leaveRequestRepository->updateById($leaveRequestId, [
-                'status' => 'cancelled'
+                'status' => RequestStatus::CANCELLED
             ]);
 
             $this->validate($updated !== false, 'Không thể cập nhật trạng thái yêu cầu nghỉ phép.', 500);
@@ -189,7 +191,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền quản lý (role phải là broker hoặc admin)
             $this->validate(
-                in_array($user->role, ['broker', 'admin'], true),
+                in_array($user->role, [UserRole::BROKER, UserRole::ADMIN], true),
                 'Bạn không có quyền xem danh sách yêu cầu nghỉ phép.',
                 403
             );
@@ -208,12 +210,12 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
                     'user_id' => (string) $item->user_id,
                     'employee_name' => $item->user ? $item->user->name : 'N/A',
                     'department' => 'Phòng Kinh doanh', // Mocked phòng ban do DB chưa có trường phòng ban riêng
-                    'leave_type' => $item->leave_type,
+                    'leave_type' => $item->leave_type->serialize(),
                     'start_date' => $item->start_date instanceof \Carbon\Carbon ? $item->start_date->toDateString() : $item->start_date,
                     'end_date' => $item->end_date instanceof \Carbon\Carbon ? $item->end_date->toDateString() : $item->end_date,
                     'number_of_days' => $numberOfDays,
                     'reason' => $item->reason,
-                    'status' => $item->status,
+                    'status' => $item->status->serialize(),
                     'created_at' => $item->created_at ? $item->created_at->toIso8601String() : null,
                 ];
             });
@@ -263,7 +265,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền duyệt nghỉ phép (role phải là broker hoặc admin)
             $this->validate(
-                in_array($user->role, ['broker', 'admin'], true),
+                in_array($user->role, [UserRole::BROKER, UserRole::ADMIN], true),
                 'Bạn không có quyền duyệt nghỉ phép.',
                 403
             );
@@ -274,13 +276,13 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
 
             // 5. Kiểm tra trạng thái yêu cầu nghỉ phép (Phải là 'pending')
             // A1 – Yêu cầu không còn ở trạng thái chờ duyệt
-            if ($leaveRequest->status !== 'pending') {
+            if ($leaveRequest->status !== RequestStatus::PENDING) {
                 $this->validate(false, 'Yêu cầu nghỉ phép đã được xử lý.', 400);
             }
 
             // 6. Cập nhật trạng thái yêu cầu nghỉ phép thành "approved" (Đã duyệt)
             $updated = $this->leaveRequestRepository->updateById($leaveRequestId, [
-                'status' => 'approved'
+                'status' => RequestStatus::APPROVED
             ]);
 
             $this->validate($updated !== false, 'Không thể cập nhật trạng thái yêu cầu nghỉ phép.', 500);
@@ -322,7 +324,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền duyệt nghỉ phép (role phải là broker hoặc admin)
             $this->validate(
-                in_array($user->role, ['broker', 'admin'], true),
+                in_array($user->role, [UserRole::BROKER, UserRole::ADMIN], true),
                 'Bạn không có quyền từ chối nghỉ phép.',
                 403
             );
@@ -333,13 +335,13 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
 
             // 5. Kiểm tra trạng thái yêu cầu nghỉ phép (Phải là 'pending')
             // A2 – Yêu cầu không còn ở trạng thái chờ duyệt
-            if ($leaveRequest->status !== 'pending') {
+            if ($leaveRequest->status !== RequestStatus::PENDING) {
                 $this->validate(false, 'Yêu cầu nghỉ phép đã được xử lý.', 400);
             }
 
             // 6. Cập nhật trạng thái yêu cầu nghỉ phép thành "rejected" (Từ chối) và lưu lý do
             $updated = $this->leaveRequestRepository->updateById($leaveRequestId, [
-                'status' => 'rejected',
+                'status' => RequestStatus::REJECTED,
                 'rejection_reason' => $reason
             ]);
 

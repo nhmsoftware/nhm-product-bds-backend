@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\LegalVideo\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,6 +10,25 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class LegalVideo
+ *
+ * @property string $id
+ * @property string $title
+ * @property string $slug
+ * @property string $short_description
+ * @property string $description
+ * @property string $video_url
+ * @property string $thumbnail_url
+ * @property int $duration_seconds
+ * @property string $category
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $published_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'LegalVideo',
     title: 'LegalVideo Model',

@@ -31,7 +31,7 @@ return new class extends Migration {
             $table->string('check_out_wifi_ssid')->nullable();
             $table->string('check_out_device_name')->nullable();
 
-            $table->enum('status', ['present', 'late', 'absent', 'half_day'])->default('present');
+            $table->tinyInteger('status')->default(1);
             $table->text('note')->nullable();
             
             $table->timestamps();

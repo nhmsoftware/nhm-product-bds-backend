@@ -1,7 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Auth\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+use App\Modules\Auth\Models\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,6 +16,29 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 
 use OpenApi\Attributes as OA;
 
+/**
+ * Class User
+ *
+ * @property string $id
+ * @property string $staff_code
+ * @property string $name
+ * @property string $email
+ * @property string $phone
+ * @property string $password
+ * @property UserRole $role
+ * @property string $avatar
+ * @property string $address
+ * @property string $department
+ * @property string $job_position
+ * @property string $area
+ * @property string $fcm_token
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read EmployeeProfile|null $employeeProfile
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'User',
     title: 'User Model',
@@ -59,7 +87,10 @@ class User extends Authenticatable implements JWTSubject
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
+        'role' => UserRole::class,
     ];
+
+    // ─── Relationships ───────────────────────────────────────────
 
     /**
      * Get the identifier that will be stored in the subject claim of the JWT.
@@ -85,7 +116,25 @@ class User extends Authenticatable implements JWTSubject
      * Quan hệ tới chi tiết hồ sơ nhân sự.
      */
     public function employeeProfile()
-    {
+    : HasOne {
         return $this->hasOne(EmployeeProfile::class, 'user_id');
+    }
+
+    public function setRoleAttribute($value)
+    {
+        if ($value === null) {
+            $this->attributes['role'] = null;
+            return;
+        }
+        $this->attributes['role'] = $value instanceof UserRole ? $value->value : UserRole::deserialize($value)->value;
+    }
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        if (isset($array['role']) && $this->role instanceof UserRole) {
+            $array['role'] = $this->role->serialize();
+        }
+        return $array;
     }
 }

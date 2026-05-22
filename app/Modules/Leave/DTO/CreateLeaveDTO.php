@@ -3,6 +3,7 @@
 namespace App\Modules\Leave\DTO;
 
 use Illuminate\Http\Request;
+use App\Modules\Leave\Models\Enums\RequestStatus;
 
 /**
  * DTO đóng gói dữ liệu yêu cầu xin nghỉ phép mới của nhân viên.
@@ -54,11 +55,11 @@ final class CreateLeaveDTO
     {
         return [
             'user_id' => $this->userId,
-            'leave_type' => $this->leaveType,
+            'leave_type' => \App\Modules\Leave\Enums\LeaveType::deserialize($this->leaveType),
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
             'reason' => $this->reason,
-            'status' => 'pending', // Mặc định đơn mới gửi sẽ ở trạng thái chờ duyệt
+            'status' => RequestStatus::PENDING, // Mặc định đơn mới gửi sẽ ở trạng thái chờ duyệt
         ];
     }
 }

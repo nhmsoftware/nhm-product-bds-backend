@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Auth\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -7,6 +9,26 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class EmployeeProfile
+ *
+ * @property string $id
+ * @property string $user_id
+ * @property string $employee_title
+ * @property string $identity_card
+ * @property \Illuminate\Support\Carbon|null $dob
+ * @property string $bank_account_name
+ * @property string $bank_account_number
+ * @property string $bank_name
+ * @property string $education
+ * @property string $major
+ * @property string $experience
+ * @property array|null $attachments
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read User|null $user
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'EmployeeProfile',
     title: 'Employee Profile Model',
@@ -64,6 +86,8 @@ class EmployeeProfile extends Model
         'dob'         => 'date',
         'attachments' => 'array',
     ];
+
+    // ─── Relationships ───────────────────────────────────────────
 
     /**
      * Quan hệ tới User sở hữu hồ sơ nhân sự này.

@@ -97,4 +97,62 @@ final class CourseRepository extends BaseRepository implements CourseRepositoryI
     {
         return \App\Modules\Learning\Models\CourseQuiz::where('lesson_id', $lessonId)->get();
     }
+
+    /**
+     * Tải danh sách khóa học cho Admin kèm tìm kiếm và lọc.
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function searchAndFilter(array $filters, int $perPage): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        $query = $this->query()->withCount('lessons');
+
+        if (!empty($filters['search'])) {
+            $search = '%' . $filters['search'] . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', $search)
+                  ->orWhere('description', 'like', $search);
+            });
+        }
+
+        if (isset($filters['is_active']) && $filters['is_active'] !== null) {
+            $query->where('is_active', $filters['is_active']);
+        }
+
+        if (isset($filters['is_required']) && $filters['is_required'] !== null) {
+            $query->where('is_required', $filters['is_required']);
+        }
+
+        if (!empty($filters['department'])) {
+            $query->where('department', $filters['department']);
+        }
+
+        if (!empty($filters['job_position'])) {
+            $query->where('job_position', $filters['job_position']);
+        }
+
+        return $query->orderBy('order', 'asc')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Lấy chi tiết khóa học cho Admin (không lọc theo is_active).
+     *
+     * @param string $courseId
+     * @return Course|null
+     */
+    public function getCourseDetailsForAdmin(string $courseId): ?Course
+    {
+        return $this->query()
+            ->where('id', $courseId)
+            ->with([
+                'lessons' => function ($q) {
+                    $q->orderBy('order', 'asc');
+                },
+                'lessons.quizzes'
+            ])
+            ->first();
+    }
 }

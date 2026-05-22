@@ -7,6 +7,7 @@ use App\Modules\News\Interfaces\NewsRepositoryInterface;
 use App\Modules\News\Models\News;
 
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Modules\Auth\Models\Enums\UserRole;
 
 final class NewsRepository extends BaseRepository implements NewsRepositoryInterface
 {
@@ -115,10 +116,10 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
     {
         $query = $this->model->where('is_published', true);
 
-        if (in_array($user->role, ['agent', 'broker'], true)) {
+        if (in_array($user->role, [UserRole::AGENT, UserRole::BROKER], true)) {
             // Employee (agent) or Team Leader (broker): Chỉ xem bài viết thuộc phòng ban của mình
             $query->where('department', $user->department);
-        } elseif ($user->role === 'admin') {
+        } elseif ($user->role === UserRole::ADMIN) {
             // Director (admin): Xem bài viết của tất cả phòng ban thuộc khu vực mình quản lý
             $query->where('area', $user->area);
         } else {

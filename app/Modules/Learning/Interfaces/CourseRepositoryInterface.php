@@ -49,4 +49,21 @@ interface CourseRepositoryInterface extends BaseRepositoryInterface
      * @return Collection
      */
     public function getQuizQuestions(string $lessonId): Collection;
+
+    /**
+     * Tải danh sách khóa học cho Admin kèm tìm kiếm và lọc.
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function searchAndFilter(array $filters, int $perPage): \Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
+    /**
+     * Lấy chi tiết khóa học cho Admin (không lọc theo is_active).
+     *
+     * @param string $courseId
+     * @return Course|null
+     */
+    public function getCourseDetailsForAdmin(string $courseId): ?Course;
 }

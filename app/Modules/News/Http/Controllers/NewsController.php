@@ -8,10 +8,12 @@ use App\Modules\News\DTO\SearchNewsDTO;
 use App\Modules\News\DTO\CreateCommentDTO;
 use App\Modules\News\DTO\CreateInternalPostDTO;
 use App\Modules\News\DTO\UpdateInternalPostDTO;
+use App\Modules\News\DTO\DeleteInternalPostDTO;
 use App\Modules\News\Http\Requests\SearchNewsRequest;
 use App\Modules\News\Http\Requests\CreateCommentRequest;
 use App\Modules\News\Http\Requests\CreateInternalPostRequest;
 use App\Modules\News\Http\Requests\UpdateInternalPostRequest;
+use App\Modules\News\Http\Requests\DeleteInternalPostRequest;
 use App\Modules\News\Interfaces\NewsServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -570,6 +572,52 @@ final class NewsController extends BaseController
         $userId = auth()->id();
         $dto = UpdateInternalPostDTO::fromRequest($request, $id, $userId);
         $result = $this->newsService->updateInternalPost($dto);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Delete(
+        path: '/api/v1/news/internal/{id}',
+        description: 'Cho phép người dùng xóa bài viết nội bộ do chính mình tạo.',
+        summary: 'Xóa bài viết nội bộ (UC-066)',
+        security: [['bearerAuth' => []]],
+        tags: ['News'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                description: 'ID của bài viết nội bộ',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Xóa bài viết thành công.',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Xóa bài viết thành công.'),
+                        new OA\Property(property: 'data', type: 'object', nullable: true)
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Chưa đăng nhập'),
+            new OA\Response(response: 403, description: 'Bạn không có quyền xóa bài viết này'),
+            new OA\Response(response: 404, description: 'Bài viết không tồn tại'),
+            new OA\Response(response: 500, description: 'Không thể xóa bài viết')
+        ]
+    )]
+    public function deleteInternal(DeleteInternalPostRequest $request, string $id): JsonResponse
+    {
+        $userId = auth()->id();
+        $dto = DeleteInternalPostDTO::fromRequest($request, $id, $userId);
+        $result = $this->newsService->deleteInternalPost($dto);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());

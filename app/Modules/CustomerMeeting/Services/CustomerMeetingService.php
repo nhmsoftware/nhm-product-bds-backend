@@ -11,6 +11,7 @@ use App\Modules\CustomerMeeting\Interfaces\CustomerMeetingRepositoryInterface;
 use App\Modules\CustomerMeeting\Interfaces\CustomerMeetingServiceInterface;
 use App\Modules\Project\Interfaces\ProjectRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
+use App\Modules\Auth\Models\Enums\UserRole;
 
 final class CustomerMeetingService extends BaseService implements CustomerMeetingServiceInterface
 {
@@ -47,9 +48,8 @@ final class CustomerMeetingService extends BaseService implements CustomerMeetin
             );
 
             // Kiểm tra role: Nhân viên có quyền sử dụng chức năng (admin, agent, broker)
-            $allowedRoles = ['admin', 'agent', 'broker'];
             $this->validate(
-                in_array($user->role, $allowedRoles, true),
+                in_array($user->role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true),
                 'Bạn không có quyền thực hiện chức năng này.',
                 403
             );

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('target_department')->comment('Phòng ban muốn chuyển đến');
             $table->text('reason')->comment('Lý do chuyển phòng ban');
             $table->date('desired_transfer_date')->comment('Ngày mong muốn chuyển');
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending')->comment('Trạng thái yêu cầu');
+            $table->tinyInteger('status')->default(1)->comment('Trạng thái yêu cầu');
             $table->timestamps();
             $table->softDeletes();
         });

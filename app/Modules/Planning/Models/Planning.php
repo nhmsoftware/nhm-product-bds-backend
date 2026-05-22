@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Planning\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,6 +10,33 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class Planning
+ *
+ * @property string $id
+ * @property string $title
+ * @property string $map_image
+ * @property string $status
+ * @property int $updated_year
+ * @property string $description
+ * @property string $city
+ * @property string $district
+ * @property string $sub_area
+ * @property string $symbol
+ * @property string $density
+ * @property string $max_height
+ * @property string $land_use_ratio
+ * @property string $setback
+ * @property string $land_type_notes
+ * @property string $pdf_url
+ * @property float $latitude
+ * @property float $longitude
+ * @property string $content
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'Planning',
     title: 'Planning Model',

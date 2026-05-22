@@ -18,7 +18,7 @@ return new class extends Migration {
             $table->string('phone')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role', ['admin', 'agent', 'broker', 'buyer'])->default('buyer');
+            $table->tinyInteger('role')->default(4);
             $table->string('avatar')->nullable();
             $table->string('fcm_token')->nullable();
             $table->boolean('is_active')->default(true);

@@ -262,7 +262,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'phone' => $user->phone ?: 'Chưa cập nhật.',
                 'address' => $user->address ?: 'Chưa cập nhật.',
                 'avatar' => $user->avatar,
-                'role' => $user->role,
+                'role' => $user->role->serialize(),
                 'is_active' => (bool) $user->is_active,
                 'created_at' => $user->created_at ? $user->created_at->toIso8601String() : null,
             ];
@@ -317,7 +317,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'phone' => $updated->phone ?: 'Chưa cập nhật.',
                 'address' => $updated->address ?: 'Chưa cập nhật.',
                 'avatar' => $updated->avatar,
-                'role' => $updated->role,
+                'role' => $updated->role->serialize(),
                 'is_active' => (bool) $updated->is_active,
                 'created_at' => $updated->created_at ? $updated->created_at->toIso8601String() : null,
             ];
@@ -424,7 +424,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                     'phone'          => $user->phone ?: 'Chưa cập nhật.',
                     'email'          => $user->email,
                     'avatar'         => $user->avatar,
-                    'role'           => $user->role, // Chức vụ
+                    'role'           => $user->role->serialize(), // Chức vụ
                     'address'        => $user->address ?: 'Chưa cập nhật.',
                 ],
                 'employee_details' => [
@@ -542,7 +542,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                     'phone'          => $freshUser->phone ?: 'Chưa cập nhật.',
                     'email'          => $freshUser->email,
                     'avatar'         => $freshUser->avatar,
-                    'role'           => $freshUser->role,
+                    'role'           => $freshUser->role->serialize(),
                     'address'        => $freshUser->address ?: 'Chưa cập nhật.',
                 ],
                 'employee_details' => [

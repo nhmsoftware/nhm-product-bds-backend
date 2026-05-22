@@ -11,6 +11,8 @@ use App\Modules\DepartmentTransfer\Interfaces\DepartmentTransferRequestRepositor
 use App\Modules\DepartmentTransfer\Interfaces\DepartmentTransferServiceInterface;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use App\Modules\DepartmentTransfer\Models\Enums\RequestStatus;
+use App\Modules\Auth\Models\Enums\UserRole;
 
 class DepartmentTransferService extends BaseService implements DepartmentTransferServiceInterface
 {
@@ -54,7 +56,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
                 'target_department' => $dto->targetDepartment,
                 'reason' => $dto->reason,
                 'desired_transfer_date' => $dto->desiredTransferDate,
-                'status' => 'pending',
+                'status' => RequestStatus::PENDING,
             ];
 
             $transferRequest = $this->departmentTransferRequestRepository->create($data);
@@ -95,7 +97,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             // 3. Kiểm tra Preconditions: Quyền xem yêu cầu chuyển phòng ban (chỉ Director hoặc Admin)
             $this->validate(
-                in_array($user->role, ['admin'], true),
+                $user->role === UserRole::ADMIN,
                 'Bạn không có quyền xem yêu cầu chuyển phòng ban.',
                 403
             );
@@ -115,7 +117,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
                         ? $item->desired_transfer_date->toDateString() 
                         : ($item->desired_transfer_date ? date('Y-m-d', strtotime($item->desired_transfer_date)) : null),
                     'reason' => $item->reason,
-                    'status' => $item->status,
+                    'status' => $item->status->serialize(),
                     'created_at' => $item->created_at ? $item->created_at->toIso8601String() : null,
                 ];
             });
@@ -165,7 +167,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             // 3. Kiểm tra Preconditions: Quyền duyệt chuyển phòng ban (role phải là admin)
             $this->validate(
-                in_array($user->role, ['admin'], true),
+                $user->role === UserRole::ADMIN,
                 'Bạn không có quyền duyệt yêu cầu chuyển phòng ban.',
                 403
             );
@@ -176,13 +178,13 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             // 5. Kiểm tra trạng thái yêu cầu chuyển phòng ban
             // A1 – Yêu cầu đã được xử lý trước đó
-            if ($transferRequest->status !== 'pending') {
+            if ($transferRequest->status !== RequestStatus::PENDING) {
                 $this->validate(false, 'Yêu cầu đã được xử lý.', 400);
             }
 
             // 6. Thực hiện cập nhật trạng thái yêu cầu thành "approved" (Đã duyệt)
             $updated = $this->departmentTransferRequestRepository->updateById($requestId, [
-                'status' => 'approved'
+                'status' => RequestStatus::APPROVED
             ]);
 
             $this->validate($updated !== false, 'Không thể cập nhật trạng thái yêu cầu.', 500);
@@ -224,7 +226,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             // 3. Kiểm tra Preconditions: Quyền từ chối chuyển phòng ban (role phải là admin)
             $this->validate(
-                in_array($user->role, ['admin'], true),
+                $user->role === UserRole::ADMIN,
                 'Bạn không có quyền từ chối yêu cầu chuyển phòng ban.',
                 403
             );
@@ -235,7 +237,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             // 5. Kiểm tra trạng thái yêu cầu chuyển phòng ban
             // A2 – Yêu cầu đã được xử lý trước đó
-            if ($transferRequest->status !== 'pending') {
+            if ($transferRequest->status !== RequestStatus::PENDING) {
                 $this->validate(false, 'Yêu cầu đã được xử lý.', 400);
             }
 
@@ -244,7 +246,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             // 6. Thực hiện cập nhật trạng thái yêu cầu thành "rejected" (Từ chối) và lưu lý do
             $updated = $this->departmentTransferRequestRepository->updateById($requestId, [
-                'status' => 'rejected',
+                'status' => RequestStatus::REJECTED,
                 'rejection_reason' => $reason
             ]);
 

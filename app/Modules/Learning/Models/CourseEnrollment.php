@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Learning\Models;
 
 use App\Modules\Auth\Models\User;
@@ -9,7 +11,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use OpenApi\Attributes as OA;
-
+use App\Modules\Learning\Models\Enums\CourseEnrollmentStatus;/**
+ * Class CourseEnrollment
+ *
+ * @property string $id
+ * @property string $user_id
+ * @property string $course_id
+ * @property CourseEnrollmentStatus $status
+ * @property string $progress_percent
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read User|null $user
+ * @property-read Course|null $course
+ * @property-read \Illuminate\Database\Eloquent\Collection|LessonProgress[] $lessonProgress
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'CourseEnrollment',
     title: 'CourseEnrollment Model',
@@ -45,7 +62,10 @@ class CourseEnrollment extends Model
         'course_id' => 'string',
         'progress_percent' => 'decimal:2',
         'completed_at' => 'datetime',
+        'status' => CourseEnrollmentStatus::class,
     ];
+
+    // ─── Relationships ───────────────────────────────────────────
 
     /**
      * Nhân viên đăng ký học.
@@ -75,5 +95,23 @@ class CourseEnrollment extends Model
     public function lessonProgress(): HasMany
     {
         return $this->hasMany(LessonProgress::class, 'enrollment_id');
+    }
+
+    public function setStatusAttribute($value)
+    {
+        if ($value === null) {
+            $this->attributes['status'] = null;
+            return;
+        }
+        $this->attributes['status'] = $value instanceof CourseEnrollmentStatus ? $value->value : CourseEnrollmentStatus::deserialize($value)->value;
+    }
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        if (isset($array['status']) && $this->status instanceof CourseEnrollmentStatus) {
+            $array['status'] = $this->status->serialize();
+        }
+        return $array;
     }
 }

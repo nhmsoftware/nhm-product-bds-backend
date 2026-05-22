@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\News\Models;
+
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -8,6 +12,29 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class News
+ *
+ * @property string $id
+ * @property string $title
+ * @property string $slug
+ * @property string $summary
+ * @property string $content
+ * @property string $thumbnail
+ * @property string $category
+ * @property string $department
+ * @property string $area
+ * @property string $author_id
+ * @property bool $is_published
+ * @property bool $is_featured
+ * @property int $likes_count
+ * @property \Illuminate\Support\Carbon|null $published_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read Author|null $author
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'News',
     title: 'News Model',
@@ -54,6 +81,8 @@ class News extends Model
         'likes_count' => 'integer',
         'published_at' => 'datetime',
     ];
+
+   // ─── Relationships ───────────────────────────────────────────
 
     public function author(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {

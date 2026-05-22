@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Learning\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -9,6 +11,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class CourseQuiz
+ *
+ * @property string $id
+ * @property string $lesson_id
+ * @property string $question
+ * @property array|null $options
+ * @property int $correct_option
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read Lesson|null $lesson
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'CourseQuiz',
     title: 'CourseQuiz Model',
@@ -46,6 +62,8 @@ class CourseQuiz extends Model
         'options' => 'array',
         'correct_option' => 'integer',
     ];
+
+    // ─── Relationships ───────────────────────────────────────────
 
     /**
      * Bài học chứa câu hỏi quiz này.

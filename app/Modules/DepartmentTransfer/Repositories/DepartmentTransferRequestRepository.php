@@ -7,6 +7,7 @@ use App\Core\Repository\BaseRepository;
 use App\Modules\DepartmentTransfer\Interfaces\DepartmentTransferRequestRepositoryInterface;
 use App\Modules\DepartmentTransfer\Models\DepartmentTransferRequest;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Modules\DepartmentTransfer\Models\Enums\RequestStatus;
 
 class DepartmentTransferRequestRepository extends BaseRepository implements DepartmentTransferRequestRepositoryInterface
 {
@@ -30,7 +31,7 @@ class DepartmentTransferRequestRepository extends BaseRepository implements Depa
     {
         return $this->query()
             ->where('user_id', $userId)
-            ->where('status', 'pending')
+            ->where('status', RequestStatus::PENDING->value)
             ->exists();
     }
 
@@ -48,7 +49,12 @@ class DepartmentTransferRequestRepository extends BaseRepository implements Depa
 
         // Lọc theo trạng thái xử lý
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            try {
+                $enum = RequestStatus::deserialize($filters['status']);
+                $query->where('status', $enum->value);
+            } catch (\InvalidArgumentException $e) {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         // Sắp xếp

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Consultation\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,6 +10,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class ConsultationSetting
+ *
+ * @property string $id
+ * @property string $hotline
+ * @property string $email
+ * @property string $address
+ * @property bool $is_callback_enabled
+ * @property bool $is_message_form_enabled
+ * @property string $working_hours
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'ConsultationSetting',
     title: 'ConsultationSetting Model',

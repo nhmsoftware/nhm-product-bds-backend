@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Learning\Http\Controllers\LearningController;
+use App\Modules\Learning\Http\Controllers\LearningAdminController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,4 +43,26 @@ Route::middleware('auth:api')->prefix('v1/learning')->group(function () {
 
     // Lưu tạm bài làm quiz (lưu bản nháp) (UC-059)
     Route::post('/lessons/{id}/quiz/draft', [LearningController::class, 'saveDraft'])->name('learning.lessons.quiz.draft');
+});
+
+Route::middleware('auth:api')->prefix('v1/learning/admin')->group(function () {
+    // Quản lý khóa học
+    Route::get('/courses', [LearningAdminController::class, 'getCourses'])->name('learning.admin.courses.index');
+    Route::get('/courses/{id}', [LearningAdminController::class, 'getCourseDetails'])->name('learning.admin.courses.show');
+    Route::post('/courses', [LearningAdminController::class, 'createCourse'])->name('learning.admin.courses.store');
+    Route::put('/courses/{id}', [LearningAdminController::class, 'updateCourse'])->name('learning.admin.courses.update');
+    Route::delete('/courses/{id}', [LearningAdminController::class, 'deleteCourse'])->name('learning.admin.courses.destroy');
+
+    // Quản lý bài học
+    Route::post('/lessons', [LearningAdminController::class, 'createLesson'])->name('learning.admin.lessons.store');
+    Route::put('/lessons/{id}', [LearningAdminController::class, 'updateLesson'])->name('learning.admin.lessons.update');
+    Route::delete('/lessons/{id}', [LearningAdminController::class, 'deleteLesson'])->name('learning.admin.lessons.destroy');
+
+    // Quản lý bài thi/quiz
+    Route::post('/quizzes', [LearningAdminController::class, 'createQuiz'])->name('learning.admin.quizzes.store');
+    Route::put('/quizzes/{id}', [LearningAdminController::class, 'updateQuiz'])->name('learning.admin.quizzes.update');
+    Route::delete('/quizzes/{id}', [LearningAdminController::class, 'deleteQuiz'])->name('learning.admin.quizzes.destroy');
+
+    // Xác nhận onboarding
+    Route::post('/courses/{courseId}/enrollments/{userId}/complete', [LearningAdminController::class, 'confirmOnboarding'])->name('learning.admin.courses.confirm-onboarding');
 });

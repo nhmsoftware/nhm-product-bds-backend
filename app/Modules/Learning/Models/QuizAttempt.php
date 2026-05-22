@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Learning\Models;
 
 use App\Modules\Auth\Models\User;
@@ -9,6 +11,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class QuizAttempt
+ *
+ * @property string $id
+ * @property string $user_id
+ * @property string $quiz_id
+ * @property int $selected_option
+ * @property bool $is_correct
+ * @property bool $is_draft
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read User|null $user
+ * @property-read Quiz|null $quiz
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'QuizAttempt',
     title: 'QuizAttempt Model',
@@ -44,6 +61,8 @@ class QuizAttempt extends Model
         'is_correct' => 'boolean',
         'is_draft' => 'boolean',
     ];
+
+    // ─── Relationships ───────────────────────────────────────────
 
     /**
      * Nhân viên thực hiện quiz.

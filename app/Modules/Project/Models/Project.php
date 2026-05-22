@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Project\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -8,6 +10,32 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class Project
+ *
+ * @property string $id
+ * @property string $name
+ * @property array|null $keywords
+ * @property string $location
+ * @property string $image
+ * @property string $banner
+ * @property string $price
+ * @property string $status
+ * @property string $type
+ * @property bool $is_public
+ * @property string $description
+ * @property array|null $amenities
+ * @property array|null $floor_plans
+ * @property array|null $legal_info
+ * @property string $brochure
+ * @property array|null $contact_info
+ * @property string $google_maps_url
+ * @property array|null $planning_info
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'Project',
     title: 'Project',

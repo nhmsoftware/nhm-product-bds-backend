@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Learning\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -10,6 +12,25 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class CourseLesson
+ *
+ * @property string $id
+ * @property string $course_id
+ * @property string $title
+ * @property string $content
+ * @property string $video_url
+ * @property int $duration_minutes
+ * @property int $order
+ * @property bool $is_active
+ * @property array|null $attachments
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read Course|null $course
+ * @property-read \Illuminate\Database\Eloquent\Collection|Quizzes[] $quizzes
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'CourseLesson',
     title: 'CourseLesson Model',
@@ -22,6 +43,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/videos/lesson1.mp4', description: 'URL video bài học'),
         new OA\Property(property: 'duration_minutes', type: 'integer', example: 15, description: 'Thời lượng video (phút)'),
         new OA\Property(property: 'order', type: 'integer', example: 1, description: 'Thứ tự trong khóa học'),
+        new OA\Property(property: 'is_active', type: 'boolean', example: true, description: 'Trạng thái bài học (Mở khóa / Khóa)'),
         new OA\Property(
             property: 'attachments',
             type: 'array',
@@ -53,6 +75,7 @@ class CourseLesson extends Model
         'video_url',
         'duration_minutes',
         'order',
+        'is_active',
         'attachments',
     ];
 
@@ -61,8 +84,11 @@ class CourseLesson extends Model
         'course_id' => 'string',
         'duration_minutes' => 'integer',
         'order' => 'integer',
+        'is_active' => 'boolean',
         'attachments' => 'array',
     ];
+
+    // ─── Relationships ───────────────────────────────────────────
 
     /**
      * Khóa học sở hữu bài học này.

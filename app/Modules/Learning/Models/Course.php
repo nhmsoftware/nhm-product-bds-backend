@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Learning\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -9,6 +11,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class Course
+ *
+ * @property string $id
+ * @property string $title
+ * @property string $description
+ * @property string $thumbnail
+ * @property bool $is_required
+ * @property string $department
+ * @property string $job_position
+ * @property int $order
+ * @property bool $is_active
+ * @property bool $has_certificate
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection|Lessons[] $lessons
+ * @property-read \Illuminate\Database\Eloquent\Collection|Enrollments[] $enrollments
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'Course',
     title: 'Course Model',
@@ -53,6 +75,8 @@ class Course extends Model
         'has_certificate' => 'boolean',
         'order' => 'integer',
     ];
+
+    // ─── Relationships ───────────────────────────────────────────
 
     /**
      * Danh sách bài học thuộc khóa học này.

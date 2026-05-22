@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Learning\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -8,6 +10,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class LessonProgress
+ *
+ * @property string $id
+ * @property string $enrollment_id
+ * @property string $lesson_id
+ * @property bool $is_completed
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property int $current_watch_seconds
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Enrollment|null $enrollment
+ * @property-read Lesson|null $lesson
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'LessonProgress',
     title: 'LessonProgress Model',
@@ -43,6 +60,8 @@ class LessonProgress extends Model
         'completed_at' => 'datetime',
         'current_watch_seconds' => 'integer',
     ];
+
+    // ─── Relationships ───────────────────────────────────────────
 
     /**
      * Lượt đăng ký khóa học tương ứng.

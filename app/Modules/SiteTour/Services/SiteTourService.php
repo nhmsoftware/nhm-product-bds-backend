@@ -11,6 +11,7 @@ use App\Modules\SiteTour\Interfaces\SiteTourRepositoryInterface;
 use App\Modules\SiteTour\Interfaces\SiteTourServiceInterface;
 use App\Modules\Project\Interfaces\ProjectRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
+use App\Modules\Auth\Models\Enums\UserRole;
 
 final class SiteTourService extends BaseService implements SiteTourServiceInterface
 {
@@ -46,9 +47,8 @@ final class SiteTourService extends BaseService implements SiteTourServiceInterf
             );
 
             // Kiểm tra phân quyền nhân viên (admin, agent, broker)
-            $allowedRoles = ['admin', 'agent', 'broker'];
             $this->validate(
-                in_array($user->role, $allowedRoles, true),
+                in_array($user->role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true),
                 'Bạn không có quyền thực hiện chức năng dẫn khách.',
                 403
             );
@@ -150,9 +150,8 @@ final class SiteTourService extends BaseService implements SiteTourServiceInterf
             );
 
             // Kiểm tra phân quyền nhân viên (admin, agent, broker)
-            $allowedRoles = ['admin', 'agent', 'broker'];
             $this->validate(
-                in_array($user->role, $allowedRoles, true),
+                in_array($user->role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true),
                 'Bạn không có quyền thực hiện chức năng dẫn khách.',
                 403
             );

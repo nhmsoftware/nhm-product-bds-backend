@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Attendance\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -7,7 +9,31 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OpenApi\Attributes as OA;
-
+use App\Modules\Attendance\Models\Enums\AttendanceStatus;/**
+ * Class Attendance
+ *
+ * @property string $id
+ * @property string $user_id
+ * @property \Illuminate\Support\Carbon|null $work_date
+ * @property \Illuminate\Support\Carbon|null $check_in_at
+ * @property float $check_in_lat
+ * @property float $check_in_lng
+ * @property string $check_in_method
+ * @property string $check_in_wifi_ssid
+ * @property string $check_in_device_name
+ * @property \Illuminate\Support\Carbon|null $check_out_at
+ * @property float $check_out_lat
+ * @property float $check_out_lng
+ * @property string $check_out_method
+ * @property string $check_out_wifi_ssid
+ * @property string $check_out_device_name
+ * @property AttendanceStatus $status
+ * @property string $note
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'Attendance',
     title: 'Attendance Model',
@@ -69,5 +95,24 @@ class Attendance extends Model
         'check_out_at' => 'datetime',
         'check_out_lat' => 'float',
         'check_out_lng' => 'float',
+        'status' => AttendanceStatus::class,
     ];
+
+    public function setStatusAttribute($value)
+    {
+        if ($value === null) {
+            $this->attributes['status'] = null;
+            return;
+        }
+        $this->attributes['status'] = $value instanceof AttendanceStatus ? $value->value : AttendanceStatus::deserialize($value)->value;
+    }
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        if (isset($array['status']) && $this->status instanceof AttendanceStatus) {
+            $array['status'] = $this->status->serialize();
+        }
+        return $array;
+    }
 }

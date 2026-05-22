@@ -71,7 +71,7 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
             $table->uuid('course_id');
-            $table->enum('status', ['not_started', 'in_progress', 'completed'])->default('not_started');
+            $table->tinyInteger('status')->default(1);
             $table->decimal('progress_percent', 5, 2)->default(0.00);
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();

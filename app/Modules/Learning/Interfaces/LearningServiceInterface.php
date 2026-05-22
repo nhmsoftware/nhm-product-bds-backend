@@ -106,4 +106,116 @@ interface LearningServiceInterface
      * @return ServiceReturn
      */
     public function saveQuizDraft(string $lessonId, array $answers, string $userId): ServiceReturn;
+
+    /**
+     * Tải danh sách khóa học cho Admin kèm tìm kiếm và lọc.
+     *
+     * @param \App\Modules\Learning\DTO\AdminViewCoursesDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminGetCourses(\App\Modules\Learning\DTO\AdminViewCoursesDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Lấy thông tin chi tiết một khóa học cho Admin.
+     *
+     * @param string $courseId
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminGetCourseDetails(string $courseId, string $adminId): ServiceReturn;
+
+    /**
+     * Tạo khóa học mới.
+     *
+     * @param \App\Modules\Learning\DTO\AdminCreateCourseDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminCreateCourse(\App\Modules\Learning\DTO\AdminCreateCourseDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Cập nhật thông tin khóa học.
+     *
+     * @param string $courseId
+     * @param \App\Modules\Learning\DTO\AdminUpdateCourseDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminUpdateCourse(string $courseId, \App\Modules\Learning\DTO\AdminUpdateCourseDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Xóa khóa học.
+     *
+     * @param string $courseId
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminDeleteCourse(string $courseId, string $adminId): ServiceReturn;
+
+    /**
+     * Tạo bài học mới.
+     *
+     * @param \App\Modules\Learning\DTO\AdminCreateLessonDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminCreateLesson(\App\Modules\Learning\DTO\AdminCreateLessonDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Cập nhật thông tin bài học.
+     *
+     * @param string $lessonId
+     * @param \App\Modules\Learning\DTO\AdminUpdateLessonDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminUpdateLesson(string $lessonId, \App\Modules\Learning\DTO\AdminUpdateLessonDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Xóa bài học.
+     *
+     * @param string $lessonId
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminDeleteLesson(string $lessonId, string $adminId): ServiceReturn;
+
+    /**
+     * Tạo câu hỏi quiz mới cho bài học.
+     *
+     * @param \App\Modules\Learning\DTO\AdminCreateQuizDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminCreateQuiz(\App\Modules\Learning\DTO\AdminCreateQuizDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Cập nhật câu hỏi quiz.
+     *
+     * @param string $quizId
+     * @param \App\Modules\Learning\DTO\AdminUpdateQuizDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminUpdateQuiz(string $quizId, \App\Modules\Learning\DTO\AdminUpdateQuizDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Xóa câu hỏi quiz.
+     *
+     * @param string $quizId
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminDeleteQuiz(string $quizId, string $adminId): ServiceReturn;
+
+    /**
+     * Xác nhận hoàn thành onboarding (khóa học) cho nhân viên.
+     *
+     * @param string $courseId
+     * @param string $userId
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminConfirmOnboarding(string $courseId, string $userId, string $adminId): ServiceReturn;
 }

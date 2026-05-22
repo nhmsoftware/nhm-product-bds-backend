@@ -43,7 +43,7 @@ final class DashboardService extends BaseService implements DashboardServiceInte
                     'id' => (string) $user->id,
                     'name' => $user->name,
                     'avatar' => $user->avatar,
-                    'role' => $user->role,
+                    'role' => $user->role->serialize(),
                 ],
                 'overview' => [
                     'latest_news' => $this->getMockNews(),
@@ -62,7 +62,7 @@ final class DashboardService extends BaseService implements DashboardServiceInte
                         'status' => 'none',
                     ],
                 ],
-                'modules' => $this->getAuthorizedModules($user->role),
+                'modules' => $this->getAuthorizedModules($user->role->serialize()),
             ];
 
             return $this->success($data, 'Tải dữ liệu trang chủ thành công.');

@@ -8,6 +8,7 @@ use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\ActivityEvidence\DTO\UploadEvidenceDTO;
 use App\Modules\ActivityEvidence\Interfaces\EvidenceServiceInterface;
 use Illuminate\Support\Facades\Storage;
+use App\Modules\Auth\Models\Enums\UserRole;
 
 final class EvidenceService extends BaseService implements EvidenceServiceInterface
 {
@@ -31,9 +32,8 @@ final class EvidenceService extends BaseService implements EvidenceServiceInterf
             $this->validate((bool) $user->is_active, 'Tài khoản của bạn đã bị khóa.', 403);
 
             // Kiểm tra quyền nhân viên
-            $allowedRoles = ['admin', 'agent', 'broker'];
             $this->validate(
-                in_array($user->role, $allowedRoles, true),
+                in_array($user->role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true),
                 'Bạn không có quyền tải lên minh chứng hoạt động.',
                 403
             );

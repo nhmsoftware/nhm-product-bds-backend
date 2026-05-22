@@ -2,14 +2,18 @@
 
 namespace App\Modules\Leave\Enums;
 
-enum LeaveType: string
+use App\Core\Traits\EnumHelper;
+
+enum LeaveType: int
 {
-    case ANNUAL = 'annual';
-    case UNPAID = 'unpaid';
-    case PERSONAL = 'personal';
-    case MATERNITY = 'maternity';
-    case BUSINESS = 'business';
-    case COMPENSATORY = 'compensatory';
+    use EnumHelper;
+
+    case ANNUAL = 1;
+    case UNPAID = 2;
+    case PERSONAL = 3;
+    case MATERNITY = 4;
+    case BUSINESS = 5;
+    case COMPENSATORY = 6;
 
     /**
      * Lấy tên hiển thị tiếng Việt tương ứng cho từng loại nghỉ phép.
@@ -27,14 +31,5 @@ enum LeaveType: string
             self::COMPENSATORY => 'Nghỉ bù',
         };
     }
-
-    /**
-     * Lấy tất cả giá trị dạng string của enum.
-     *
-     * @return array<string>
-     */
-    public static function values(): array
-    {
-        return array_column(self::cases(), 'value');
-    }
 }
+

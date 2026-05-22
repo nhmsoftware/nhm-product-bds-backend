@@ -16,6 +16,7 @@ Route::prefix('v1/news')->group(function () {
         Route::post('/internal', [NewsController::class, 'createInternal'])->name('news.internal.create');
         Route::get('/internal/{id}', [NewsController::class, 'getInternalDetail'])->name('news.internal.detail');
         Route::match(['post', 'put'], '/internal/{id}', [NewsController::class, 'updateInternal'])->name('news.internal.update');
+        Route::delete('/internal/{id}', [NewsController::class, 'deleteInternal'])->name('news.internal.delete');
         Route::post('/internal/{id}/comments', [NewsController::class, 'addComment'])->name('news.internal.comment');
         Route::post('/internal/{id}/like', [NewsController::class, 'likeInternal'])->name('news.internal.like');
         Route::post('/{id}/like', [NewsController::class, 'like'])->name('news.like');

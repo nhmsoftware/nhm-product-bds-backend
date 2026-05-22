@@ -9,6 +9,7 @@ use App\Modules\News\DTO\SearchNewsDTO;
 use App\Modules\News\DTO\CreateCommentDTO;
 use App\Modules\News\DTO\CreateInternalPostDTO;
 use App\Modules\News\DTO\UpdateInternalPostDTO;
+use App\Modules\News\DTO\DeleteInternalPostDTO;
 use App\Modules\News\Events\NewsLiked;
 use App\Modules\News\Events\NewsUnliked;
 use App\Modules\News\Events\NewsCommentCreated;
@@ -19,6 +20,7 @@ use App\Modules\News\Interfaces\NewsCommentRepositoryInterface;
 use App\Modules\News\Interfaces\NewsServiceInterface;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Modules\Auth\Models\Enums\UserRole;
 
 final class NewsService extends BaseService implements NewsServiceInterface
 {
@@ -271,9 +273,9 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($news->is_published === true, 'Bài viết không tồn tại.', 404);
 
             // 3. Kiểm tra phân quyền truy cập bài viết nội bộ (A1)
-            if (in_array($user->role, ['agent', 'broker'], true)) {
+            if (in_array($user->role, [UserRole::AGENT, UserRole::BROKER], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền truy cập bài viết này.', 403);
-            } elseif ($user->role === 'admin') {
+            } elseif ($user->role === UserRole::ADMIN) {
                 $this->validate($news->area === $user->area, 'Bạn không có quyền truy cập bài viết này.', 403);
             } else {
                 $this->throw('Bạn không có quyền truy cập bài viết này.', 403);
@@ -361,9 +363,9 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($news->is_published === true, 'Bài viết không tồn tại.', 404);
 
             // 3. Kiểm tra phân quyền truy cập bài viết nội bộ
-            if (in_array($user->role, ['agent', 'broker'], true)) {
+            if (in_array($user->role, [UserRole::AGENT, UserRole::BROKER], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền bình luận bài viết này.', 403);
-            } elseif ($user->role === 'admin') {
+            } elseif ($user->role === UserRole::ADMIN) {
                 $this->validate($news->area === $user->area, 'Bạn không có quyền bình luận bài viết này.', 403);
             } else {
                 $this->throw('Bạn không có quyền bình luận bài viết này.', 403);
@@ -417,9 +419,8 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
             // Kiểm tra phân quyền: Employee (agent), Team Leader (broker), Director (admin)
-            $allowedRoles = ['agent', 'broker', 'admin'];
             $this->validate(
-                in_array($user->role, $allowedRoles, true),
+                in_array($user->role, [UserRole::AGENT, UserRole::BROKER, UserRole::ADMIN], true),
                 'Bạn không có quyền đăng bài viết nội bộ.',
                 403
             );
@@ -463,7 +464,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $department = null;
             $area = null;
 
-            if ($user->role === 'admin') {
+            if ($user->role === UserRole::ADMIN) {
                 // Director (admin): Xem bài viết của khu vực
                 $area = $user->area;
                 $this->validate(!empty($area), 'Khu vực quản lý của giám đốc không xác định.', 400);
@@ -595,9 +596,9 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($news !== null && $news->is_published === true, 'Bài viết không tồn tại.', 404);
 
             // 3. Kiểm tra phân quyền truy cập bài viết nội bộ (A1)
-            if (in_array($user->role, ['agent', 'broker'], true)) {
+            if (in_array($user->role, [UserRole::AGENT, UserRole::BROKER], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền tương tác bài viết này.', 403);
-            } elseif ($user->role === 'admin') {
+            } elseif ($user->role === UserRole::ADMIN) {
                 $this->validate($news->area === $user->area, 'Bạn không có quyền tương tác bài viết này.', 403);
             } else {
                 $this->throw('Bạn không có quyền tương tác bài viết này.', 403);
@@ -637,6 +638,44 @@ final class NewsService extends BaseService implements NewsServiceInterface
                 return ServiceReturn::error($e->getMessage(), $e, null, $e->getCode());
             }
             return ServiceReturn::error('Không thể cập nhật lượt thích. Vui lòng thử lại.', $e, null, 500);
+        });
+    }
+
+    /**
+     * Xóa bài viết nội bộ (UC-066).
+     * 
+     * @param DeleteInternalPostDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function deleteInternalPost(DeleteInternalPostDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            // 1. Kiểm tra Preconditions: Người dùng tồn tại và đang hoạt động
+            $user = \App\Modules\Auth\Models\User::find($dto->userId);
+            $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
+            $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
+
+            // 2. Tìm bài viết nội bộ
+            $news = $this->newsRepository->find($dto->id);
+            // A3 - Bài viết không tồn tại
+            $this->validate($news !== null, 'Bài viết không tồn tại.', 404);
+            $this->validate($news->category === 'internal', 'Bài viết không tồn tại.', 404);
+
+            // 3. Kiểm tra A1: Người dùng không phải chủ sở hữu bài viết
+            $this->validate($news->author_id === $user->id, 'Bạn không có quyền xóa bài viết này.', 403);
+
+            // 4. Thực hiện xóa bài viết
+            $deleted = $this->newsRepository->deleteById($news->id);
+            // A4 - Lỗi xóa bài viết
+            $this->validate($deleted === true, 'Không thể xóa bài viết.', 500);
+
+            return $this->success(null, 'Xóa bài viết thành công.');
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            if ($e instanceof \App\Core\Services\ServiceException) {
+                return ServiceReturn::error($e->getMessage(), $e, null, $e->getCode());
+            }
+            return ServiceReturn::error('Không thể xóa bài viết.', $e, null, 500);
         });
     }
 }

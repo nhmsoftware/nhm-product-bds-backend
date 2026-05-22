@@ -27,9 +27,15 @@ final class CreateLeaveRequest extends FormRequest
      */
     public function rules(): array
     {
-        $types = implode(',', LeaveType::values());
+        $validLeaveTypes = [];
+        foreach (LeaveType::cases() as $case) {
+            $validLeaveTypes[] = $case->value;
+            $validLeaveTypes[] = (string) $case->value;
+            $validLeaveTypes[] = $case->serialize();
+        }
+        $types = implode(',', $validLeaveTypes);
         return [
-            'leave_type' => ['required', 'string', "in:{$types}"],
+            'leave_type' => ['required', "in:{$types}"],
             'start_date' => ['required', 'date_format:Y-m-d'],
             'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'reason' => ['required', 'string', 'min:5'],

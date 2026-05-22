@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\SiteTour\Models;
 
 use App\Modules\Auth\Models\User;
@@ -11,6 +13,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OpenApi\Attributes as OA;
 
+/**
+ * Class SiteTour
+ *
+ * @property string $id
+ * @property string $user_id
+ * @property string $project_id
+ * @property string $unit_code
+ * @property string $customer_name
+ * @property string $image_path
+ * @property string $latitude
+ * @property string $longitude
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read User|null $user
+ * @property-read Project|null $project
+ * @mixin \Eloquent
+ */
 #[OA\Schema(
     schema: 'SiteTour',
     title: 'SiteTour',
@@ -50,6 +70,8 @@ class SiteTour extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+   // ─── Relationships ───────────────────────────────────────────
 
     public function user(): BelongsTo
     {

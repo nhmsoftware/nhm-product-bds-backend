@@ -12,6 +12,8 @@ use App\Modules\Attendance\Interfaces\AttendanceRepositoryInterface;
 use App\Modules\Attendance\Interfaces\AttendanceServiceInterface;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use Carbon\Carbon;
+use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Attendance\Models\Enums\AttendanceStatus;
 
 final class AttendanceService extends BaseService implements AttendanceServiceInterface
 {
@@ -44,7 +46,7 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             
             // Employee check-in: Chỉ cho phép vai trò admin, agent, broker check-in
             $this->validate(
-                in_array($user->role, ['admin', 'agent', 'broker']),
+                in_array($user->role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true),
                 'Tài khoản không được cấp quyền sử dụng chức năng Check-in.',
                 403
             );
@@ -116,7 +118,7 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
                 'check_in_method' => $dto->method,
                 'check_in_wifi_ssid' => $dto->method === 'wifi' ? $dto->wifiSsid : null,
                 'check_in_device_name' => $dto->deviceName,
-                'status' => $status,
+                'status' => AttendanceStatus::deserialize($status),
                 'note' => $note,
             ];
 
@@ -149,7 +151,7 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             
             // Employee check-out: Chỉ cho phép vai trò admin, agent, broker check-out
             $this->validate(
-                in_array($user->role, ['admin', 'agent', 'broker']),
+                in_array($user->role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true),
                 'Tài khoản không được cấp quyền sử dụng chức năng Check-out.',
                 403
             );

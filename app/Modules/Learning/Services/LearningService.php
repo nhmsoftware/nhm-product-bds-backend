@@ -5,9 +5,19 @@ namespace App\Modules\Learning\Services;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
 use App\Modules\Learning\DTO\ViewCoursesDTO;
+use App\Modules\Learning\DTO\AdminViewCoursesDTO;
+use App\Modules\Learning\DTO\AdminCreateCourseDTO;
+use App\Modules\Learning\DTO\AdminUpdateCourseDTO;
+use App\Modules\Learning\DTO\AdminCreateLessonDTO;
+use App\Modules\Learning\DTO\AdminUpdateLessonDTO;
+use App\Modules\Learning\DTO\AdminCreateQuizDTO;
+use App\Modules\Learning\DTO\AdminUpdateQuizDTO;
 use App\Modules\Learning\Interfaces\CourseEnrollmentRepositoryInterface;
 use App\Modules\Learning\Interfaces\CourseRepositoryInterface;
+use App\Modules\Learning\Interfaces\CourseLessonRepositoryInterface;
+use App\Modules\Learning\Interfaces\CourseQuizRepositoryInterface;
 use App\Modules\Learning\Interfaces\LearningServiceInterface;
+use App\Modules\Learning\Models\Enums\CourseEnrollmentStatus;
 
 /**
  * Class LearningService
@@ -29,17 +39,33 @@ final class LearningService extends BaseService implements LearningServiceInterf
     protected CourseEnrollmentRepositoryInterface $courseEnrollmentRepository;
 
     /**
+     * @var CourseLessonRepositoryInterface
+     */
+    protected CourseLessonRepositoryInterface $lessonRepository;
+
+    /**
+     * @var CourseQuizRepositoryInterface
+     */
+    protected CourseQuizRepositoryInterface $quizRepository;
+
+    /**
      * Khởi tạo Service với các Repository tương ứng.
      *
      * @param CourseRepositoryInterface $courseRepository
      * @param CourseEnrollmentRepositoryInterface $courseEnrollmentRepository
+     * @param CourseLessonRepositoryInterface $lessonRepository
+     * @param CourseQuizRepositoryInterface $quizRepository
      */
     public function __construct(
         CourseRepositoryInterface $courseRepository,
-        CourseEnrollmentRepositoryInterface $courseEnrollmentRepository
+        CourseEnrollmentRepositoryInterface $courseEnrollmentRepository,
+        CourseLessonRepositoryInterface $lessonRepository,
+        CourseQuizRepositoryInterface $quizRepository
     ) {
         $this->courseRepository = $courseRepository;
         $this->courseEnrollmentRepository = $courseEnrollmentRepository;
+        $this->lessonRepository = $lessonRepository;
+        $this->quizRepository = $quizRepository;
     }
 
     /**
@@ -84,9 +110,9 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'thumbnail' => $course->thumbnail,
                     'description' => $course->description,
                     'progress_percent' => $enrollment ? (float) $enrollment->progress_percent : 0.00,
-                    'status' => $enrollment ? $enrollment->status : 'not_started',
+                    'status' => $enrollment ? $enrollment->status->serialize() : 'not_started',
                     'status_label' => $enrollment 
-                        ? ($enrollment->status === 'completed' ? 'Hoàn thành' : 'Đang học') 
+                        ? ($enrollment->status === CourseEnrollmentStatus::COMPLETED ? 'Hoàn thành' : 'Đang học') 
                         : 'Chưa học',
                 ];
             });
@@ -131,7 +157,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 $enrollment = $this->courseEnrollmentRepository->create([
                     'user_id' => $userId,
                     'course_id' => $courseId,
-                    'status' => 'in_progress',
+                    'status' => CourseEnrollmentStatus::IN_PROGRESS,
                     'progress_percent' => 0.00,
                 ]);
             }
@@ -185,7 +211,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'thumbnail' => $course->thumbnail,
                 'description' => $course->description,
                 'progress_percent' => (float) $enrollment->progress_percent,
-                'status' => $enrollment->status,
+                'status' => $enrollment->status->serialize(),
                 'lessons' => $mappedLessons,
             ];
 
@@ -401,10 +427,10 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     $enrollment->progress_percent = $progressPercent;
 
                     if ($completedLessonsCount === $totalLessonsCount) {
-                        $enrollment->status = 'completed';
+                        $enrollment->status = CourseEnrollmentStatus::COMPLETED;
                         $enrollment->completed_at = now();
                     } else {
-                        $enrollment->status = 'in_progress';
+                        $enrollment->status = CourseEnrollmentStatus::IN_PROGRESS;
                     }
 
                     $enrollment->save();
@@ -440,7 +466,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'current_watch_seconds' => $progressRecord->current_watch_seconds,
                 'is_completed' => $isCompleted,
                 'course_progress_percent' => (float) $enrollment->progress_percent,
-                'course_status' => $enrollment->status,
+                'course_status' => $enrollment->status->serialize(),
                 'next_lesson_id' => $nextLessonId,
                 'unlock_condition' => $unlockCondition,
             ];
@@ -685,7 +711,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
 
             // Nếu đã hoàn thành từ trước, trả về thông tin thành công ngay
-            if ($enrollment->status === 'completed') {
+            if ($enrollment->status === CourseEnrollmentStatus::COMPLETED) {
                 return $this->success(
                     data: $enrollment,
                     message: 'Bạn đã hoàn thành khóa học.'
@@ -735,7 +761,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             }
 
             // 7. Cập nhật trạng thái và tiến độ khóa học thành Hoàn thành (100%)
-            $enrollment->status = 'completed';
+            $enrollment->status = CourseEnrollmentStatus::COMPLETED;
             $enrollment->progress_percent = 100.00;
             $enrollment->completed_at = now();
             $enrollment->save();
@@ -784,7 +810,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             // 5. A1 – Employee chưa hoàn thành khóa học
             $enrollment = $course->enrollments->first();
-            if ($enrollment === null || $enrollment->status !== 'completed') {
+            if ($enrollment === null || $enrollment->status !== CourseEnrollmentStatus::COMPLETED) {
                 return ServiceReturn::error(
                     message: 'Bạn chưa hoàn thành khóa học.',
                     code: 403
@@ -965,6 +991,461 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 code: 500
             );
         });
+    }
+
+    /**
+     * Kiểm tra và xác thực xem người dùng có phải là Admin đang hoạt động hay không.
+     *
+     * @param string $adminId
+     * @return void
+     */
+    private function validateAdmin(string $adminId): void
+    {
+        $admin = \App\Modules\Auth\Models\User::find($adminId);
+        $this->validate($admin !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
+        $this->validate($admin->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
+        $this->validate($admin->role === \App\Modules\Auth\Models\Enums\UserRole::ADMIN, 'Bạn không có quyền thực hiện chức năng này.', 403);
+    }
+
+    /**
+     * Tải danh sách khóa học cho Admin kèm tìm kiếm và lọc.
+     */
+    public function adminGetCourses(AdminViewCoursesDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($dto, $adminId) {
+            $this->validateAdmin($adminId);
+            $paginator = $this->courseRepository->searchAndFilter($dto->toArray(), $dto->perPage);
+            
+            $items = collect($paginator->items())->map(function ($course) {
+                return [
+                    'id' => (string) $course->id,
+                    'title' => $course->title,
+                    'description' => $course->description,
+                    'thumbnail' => $course->thumbnail,
+                    'is_required' => (bool) $course->is_required,
+                    'department' => $course->department,
+                    'job_position' => $course->job_position,
+                    'order' => (int) $course->order,
+                    'is_active' => (bool) $course->is_active,
+                    'has_certificate' => (bool) $course->has_certificate,
+                    'lessons_count' => (int) $course->lessons_count,
+                    'created_at' => $course->created_at?->toIso8601String(),
+                ];
+            });
+
+            return $this->success(
+                data: [
+                    'list' => $items->toArray(),
+                    'pagination' => [
+                        'total' => $paginator->total(),
+                        'per_page' => $paginator->perPage(),
+                        'current_page' => $paginator->currentPage(),
+                        'last_page' => $paginator->lastPage(),
+                    ]
+                ],
+                message: 'Tải danh sách khóa học thành công.'
+            );
+        }, useTransaction: false);
+    }
+
+    /**
+     * Lấy thông tin chi tiết một khóa học cho Admin.
+     */
+    public function adminGetCourseDetails(string $courseId, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $adminId) {
+            $this->validateAdmin($adminId);
+            $course = $this->courseRepository->getCourseDetailsForAdmin($courseId);
+            $this->validate($course !== null, 'Không tìm thấy khóa học.', 404);
+
+            $lessons = $course->lessons->map(function ($lesson) {
+                $quizzes = $lesson->quizzes->map(function ($quiz) {
+                    return [
+                        'id' => (string) $quiz->id,
+                        'question' => $quiz->question,
+                        'options' => $quiz->options,
+                        'correct_option' => (int) $quiz->correct_option,
+                    ];
+                });
+
+                return [
+                    'id' => (string) $lesson->id,
+                    'title' => $lesson->title,
+                    'content' => $lesson->content,
+                    'video_url' => $lesson->video_url,
+                    'duration_minutes' => (int) $lesson->duration_minutes,
+                    'order' => (int) $lesson->order,
+                    'is_active' => (bool) $lesson->is_active,
+                    'attachments' => $lesson->attachments,
+                    'quizzes' => $quizzes->toArray(),
+                ];
+            });
+
+            $data = [
+                'id' => (string) $course->id,
+                'title' => $course->title,
+                'description' => $course->description,
+                'thumbnail' => $course->thumbnail,
+                'is_required' => (bool) $course->is_required,
+                'department' => $course->department,
+                'job_position' => $course->job_position,
+                'order' => (int) $course->order,
+                'is_active' => (bool) $course->is_active,
+                'has_certificate' => (bool) $course->has_certificate,
+                'lessons' => $lessons->toArray(),
+            ];
+
+            return $this->success(data: $data, message: 'Tải chi tiết khóa học thành công.');
+        }, useTransaction: false);
+    }
+
+    /**
+     * Tạo khóa học mới.
+     */
+    public function adminCreateCourse(AdminCreateCourseDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($dto, $adminId) {
+            $this->validateAdmin($adminId);
+
+            // A2 – Chưa có bài học
+            $this->validate(!empty($dto->lessons), 'Vui lòng thêm ít nhất một bài học.', 422);
+
+            // A5 – Khóa học chưa có quiz
+            $totalQuizzes = 0;
+            foreach ($dto->lessons as $lessonData) {
+                if (!empty($lessonData['quizzes'])) {
+                    $totalQuizzes += count($lessonData['quizzes']);
+                }
+            }
+            $this->validate($totalQuizzes > 0, 'Khóa học chưa có quiz. Vui lòng tạo quiz cho khóa học.', 422);
+
+            // Create Course
+            $course = $this->courseRepository->create($dto->toArray());
+            $this->validate($course !== null, 'Không thể tạo khóa học.', 500);
+
+            // Create Lessons and Quizzes
+            foreach ($dto->lessons as $lessonIndex => $lessonData) {
+                $lesson = $this->lessonRepository->create([
+                    'course_id' => $course->id,
+                    'title' => $lessonData['title'],
+                    'content' => $lessonData['content'] ?? null,
+                    'video_url' => $lessonData['video_url'] ?? null,
+                    'duration_minutes' => (int) $lessonData['duration_minutes'],
+                    'order' => (int) ($lessonData['order'] ?? $lessonIndex + 1),
+                    'is_active' => (bool) ($lessonData['is_active'] ?? true),
+                    'attachments' => $lessonData['attachments'] ?? null,
+                ]);
+
+                $this->validate($lesson !== null, 'Không thể tạo khóa học.', 500);
+
+                if (!empty($lessonData['quizzes'])) {
+                    foreach ($lessonData['quizzes'] as $quizData) {
+                        $quiz = $this->quizRepository->create([
+                            'lesson_id' => $lesson->id,
+                            'question' => $quizData['question'],
+                            'options' => $quizData['options'],
+                            'correct_option' => (int) $quizData['correct_option'],
+                        ]);
+                        $this->validate($quiz !== null, 'Không thể tạo khóa học.', 500);
+                    }
+                }
+            }
+
+            // Return full course structure
+            $fullCourse = $this->courseRepository->getCourseDetailsForAdmin($course->id);
+            return $this->success(data: $fullCourse, message: 'Tạo khóa học thành công.');
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            // A6 – Lỗi tạo khóa học
+            return ServiceReturn::error(
+                message: $e->getCode() === 422 ? $e->getMessage() : 'Không thể tạo khóa học.',
+                code: $e->getCode() === 422 ? 422 : 500
+            );
+        });
+    }
+
+    /**
+     * Cập nhật thông tin khóa học.
+     */
+    public function adminUpdateCourse(string $courseId, AdminUpdateCourseDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $dto, $adminId) {
+            $this->validateAdmin($adminId);
+
+            // A1 – Khóa học không tồn tại
+            $course = $this->courseRepository->find($courseId);
+            $this->validate($course !== null, 'Khóa học không tồn tại.', 404);
+
+            // A3 – Chưa có bài học
+            $this->validate(!empty($dto->lessons), 'Vui lòng thêm ít nhất một bài học.', 422);
+
+            // A6 – Khóa học chưa có quiz
+            $totalQuizzes = 0;
+            foreach ($dto->lessons as $lessonData) {
+                if (!empty($lessonData['quizzes'])) {
+                    $totalQuizzes += count($lessonData['quizzes']);
+                }
+            }
+            $this->validate($totalQuizzes > 0, 'Khóa học chưa có quiz. Vui lòng tạo quiz cho khóa học.', 422);
+
+            // Update course itself
+            $updated = $this->courseRepository->updateById($courseId, $dto->toArray());
+            $this->validate($updated !== false, 'Không thể cập nhật khóa học.', 500);
+
+            // Get existing lessons of this course
+            $existingLessons = $this->lessonRepository->query()->where('course_id', $courseId)->get();
+            $existingLessonIds = $existingLessons->pluck('id')->toArray();
+
+            $processedLessonIds = [];
+
+            // Process lessons in payload
+            foreach ($dto->lessons as $lessonIndex => $lessonData) {
+                $lessonId = $lessonData['id'] ?? null;
+
+                $lessonPayload = [
+                    'course_id' => $courseId,
+                    'title' => $lessonData['title'],
+                    'content' => $lessonData['content'] ?? null,
+                    'video_url' => $lessonData['video_url'] ?? null,
+                    'duration_minutes' => (int) $lessonData['duration_minutes'],
+                    'order' => (int) ($lessonData['order'] ?? $lessonIndex + 1),
+                    'is_active' => (bool) ($lessonData['is_active'] ?? true),
+                    'attachments' => $lessonData['attachments'] ?? null,
+                ];
+
+                if ($lessonId && in_array($lessonId, $existingLessonIds)) {
+                    // Update existing lesson
+                    $lesson = $this->lessonRepository->updateById($lessonId, $lessonPayload);
+                    $this->validate($lesson !== false, 'Không thể cập nhật khóa học.', 500);
+                    $processedLessonIds[] = $lessonId;
+                } else {
+                    // Create new lesson
+                    $lesson = $this->lessonRepository->create($lessonPayload);
+                    $this->validate($lesson !== null, 'Không thể cập nhật khóa học.', 500);
+                    $lessonId = (string) $lesson->id;
+                    $processedLessonIds[] = $lessonId;
+                }
+
+                // Process quizzes for this lesson
+                $existingQuizzes = $this->quizRepository->query()->where('lesson_id', $lessonId)->get();
+                $existingQuizIds = $existingQuizzes->pluck('id')->toArray();
+                $processedQuizIds = [];
+
+                if (!empty($lessonData['quizzes'])) {
+                    foreach ($lessonData['quizzes'] as $quizData) {
+                        $quizId = $quizData['id'] ?? null;
+                        $quizPayload = [
+                            'lesson_id' => $lessonId,
+                            'question' => $quizData['question'],
+                            'options' => $quizData['options'],
+                            'correct_option' => (int) $quizData['correct_option'],
+                        ];
+
+                        if ($quizId && in_array($quizId, $existingQuizIds)) {
+                            // Update existing quiz
+                            $quiz = $this->quizRepository->updateById($quizId, $quizPayload);
+                            $this->validate($quiz !== false, 'Không thể cập nhật khóa học.', 500);
+                            $processedQuizIds[] = $quizId;
+                        } else {
+                            // Create new quiz
+                            $quiz = $this->quizRepository->create($quizPayload);
+                            $this->validate($quiz !== null, 'Không thể cập nhật khóa học.', 500);
+                            $processedQuizIds[] = (string) $quiz->id;
+                        }
+                    }
+                }
+
+                // Delete quizzes of this lesson that are not in the payload
+                $quizzesToDelete = array_diff($existingQuizIds, $processedQuizIds);
+                foreach ($quizzesToDelete as $delQuizId) {
+                    $this->quizRepository->deleteById($delQuizId);
+                }
+            }
+
+            // Delete lessons (and cascade deletes quizzes) not in the payload
+            $lessonsToDelete = array_diff($existingLessonIds, $processedLessonIds);
+            foreach ($lessonsToDelete as $delLessonId) {
+                $this->lessonRepository->deleteById($delLessonId);
+            }
+
+            // Return full course structure
+            $fullCourse = $this->courseRepository->getCourseDetailsForAdmin($courseId);
+            return $this->success(data: $fullCourse, message: 'Cập nhật khóa học thành công.');
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            // A7 – Lỗi cập nhật khóa học
+            $code = $e->getCode();
+            $message = $e->getMessage();
+
+            // Check if it's one of our validation exceptions
+            if ($code === 404) {
+                return ServiceReturn::error(message: $message, code: 404);
+            }
+            if ($code === 422) {
+                return ServiceReturn::error(message: $message, code: 422);
+            }
+
+            return ServiceReturn::error(message: 'Không thể cập nhật khóa học.', code: 500);
+        });
+    }
+
+    /**
+     * Xóa khóa học.
+     */
+    public function adminDeleteCourse(string $courseId, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $adminId) {
+            $this->validateAdmin($adminId);
+            $course = $this->courseRepository->find($courseId);
+            $this->validate($course !== null, 'Không tìm thấy khóa học.', 404);
+
+            $deleted = $this->courseRepository->deleteById($courseId);
+            $this->validate($deleted !== false, 'Không thể xóa khóa học.', 500);
+
+            return $this->success(data: null, message: 'Xóa khóa học thành công.');
+        }, useTransaction: true);
+    }
+
+    /**
+     * Tạo bài học mới.
+     */
+    public function adminCreateLesson(AdminCreateLessonDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($dto, $adminId) {
+            $this->validateAdmin($adminId);
+            $course = $this->courseRepository->find($dto->courseId);
+            $this->validate($course !== null, 'Không tìm thấy khóa học.', 404);
+
+            $lesson = $this->lessonRepository->create($dto->toArray());
+            return $this->success(data: $lesson, message: 'Tạo bài học thành công.');
+        }, useTransaction: true);
+    }
+
+    /**
+     * Cập nhật thông tin bài học.
+     */
+    public function adminUpdateLesson(string $lessonId, AdminUpdateLessonDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($lessonId, $dto, $adminId) {
+            $this->validateAdmin($adminId);
+            $lesson = $this->lessonRepository->find($lessonId);
+            $this->validate($lesson !== null, 'Bài học không tồn tại.', 404);
+
+            $updated = $this->lessonRepository->updateById($lessonId, $dto->toArray());
+            $this->validate($updated !== false, 'Không thể cập nhật bài học.', 500);
+
+            $updatedLesson = $this->lessonRepository->find($lessonId);
+            return $this->success(data: $updatedLesson, message: 'Cập nhật bài học thành công.');
+        }, useTransaction: true);
+    }
+
+    /**
+     * Xóa bài học.
+     */
+    public function adminDeleteLesson(string $lessonId, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($lessonId, $adminId) {
+            $this->validateAdmin($adminId);
+            $lesson = $this->lessonRepository->find($lessonId);
+            $this->validate($lesson !== null, 'Bài học không tồn tại.', 404);
+
+            $deleted = $this->lessonRepository->deleteById($lessonId);
+            $this->validate($deleted !== false, 'Không thể xóa bài học.', 500);
+
+            return $this->success(data: null, message: 'Xóa bài học thành công.');
+        }, useTransaction: true);
+    }
+
+    /**
+     * Tạo câu hỏi quiz mới cho bài học.
+     */
+    public function adminCreateQuiz(AdminCreateQuizDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($dto, $adminId) {
+            $this->validateAdmin($adminId);
+            $lesson = $this->lessonRepository->find($dto->lessonId);
+            $this->validate($lesson !== null, 'Bài học không tồn tại.', 404);
+
+            $quiz = $this->quizRepository->create($dto->toArray());
+            return $this->success(data: $quiz, message: 'Tạo câu hỏi quiz thành công.');
+        }, useTransaction: true);
+    }
+
+    /**
+     * Cập nhật câu hỏi quiz.
+     */
+    public function adminUpdateQuiz(string $quizId, AdminUpdateQuizDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($quizId, $dto, $adminId) {
+            $this->validateAdmin($adminId);
+            $quiz = $this->quizRepository->find($quizId);
+            $this->validate($quiz !== null, 'Câu hỏi quiz không tồn tại.', 404);
+
+            $updated = $this->quizRepository->updateById($quizId, $dto->toArray());
+            $this->validate($updated !== false, 'Không thể cập nhật câu hỏi quiz.', 500);
+
+            $updatedQuiz = $this->quizRepository->find($quizId);
+            return $this->success(data: $updatedQuiz, message: 'Cập nhật câu hỏi quiz thành công.');
+        }, useTransaction: true);
+    }
+
+    /**
+     * Xóa câu hỏi quiz.
+     */
+    public function adminDeleteQuiz(string $quizId, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($quizId, $adminId) {
+            $this->validateAdmin($adminId);
+            $quiz = $this->quizRepository->find($quizId);
+            $this->validate($quiz !== null, 'Câu hỏi quiz không tồn tại.', 404);
+
+            $deleted = $this->quizRepository->deleteById($quizId);
+            $this->validate($deleted !== false, 'Không thể xóa câu hỏi quiz.', 500);
+
+            return $this->success(data: null, message: 'Xóa câu hỏi quiz thành công.');
+        }, useTransaction: true);
+    }
+
+    /**
+     * Xác nhận hoàn thành onboarding (khóa học) cho nhân viên.
+     */
+    public function adminConfirmOnboarding(string $courseId, string $userId, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $userId, $adminId) {
+            $this->validateAdmin($adminId);
+
+            $user = \App\Modules\Auth\Models\User::find($userId);
+            $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
+
+            $course = $this->courseRepository->find($courseId);
+            $this->validate($course !== null, 'Không tìm thấy khóa học.', 404);
+
+            $enrollment = $this->courseEnrollmentRepository->findByUserAndCourse($userId, $courseId);
+            if (!$enrollment) {
+                $enrollment = $this->courseEnrollmentRepository->create([
+                    'user_id' => $userId,
+                    'course_id' => $courseId,
+                    'status' => \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::COMPLETED,
+                    'progress_percent' => 100.00,
+                    'completed_at' => now(),
+                ]);
+            } else {
+                $enrollment->status = \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::COMPLETED;
+                $enrollment->progress_percent = 100.00;
+                $enrollment->completed_at = now();
+                $enrollment->save();
+            }
+
+            return $this->success(
+                data: [
+                    'id' => (string) $enrollment->id,
+                    'user_id' => (string) $enrollment->user_id,
+                    'course_id' => (string) $enrollment->course_id,
+                    'status' => $enrollment->status->serialize(),
+                    'progress_percent' => (float) $enrollment->progress_percent,
+                    'completed_at' => $enrollment->completed_at?->toIso8601String(),
+                ],
+                message: 'Xác nhận hoàn thành onboarding cho nhân viên thành công.'
+            );
+        }, useTransaction: true);
     }
 }
 

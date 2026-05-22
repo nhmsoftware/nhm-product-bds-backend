@@ -3039,6 +3039,654 @@
                 ]
             }
         },
+        "/api/v1/learning/admin/courses": {
+            "get": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Tải danh sách khóa học kèm tìm kiếm và lọc dành cho Admin (UC-069)",
+                "operationId": "5932743085123e052f9af417efd36ddf",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_active",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "is_required",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "department",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "job_position",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải danh sách khóa học thành công"
+                    },
+                    "403": {
+                        "description": "Không có quyền truy cập"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Tạo khóa học mới (UC-069)",
+                "operationId": "cc5da32b8e41939afe864f31a0946821",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "thumbnail": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "is_required": {
+                                        "type": "boolean",
+                                        "default": true
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "job_position": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "order": {
+                                        "type": "integer",
+                                        "default": 0
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "default": true
+                                    },
+                                    "has_certificate": {
+                                        "type": "boolean",
+                                        "default": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tạo khóa học thành công"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/courses/{id}": {
+            "get": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Xem chi tiết khóa học cho Admin bao gồm toàn bộ bài học và quiz (UC-069)",
+                "operationId": "7c8f10e21ff8ba945864083c1536bd53",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải chi tiết khóa học thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy khóa học"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Cập nhật thông tin khóa học (UC-069)",
+                "operationId": "4529e56a30e54a717a6290026a5db117",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "thumbnail": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "is_required": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "job_position": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "order": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    },
+                                    "has_certificate": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật khóa học thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy khóa học"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Xóa khóa học (UC-069)",
+                "operationId": "1f9ad5f67ce0da8063982f546b17f7ae",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa khóa học thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy khóa học"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/lessons": {
+            "post": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Tạo bài học mới (UC-069)",
+                "operationId": "b7737e7fdf8304a5d95e0828ae473cfb",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "course_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "video_url": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "duration_minutes": {
+                                        "type": "integer"
+                                    },
+                                    "order": {
+                                        "type": "integer",
+                                        "default": 0
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "default": true
+                                    },
+                                    "attachments": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tạo bài học thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy khóa học"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/lessons/{id}": {
+            "put": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Cập nhật thông tin bài học (UC-069)",
+                "operationId": "7b24a252d3b8982cf657512177aec12c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "video_url": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "duration_minutes": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "order": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    },
+                                    "attachments": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật bài học thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy bài học"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Xóa bài học (UC-069)",
+                "operationId": "fbb4c0bcf023b25010fcf390929e047e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa bài học thành công"
+                    },
+                    "404": {
+                        "description": "Bài học không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/quizzes": {
+            "post": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Tạo câu hỏi quiz kiểm tra bài học mới (UC-069)",
+                "operationId": "3106edf5bfd3ce83ed4eac4036ebae38",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "lesson_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "question": {
+                                        "type": "string"
+                                    },
+                                    "options": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "correct_option": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tạo câu hỏi quiz thành công"
+                    },
+                    "404": {
+                        "description": "Bài học không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/quizzes/{id}": {
+            "put": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Cập nhật thông tin câu hỏi quiz (UC-069)",
+                "operationId": "2e72ba66e255e134e7e48755ad270385",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "question": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "options": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "correct_option": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật câu hỏi quiz thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy câu hỏi quiz"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Xóa câu hỏi quiz (UC-069)",
+                "operationId": "70960f1f300032d0cf1f0cc3921ee7dd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa câu hỏi quiz thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy câu hỏi quiz"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/courses/{courseId}/enrollments/{userId}/complete": {
+            "post": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Xác nhận hoàn thành onboarding cho nhân viên (UC-069)",
+                "operationId": "f815ffc2db9aff8945ea2c878bbcf9b9",
+                "parameters": [
+                    {
+                        "name": "courseId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xác nhận hoàn thành onboarding thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy nhân viên hoặc khóa học"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/learning/courses": {
             "get": {
                 "tags": [
@@ -6326,6 +6974,69 @@
                         "bearerAuth": []
                     }
                 ]
+            },
+            "delete": {
+                "tags": [
+                    "News"
+                ],
+                "summary": "Xóa bài viết nội bộ (UC-066)",
+                "description": "Cho phép người dùng xóa bài viết nội bộ do chính mình tạo.",
+                "operationId": "f4c61fa3fd33285d8eeb86abff7c0f7f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của bài viết nội bộ",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa bài viết thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Xóa bài viết thành công."
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập"
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền xóa bài viết này"
+                    },
+                    "404": {
+                        "description": "Bài viết không tồn tại"
+                    },
+                    "500": {
+                        "description": "Không thể xóa bài viết"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/news/internal/{id}/comments": {
@@ -7556,6 +8267,7 @@
                 "description": "Thông tin chấm công hàng ngày của nhân viên",
                 "properties": {
                     "id": {
+                        "description": "Class Attendance",
                         "type": "string",
                         "format": "uuid",
                         "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
@@ -7679,6 +8391,7 @@
                 "description": "Bảng thông tin chi tiết hồ sơ nhân sự của hệ thống.",
                 "properties": {
                     "id": {
+                        "description": "Class EmployeeProfile",
                         "type": "string",
                         "format": "uuid",
                         "example": "123e4567-e89b-12d3-a456-426614174000"
@@ -7773,6 +8486,7 @@
                 "description": "Thông tin người dùng",
                 "properties": {
                     "id": {
+                        "description": "Class User",
                         "type": "string",
                         "format": "uuid",
                         "example": "uuid-string"
@@ -7837,6 +8551,7 @@
                 "description": "Yêu cầu liên hệ tư vấn bất động sản của khách hàng",
                 "properties": {
                     "id": {
+                        "description": "Class ConsultationMessage",
                         "type": "string",
                         "format": "uuid",
                         "example": "d3b07384-d113-49c2-a558-e244247a88ca"
@@ -7890,6 +8605,7 @@
                 "description": "Thông tin cấu hình liên hệ tư vấn hệ thống",
                 "properties": {
                     "id": {
+                        "description": "Class ConsultationSetting",
                         "type": "string",
                         "format": "uuid",
                         "example": "d3b07384-d113-49c2-a558-e244247a88ca"
@@ -7950,6 +8666,7 @@
                 ],
                 "properties": {
                     "id": {
+                        "description": "Class CustomerMeeting",
                         "type": "string",
                         "format": "uuid",
                         "example": "550e8400-e29b-41d4-a716-446655440000"
@@ -8030,6 +8747,7 @@
                 "description": "Thông tin yêu cầu chuyển phòng ban",
                 "properties": {
                     "id": {
+                        "description": "Class DepartmentTransferRequest",
                         "type": "string",
                         "format": "uuid",
                         "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
@@ -8247,6 +8965,11 @@
                         "type": "integer",
                         "example": 1
                     },
+                    "is_active": {
+                        "description": "Trạng thái bài học (Mở khóa / Khóa)",
+                        "type": "boolean",
+                        "example": true
+                    },
                     "attachments": {
                         "description": "Danh sách tài liệu đính kèm",
                         "type": "array",
@@ -8327,6 +9050,7 @@
                 "description": "Tiến độ học bài học của nhân viên",
                 "properties": {
                     "id": {
+                        "description": "Class LessonProgress",
                         "type": "string",
                         "format": "uuid",
                         "example": "uuid-string"
@@ -8363,6 +9087,7 @@
                 "description": "Lịch sử trả lời câu hỏi trắc nghiệm của nhân viên",
                 "properties": {
                     "id": {
+                        "description": "Class QuizAttempt",
                         "type": "string",
                         "format": "uuid",
                         "example": "uuid-string"
@@ -8474,6 +9199,7 @@
                 "description": "Thông tin video kiến thức và pháp lý bất động sản",
                 "properties": {
                     "id": {
+                        "description": "Class LegalVideo",
                         "type": "string",
                         "format": "uuid"
                     },
@@ -8521,6 +9247,7 @@
                 "description": "Thông tin bài viết tin tức",
                 "properties": {
                     "id": {
+                        "description": "Class News",
                         "type": "string",
                         "format": "uuid"
                     },
@@ -8567,6 +9294,7 @@
                 "description": "Thông tin bình luận bài viết",
                 "properties": {
                     "id": {
+                        "description": "Class NewsComment",
                         "type": "string",
                         "format": "uuid"
                     },
@@ -8597,6 +9325,7 @@
                 "description": "Thông tin quy hoạch bất động sản",
                 "properties": {
                     "id": {
+                        "description": "Class Planning",
                         "type": "string",
                         "format": "uuid",
                         "example": "uuid-string"
@@ -8709,6 +9438,7 @@
                 ],
                 "properties": {
                     "id": {
+                        "description": "Class Project",
                         "type": "string",
                         "format": "uuid",
                         "example": "550e8400-e29b-41d4-a716-446655440000"
@@ -8823,6 +9553,7 @@
                 ],
                 "properties": {
                     "id": {
+                        "description": "Class SiteTour",
                         "type": "string",
                         "format": "uuid",
                         "example": "550e8400-e29b-41d4-a716-446655440000"
@@ -8908,6 +9639,10 @@
         {
             "name": "Dashboard",
             "description": "Dashboard"
+        },
+        {
+            "name": "Learning Admin",
+            "description": "Learning Admin"
         },
         {
             "name": "Learning",
