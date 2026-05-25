@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Consultation\Models;
 
+use App\Modules\Consultation\Models\Enums\ConsultationStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -20,7 +21,7 @@ use OpenApi\Attributes as OA;
  * @property string $project_id
  * @property string $project_name
  * @property string $content
- * @property string $status
+ * @property ConsultationStatus $status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -64,5 +65,15 @@ class ConsultationMessage extends Model
         'project_id' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'status' => ConsultationStatus::class,
     ];
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        if (isset($array['status']) && $this->status instanceof ConsultationStatus) {
+            $array['status'] = $this->status->serialize();
+        }
+        return $array;
+    }
 }

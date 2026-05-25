@@ -120,6 +120,19 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne(EmployeeProfile::class, 'user_id');
     }
 
+    /**
+     * Danh sách khu đất được phân quyền cho người dùng.
+     */
+    public function assignedAreas(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(
+            \App\Modules\Area\Models\Area::class,
+            'area_assignments',
+            'user_id',
+            'area_id'
+        )->withTimestamps()->whereNull('area_assignments.deleted_at');
+    }
+
     public function setRoleAttribute($value)
     {
         if ($value === null) {

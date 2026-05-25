@@ -11,6 +11,7 @@ use App\Modules\Auth\DTO\VerifyOtpDTO;
 use App\Modules\Auth\Events\UserRegistered;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Interfaces\AuthServiceInterface;
+use App\Modules\Auth\Models\Enums\UserRole;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -49,7 +50,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $data = $dto->toArray();
             $data['password']   = Hash::make($dto->password);
             $data['staff_code'] = $this->generateStaffCode();
-            $data['role']       = 'buyer'; // Mặc định là buyer khi đăng ký qua public form
+            $data['role']       = UserRole::BUYER; // Mặc định là buyer khi đăng ký qua public form
             $data['is_active']  = true;
 
             // 3. Tạo user

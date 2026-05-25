@@ -7,6 +7,7 @@ use App\Core\Services\ServiceReturn;
 use App\Modules\Planning\DTO\PlanningListDTO;
 use App\Modules\Planning\Interfaces\PlanningRepositoryInterface;
 use App\Modules\Planning\Interfaces\PlanningServiceInterface;
+use App\Modules\Planning\Models\Enums\PlanningStatus;
 
 /**
  * Class PlanningService
@@ -97,10 +98,10 @@ final class PlanningService extends BaseService implements PlanningServiceInterf
             // A1 – Quy hoạch không tồn tại
             $this->validate($planning !== null, 'Thông tin quy hoạch không tồn tại hoặc đã bị xóa.', 404);
 
-            // A2 – Quy hoạch chưa được công khai (Giả định status 'public' là công khai)
+            // A2 – Quy hoạch chưa được công khai
             $this->validate(
-                strtolower($planning->status) === 'public' || strtolower($planning->status) === 'published', 
-                'Thông tin quy hoạch hiện chưa được công khai.', 
+                $planning->status === PlanningStatus::PUBLIC,
+                'Thông tin quy hoạch hiện chưa được công khai.',
                 403
             );
 

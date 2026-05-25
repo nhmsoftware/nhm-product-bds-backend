@@ -51,6 +51,13 @@ class AdminCreateCourseRequest extends FormRequest
             'lessons.required' => 'Vui lòng thêm ít nhất một bài học.',
             'lessons.min' => 'Vui lòng thêm ít nhất một bài học.',
             'lessons.*.title.required' => 'Vui lòng nhập đầy đủ thông tin khóa học.',
+            'lessons.*.duration_minutes.required' => 'Vui lòng nhập đầy đủ thông tin khóa học.',
+            'lessons.*.duration_minutes.integer' => 'Vui lòng nhập đầy đủ thông tin khóa học.',
+            'lessons.*.attachments.*.name.required_with' => 'Vui lòng nhập đầy đủ thông tin khóa học.',
+            'lessons.*.attachments.*.url.required_with' => 'Vui lòng nhập đầy đủ thông tin khóa học.',
+            'lessons.*.quizzes.*.question.required_with' => 'Vui lòng nhập đầy đủ thông tin khóa học.',
+            'lessons.*.quizzes.*.options.required_with' => 'Vui lòng nhập đầy đủ thông tin khóa học.',
+            'lessons.*.quizzes.*.correct_option.required_with' => 'Vui lòng nhập đầy đủ thông tin khóa học.',
             'lessons.*.video_url.url' => 'File video không hợp lệ.',
             'lessons.*.attachments.*.url.url' => 'File tài liệu không hợp lệ.',
         ];

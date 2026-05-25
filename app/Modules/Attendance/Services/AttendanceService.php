@@ -102,10 +102,10 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             // 5. Xác định trạng thái chấm công (Đúng giờ hoặc Đi trễ)
             $now = Carbon::now();
             $shiftStartTime = Carbon::createFromTimeString($shiftStartTimeStr);
-            
-            $status = $now->greaterThan($shiftStartTime) ? 'late' : 'present';
-            $note = $status === 'late' 
-                ? 'Đi làm trễ (Giờ quy định: ' . $shiftStartTime->format('H:i') . ')' 
+
+            $attendanceStatus = $now->greaterThan($shiftStartTime) ? AttendanceStatus::LATE : AttendanceStatus::PRESENT;
+            $note = $attendanceStatus === AttendanceStatus::LATE
+                ? 'Đi làm trễ (Giờ quy định: ' . $shiftStartTime->format('H:i') . ')'
                 : 'Đi làm đúng giờ';
 
             // 6. Ghi nhận dữ liệu check-in
@@ -118,7 +118,7 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
                 'check_in_method' => $dto->method,
                 'check_in_wifi_ssid' => $dto->method === 'wifi' ? $dto->wifiSsid : null,
                 'check_in_device_name' => $dto->deviceName,
-                'status' => AttendanceStatus::deserialize($status),
+                'status' => $attendanceStatus,
                 'note' => $note,
             ];
 

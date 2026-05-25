@@ -5,6 +5,7 @@ namespace App\Modules\Dashboard\Services;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
+use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Dashboard\DTO\ViewDashboardDTO;
 use App\Modules\Dashboard\Interfaces\DashboardServiceInterface;
 use App\Modules\Attendance\Interfaces\AttendanceRepositoryInterface;
@@ -62,7 +63,7 @@ final class DashboardService extends BaseService implements DashboardServiceInte
                         'status' => 'none',
                     ],
                 ],
-                'modules' => $this->getAuthorizedModules($user->role->serialize()),
+                'modules' => $this->getAuthorizedModules($user->role),
             ];
 
             return $this->success($data, 'Tải dữ liệu trang chủ thành công.');
@@ -72,10 +73,10 @@ final class DashboardService extends BaseService implements DashboardServiceInte
     /**
      * Lấy danh sách các module mà user được phép truy cập dựa trên role.
      * 
-     * @param string $role
+     * @param UserRole $role
      * @return array
      */
-    private function getAuthorizedModules(string $role): array
+    private function getAuthorizedModules(UserRole $role): array
     {
         $allModules = [
             'lms' => [
@@ -115,14 +116,14 @@ final class DashboardService extends BaseService implements DashboardServiceInte
         // Default modules for everyone
         $authorized[] = $allModules['notifications'];
 
-        if (in_array($role, ['admin', 'agent', 'broker'])) {
+        if (in_array($role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true)) {
             $authorized[] = $allModules['lms'];
             $authorized[] = $allModules['warehouse'];
             $authorized[] = $allModules['kpi'];
             $authorized[] = $allModules['checkin'];
         }
 
-        if ($role === 'buyer') {
+        if ($role === UserRole::BUYER) {
             $authorized[] = $allModules['warehouse'];
         }
 

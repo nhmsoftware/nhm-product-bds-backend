@@ -128,6 +128,1104 @@
                 ]
             }
         },
+        "/api/v1/areas": {
+            "get": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Xem danh sách khu đất/bảng hàng được cấp quyền (UC-077)",
+                "description": "Cho phép Employee, Team Leader, Director, General Director xem danh sách các khu đất/bảng hàng họ được phân quyền.",
+                "operationId": "3a613ac2e3ead0ba4a1281ba0aaa0af6",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại (bắt đầu từ 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số bản ghi trên mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "description": "Trường dùng để sắp xếp",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "created_at",
+                            "enum": [
+                                "id",
+                                "created_at",
+                                "name",
+                                "total_lots",
+                                "remaining_lots"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "direction",
+                        "in": "query",
+                        "description": "Chiều sắp xếp",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "desc",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "filters[is_featured]",
+                        "in": "query",
+                        "description": "Lọc theo trạng thái nổi bật (true/false)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "true",
+                                "false"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải danh sách khu đất thành công hoặc hiển thị danh sách trống/không có quyền.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải danh sách khu đất thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Area"
+                                                    }
+                                                },
+                                                "first_page_url": {
+                                                    "type": "string",
+                                                    "example": "http://localhost/api/v1/areas?page=1"
+                                                },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page_url": {
+                                                    "type": "string",
+                                                    "example": "http://localhost/api/v1/areas?page=1"
+                                                },
+                                                "next_page_url": {
+                                                    "type": "string",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "path": {
+                                                    "type": "string",
+                                                    "example": "http://localhost/api/v1/areas"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "prev_page_url": {
+                                                    "type": "string",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Không có quyền truy cập bảng hàng hoặc tài khoản bị khóa.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bạn không có quyền xem bảng hàng."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Không thể tải danh sách do lỗi hệ thống hoặc kết nối cơ sở dữ liệu.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Không thể tải danh sách khu đất. Vui lòng thử lại."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/areas/{id}/inventory-map": {
+            "get": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Xem sơ đồ bảng hàng của khu đất theo trạng thái từng lô (UC-078)",
+                "description": "Cho phép người dùng xem sơ đồ bảng hàng của một khu đất cụ thể mà họ có quyền truy cập.",
+                "operationId": "550763b37071bd085c21841db28fa83f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của khu đất",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải sơ đồ bảng hàng thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải sơ đồ bảng hàng thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "area_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                                                },
+                                                "area_name": {
+                                                    "type": "string",
+                                                    "example": "Phân khu A"
+                                                },
+                                                "sales_board_image": {
+                                                    "type": "string",
+                                                    "example": "https://example.com/board.jpg"
+                                                },
+                                                "lots": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Lot"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Không có quyền xem bảng hàng hoặc không có quyền truy cập khu đất này.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bạn không có quyền truy cập khu đất này."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Khu đất không tồn tại hoặc chưa có dữ liệu bảng hàng.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Chưa có dữ liệu bảng hàng."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống khi tải sơ đồ bảng hàng."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/lots/{id}": {
+            "get": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Xem chi tiết lô đất (UC-080)",
+                "description": "Tải thông tin chi tiết của một lô đất bao gồm quy hoạch và bình luận nội bộ.",
+                "operationId": "afcf9cce4157fed1e75abc2b96935cec",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của lô đất",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải chi tiết lô đất thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải chi tiết lô đất thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                                                },
+                                                "area_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
+                                                },
+                                                "area_name": {
+                                                    "type": "string",
+                                                    "example": "Phân khu A"
+                                                },
+                                                "code": {
+                                                    "type": "string",
+                                                    "example": "A-01"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "available"
+                                                },
+                                                "area_size": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 120.5,
+                                                    "nullable": true
+                                                },
+                                                "direction": {
+                                                    "type": "string",
+                                                    "example": "Đông Nam",
+                                                    "nullable": true
+                                                },
+                                                "price": {
+                                                    "type": "integer",
+                                                    "example": 5000000000,
+                                                    "nullable": true
+                                                },
+                                                "unit_price": {
+                                                    "type": "integer",
+                                                    "example": 45000000,
+                                                    "nullable": true
+                                                },
+                                                "coordinate_x": {
+                                                    "type": "integer",
+                                                    "example": 150,
+                                                    "nullable": true
+                                                },
+                                                "coordinate_y": {
+                                                    "type": "integer",
+                                                    "example": 320,
+                                                    "nullable": true
+                                                },
+                                                "width": {
+                                                    "type": "integer",
+                                                    "example": 60,
+                                                    "nullable": true
+                                                },
+                                                "height": {
+                                                    "type": "integer",
+                                                    "example": 60,
+                                                    "nullable": true
+                                                },
+                                                "image_url": {
+                                                    "type": "string",
+                                                    "example": "https://example.com/lot.jpg",
+                                                    "nullable": true
+                                                },
+                                                "frontage": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 5.5,
+                                                    "nullable": true
+                                                },
+                                                "legal": {
+                                                    "type": "string",
+                                                    "example": "Sổ hồng riêng",
+                                                    "nullable": true
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Mô tả chi tiết lô đất...",
+                                                    "nullable": true
+                                                },
+                                                "planning": {
+                                                    "oneOf": [
+                                                        {
+                                                            "$ref": "#/components/schemas/Planning"
+                                                        }
+                                                    ],
+                                                    "nullable": true,
+                                                    "type": "object"
+                                                },
+                                                "comments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                                                            },
+                                                            "user_id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "d3b07384-d113-4ec2-a5d6-c734b3234567"
+                                                            },
+                                                            "user_name": {
+                                                                "type": "string",
+                                                                "example": "Nguyen Van A"
+                                                            },
+                                                            "content": {
+                                                                "type": "string",
+                                                                "example": "Bình luận nội bộ..."
+                                                            },
+                                                            "created_at": {
+                                                                "type": "string",
+                                                                "format": "date-time"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Không có quyền truy cập khu đất của lô đất này.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bạn không có quyền truy cập khu đất này."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Lô đất không tồn tại.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Lô đất không tồn tại."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống khi tải thông tin lô đất."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/lots/{id}/comments": {
+            "post": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Thêm bình luận nội bộ mới cho lô đất (UC-080)",
+                "description": "Cho phép người dùng gửi bình luận nội bộ mới về lô đất.",
+                "operationId": "35da4a334907043efed452c0c0b1bdb6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của lô đất",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "content"
+                                ],
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "example": "Vị trí này rất tiềm năng."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Thêm bình luận thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Thêm bình luận thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                                                },
+                                                "lot_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
+                                                },
+                                                "user_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b3234567"
+                                                },
+                                                "user_name": {
+                                                    "type": "string",
+                                                    "example": "Nguyen Van A"
+                                                },
+                                                "content": {
+                                                    "type": "string",
+                                                    "example": "Vị trí này rất tiềm năng."
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Không có quyền truy cập khu đất của lô đất này.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bạn không có quyền truy cập khu đất này."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Lô đất không tồn tại.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Lô đất không tồn tại."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Dữ liệu không hợp lệ."
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "content": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "Vui lòng nhập nội dung bình luận."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống khi thêm bình luận."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/lots/{id}/lock": {
+            "post": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Yêu cầu giữ chỗ (lock) lô đất (UC-082)",
+                "description": "Cho phép nhân viên gửi yêu cầu giữ chỗ (lock) lô đất trong một khoảng thời gian.",
+                "operationId": "d69977c3bf3d2d04a95d12551dc23d31",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của lô đất",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "example": "Khách hẹn cọc ngày mai.",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Yêu cầu lock lô thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Yêu cầu lock lô thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                                                },
+                                                "lot_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
+                                                },
+                                                "user_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b3234567"
+                                                },
+                                                "reason": {
+                                                    "type": "string",
+                                                    "example": "Khách hẹn cọc ngày mai.",
+                                                    "nullable": true
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "lot": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid"
+                                                        },
+                                                        "code": {
+                                                            "type": "string"
+                                                        },
+                                                        "status": {
+                                                            "type": "string",
+                                                            "example": "reserved"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Lô đất đã được lock hoặc bán.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Lô đất đang được giữ chỗ."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Không có quyền thực hiện hoặc không có quyền truy cập khu đất của lô đất này.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bạn không có quyền thực hiện chức năng này."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Lô đất không tồn tại.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Lô đất không tồn tại."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ."
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống khi tạo yêu cầu lock lô."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/areas/search": {
+            "get": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Tìm kiếm khu đất hoặc lô đất trong inventory (UC-079)",
+                "description": "Cho phép người dùng tìm kiếm khu đất, bảng hàng hoặc lô đất theo tên khu vực, mã lô hoặc thông tin liên quan.",
+                "operationId": "ee2ce937687db2cb095646515126ef9a",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Từ khóa tìm kiếm (Tên khu đất, tên khu vực, mã lô đất)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số bản ghi trên mỗi trang (nếu có)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại (nếu có)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tìm kiếm dữ liệu bảng hàng thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tìm kiếm dữ liệu bảng hàng thành công."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "example": "area"
+                                                    },
+                                                    "id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                                                    },
+                                                    "code": {
+                                                        "type": "string",
+                                                        "example": "A-01",
+                                                        "nullable": true
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Phân khu A"
+                                                    },
+                                                    "sales_board_image": {
+                                                        "type": "string",
+                                                        "example": "https://example.com/board.jpg",
+                                                        "nullable": true
+                                                    },
+                                                    "total_lots": {
+                                                        "type": "integer",
+                                                        "example": 100
+                                                    },
+                                                    "remaining_lots": {
+                                                        "type": "integer",
+                                                        "example": 45
+                                                    },
+                                                    "status": {
+                                                        "type": "string",
+                                                        "example": "Đang mở bán"
+                                                    },
+                                                    "target_id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Không có quyền truy cập dữ liệu này.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bạn không có quyền truy cập dữ liệu này."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tìm thấy bảng hàng hoặc lô đất phù hợp.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Không tìm thấy bảng hàng hoặc lô đất phù hợp."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Vui lòng nhập từ khóa tìm kiếm.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Dữ liệu không hợp lệ."
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "keyword": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "Vui lòng nhập từ khóa tìm kiếm."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Không thể thực hiện tìm kiếm. Vui lòng thử lại."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/attendance/check-in": {
             "post": {
                 "tags": [
@@ -3124,48 +4222,153 @@
                 "tags": [
                     "Learning Admin"
                 ],
-                "summary": "Tạo khóa học mới (UC-069)",
+                "summary": "Tạo khóa học mới (UC-070)",
                 "operationId": "cc5da32b8e41939afe864f31a0946821",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
+                                "required": [
+                                    "title",
+                                    "lessons"
+                                ],
                                 "properties": {
                                     "title": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "example": "Khóa học thiết kế Figma"
                                     },
                                     "description": {
                                         "type": "string",
+                                        "example": "Hướng dẫn thiết kế UI/UX",
                                         "nullable": true
                                     },
                                     "thumbnail": {
                                         "type": "string",
+                                        "example": "https://example.com/thumbnail.png",
                                         "nullable": true
                                     },
                                     "is_required": {
                                         "type": "boolean",
+                                        "example": false,
                                         "default": true
                                     },
                                     "department": {
                                         "type": "string",
+                                        "example": "Design",
                                         "nullable": true
                                     },
                                     "job_position": {
                                         "type": "string",
+                                        "example": "UI/UX Designer",
                                         "nullable": true
                                     },
                                     "order": {
                                         "type": "integer",
+                                        "example": 5,
                                         "default": 0
                                     },
                                     "is_active": {
                                         "type": "boolean",
+                                        "example": true,
                                         "default": true
                                     },
                                     "has_certificate": {
                                         "type": "boolean",
+                                        "example": true,
                                         "default": true
+                                    },
+                                    "lessons": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "title",
+                                                "duration_minutes"
+                                            ],
+                                            "properties": {
+                                                "title": {
+                                                    "type": "string",
+                                                    "example": "Bài học Figma 1"
+                                                },
+                                                "content": {
+                                                    "type": "string",
+                                                    "example": "Nội dung Figma",
+                                                    "nullable": true
+                                                },
+                                                "video_url": {
+                                                    "type": "string",
+                                                    "example": "https://example.com/figma1.mp4",
+                                                    "nullable": true
+                                                },
+                                                "duration_minutes": {
+                                                    "type": "integer",
+                                                    "example": 30
+                                                },
+                                                "order": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "is_active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "attachments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "required": [
+                                                            "name",
+                                                            "url"
+                                                        ],
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Tài liệu hướng dẫn"
+                                                            },
+                                                            "url": {
+                                                                "type": "string",
+                                                                "example": "https://example.com/doc1.pdf"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "quizzes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "required": [
+                                                            "question",
+                                                            "options",
+                                                            "correct_option"
+                                                        ],
+                                                        "properties": {
+                                                            "question": {
+                                                                "type": "string",
+                                                                "example": "Figma là gì?"
+                                                            },
+                                                            "options": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                },
+                                                                "example": [
+                                                                    "Công cụ design",
+                                                                    "Công cụ soạn thảo",
+                                                                    "Trình duyệt"
+                                                                ]
+                                                            },
+                                                            "correct_option": {
+                                                                "type": "integer",
+                                                                "example": 0
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -3224,7 +4427,7 @@
                 "tags": [
                     "Learning Admin"
                 ],
-                "summary": "Cập nhật thông tin khóa học (UC-069)",
+                "summary": "Cập nhật thông tin khóa học (UC-071)",
                 "operationId": "4529e56a30e54a717a6290026a5db117",
                 "parameters": [
                     {
@@ -3242,42 +4445,158 @@
                     "content": {
                         "application/json": {
                             "schema": {
+                                "required": [
+                                    "title",
+                                    "lessons"
+                                ],
                                 "properties": {
                                     "title": {
                                         "type": "string",
-                                        "nullable": true
+                                        "example": "Khóa học thiết kế Figma - Cập nhật"
                                     },
                                     "description": {
                                         "type": "string",
+                                        "example": "Hướng dẫn thiết kế UI/UX nâng cao",
                                         "nullable": true
                                     },
                                     "thumbnail": {
                                         "type": "string",
+                                        "example": "https://example.com/thumbnail-updated.png",
                                         "nullable": true
                                     },
                                     "is_required": {
                                         "type": "boolean",
+                                        "example": false,
                                         "nullable": true
                                     },
                                     "department": {
                                         "type": "string",
+                                        "example": "Design",
                                         "nullable": true
                                     },
                                     "job_position": {
                                         "type": "string",
+                                        "example": "Senior UI/UX Designer",
                                         "nullable": true
                                     },
                                     "order": {
                                         "type": "integer",
+                                        "example": 5,
                                         "nullable": true
                                     },
                                     "is_active": {
                                         "type": "boolean",
+                                        "example": true,
                                         "nullable": true
                                     },
                                     "has_certificate": {
                                         "type": "boolean",
+                                        "example": true,
                                         "nullable": true
+                                    },
+                                    "lessons": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "title",
+                                                "duration_minutes"
+                                            ],
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "b0f80a44-df42-493e-9081-305128362678",
+                                                    "nullable": true
+                                                },
+                                                "title": {
+                                                    "type": "string",
+                                                    "example": "Bài học Figma 1 updated"
+                                                },
+                                                "content": {
+                                                    "type": "string",
+                                                    "example": "Nội dung Figma nâng cao",
+                                                    "nullable": true
+                                                },
+                                                "video_url": {
+                                                    "type": "string",
+                                                    "example": "https://example.com/figma1_new.mp4",
+                                                    "nullable": true
+                                                },
+                                                "duration_minutes": {
+                                                    "type": "integer",
+                                                    "example": 35
+                                                },
+                                                "order": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "is_active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "attachments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "required": [
+                                                            "name",
+                                                            "url"
+                                                        ],
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Tài liệu hướng dẫn mới"
+                                                            },
+                                                            "url": {
+                                                                "type": "string",
+                                                                "example": "https://example.com/doc1_new.pdf"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "quizzes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "required": [
+                                                            "question",
+                                                            "options",
+                                                            "correct_option"
+                                                        ],
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "c0a80e12-4217-47b2-8c90-215106a7cd5b",
+                                                                "nullable": true
+                                                            },
+                                                            "question": {
+                                                                "type": "string",
+                                                                "example": "Figma là gì?"
+                                                            },
+                                                            "options": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                },
+                                                                "example": [
+                                                                    "Công cụ design chuyên nghiệp",
+                                                                    "Công cụ soạn thảo",
+                                                                    "Trình duyệt"
+                                                                ]
+                                                            },
+                                                            "correct_option": {
+                                                                "type": "integer",
+                                                                "example": 0
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -3322,6 +4641,301 @@
                     },
                     "404": {
                         "description": "Không tìm thấy khóa học"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/courses/{id}/status": {
+            "patch": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Cập nhật trạng thái khóa học (UC-072)",
+                "operationId": "4898e06e5fc88f326c6026b3eab65165",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "is_active"
+                                ],
+                                "properties": {
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật trạng thái khóa học thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy khóa học"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/courses/{id}/quiz": {
+            "put": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Cập nhật bài quiz cho khóa học (UC-074)",
+                "operationId": "2c45586f16ca82d751d57d5726d79c7b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "passing_score",
+                                    "questions"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Quiz văn hóa doanh nghiệp cập nhật"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Bài kiểm tra cuối khóa học đã cập nhật",
+                                        "nullable": true
+                                    },
+                                    "passing_score": {
+                                        "type": "number",
+                                        "example": 80
+                                    },
+                                    "questions": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "question",
+                                                "options",
+                                                "correct_option"
+                                            ],
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec5-a3d6-444455556666",
+                                                    "nullable": true
+                                                },
+                                                "question": {
+                                                    "type": "string",
+                                                    "example": "Giá trị cốt lõi đầu tiên là gì?"
+                                                },
+                                                "options": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "example": [
+                                                        "Khách hàng là trọng tâm",
+                                                        "Tự do sáng tạo",
+                                                        "Kỷ luật tối đa"
+                                                    ]
+                                                },
+                                                "correct_option": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật bài quiz thành công"
+                    },
+                    "400": {
+                        "description": "Yêu cầu không hợp lệ"
+                    },
+                    "404": {
+                        "description": "Quiz hoặc khóa học không tồn tại"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Tạo bài quiz cho khóa học (UC-073)",
+                "operationId": "decf49e2042d2eb91aa708b3d8ed9601",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "passing_score",
+                                    "questions"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Quiz văn hóa doanh nghiệp"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Bài kiểm tra cuối khóa học",
+                                        "nullable": true
+                                    },
+                                    "passing_score": {
+                                        "type": "number",
+                                        "example": 80
+                                    },
+                                    "questions": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "question",
+                                                "options",
+                                                "correct_option"
+                                            ],
+                                            "properties": {
+                                                "question": {
+                                                    "type": "string",
+                                                    "example": "Giá trị cốt lõi đầu tiên là gì?"
+                                                },
+                                                "options": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "example": [
+                                                        "Khách hàng là trọng tâm",
+                                                        "Tự do sáng tạo",
+                                                        "Kỷ luật tối đa"
+                                                    ]
+                                                },
+                                                "correct_option": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tạo bài quiz thành công"
+                    },
+                    "400": {
+                        "description": "Yêu cầu không hợp lệ"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy khóa học"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Xóa bài quiz của khóa học (UC-075)",
+                "operationId": "984135847ff541c8bdf7ab0f5260da10",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa quiz thành công"
+                    },
+                    "400": {
+                        "description": "Yêu cầu không hợp lệ hoặc quiz đã có nhân viên làm bài"
+                    },
+                    "404": {
+                        "description": "Quiz hoặc khóa học không tồn tại"
                     }
                 },
                 "security": [
@@ -3650,7 +5264,7 @@
                 "tags": [
                     "Learning Admin"
                 ],
-                "summary": "Xác nhận hoàn thành onboarding cho nhân viên (UC-069)",
+                "summary": "Xác nhận hoàn thành onboarding cho nhân viên (UC-076)",
                 "operationId": "f815ffc2db9aff8945ea2c878bbcf9b9",
                 "parameters": [
                     {
@@ -3678,6 +5292,103 @@
                     },
                     "404": {
                         "description": "Không tìm thấy nhân viên hoặc khóa học"
+                    },
+                    "400": {
+                        "description": "Nhân viên chưa đạt yêu cầu hoặc đã hoàn thành trước đó"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/onboarding": {
+            "get": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Tải danh sách tiến độ onboarding của nhân viên (UC-076)",
+                "operationId": "7790a5d6248b1792f4ab8ce8645d3b20",
+                "parameters": [
+                    {
+                        "name": "department",
+                        "in": "query",
+                        "description": "Lọc theo phòng ban",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Lọc theo trạng thái (1: Chưa bắt đầu, 2: Đang học, 3: Hoàn thành)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "quiz_score",
+                        "in": "query",
+                        "description": "Lọc theo điểm quiz",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "format": "float"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải danh sách onboarding thành công"
+                    },
+                    "403": {
+                        "description": "Không có quyền thực hiện chức năng này"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/admin/courses/{courseId}/enrollments/{userId}": {
+            "get": {
+                "tags": [
+                    "Learning Admin"
+                ],
+                "summary": "Tải chi tiết tiến độ onboarding của một nhân viên (UC-076)",
+                "operationId": "b1b811a9a14e472780aed00d6d6ef0ad",
+                "parameters": [
+                    {
+                        "name": "courseId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải thông tin chi tiết onboarding thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy thông tin tài khoản hoặc khóa học"
                     }
                 },
                 "security": [
@@ -8262,6 +9973,231 @@
     },
     "components": {
         "schemas": {
+            "Area": {
+                "title": "Area Model",
+                "description": "Thông tin khu đất / bảng hàng",
+                "properties": {
+                    "id": {
+                        "description": "Class Area",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Phân khu A - Golden Land"
+                    },
+                    "sales_board_image": {
+                        "type": "string",
+                        "example": "https://example.com/images/sales_board.jpg",
+                        "nullable": true
+                    },
+                    "total_lots": {
+                        "type": "integer",
+                        "example": 100
+                    },
+                    "remaining_lots": {
+                        "type": "integer",
+                        "example": 45
+                    },
+                    "is_featured": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "AreaAssignment": {
+                "title": "AreaAssignment Model",
+                "description": "Bảng phân quyền/cấp quyền khu đất cho người dùng",
+                "properties": {
+                    "id": {
+                        "description": "Class AreaAssignment",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "uuid-string"
+                    },
+                    "area_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "uuid-string"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "uuid-string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Lot": {
+                "title": "Lot Model",
+                "description": "Thông tin chi tiết lô đất",
+                "properties": {
+                    "id": {
+                        "description": "Class Lot",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                    },
+                    "area_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "A-01"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "available",
+                        "enum": [
+                            "available",
+                            "sold",
+                            "reserved",
+                            "unavailable"
+                        ]
+                    },
+                    "area_size": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 120.5,
+                        "nullable": true
+                    },
+                    "direction": {
+                        "type": "string",
+                        "example": "Đông Nam",
+                        "nullable": true
+                    },
+                    "price": {
+                        "type": "integer",
+                        "example": 5000000000,
+                        "nullable": true
+                    },
+                    "unit_price": {
+                        "type": "integer",
+                        "example": 45000000,
+                        "nullable": true
+                    },
+                    "coordinate_x": {
+                        "type": "integer",
+                        "example": 150,
+                        "nullable": true
+                    },
+                    "coordinate_y": {
+                        "type": "integer",
+                        "example": 320,
+                        "nullable": true
+                    },
+                    "width": {
+                        "type": "integer",
+                        "example": 60,
+                        "nullable": true
+                    },
+                    "height": {
+                        "type": "integer",
+                        "example": 60,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "LotComment": {
+                "title": "LotComment Model",
+                "description": "Thông tin bình luận lô đất",
+                "properties": {
+                    "id": {
+                        "description": "Class LotComment",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                    },
+                    "lot_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b3234567"
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "Lô đất này có vị trí rất đẹp."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "LotLockRequest": {
+                "title": "LotLockRequest Model",
+                "description": "Thông tin yêu cầu lock lô đất",
+                "properties": {
+                    "id": {
+                        "description": "Class LotLockRequest",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                    },
+                    "lot_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b3234567"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "example": "Khách hàng hẹn cọc ngày mai.",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "Attendance": {
                 "title": "Attendance Model",
                 "description": "Thông tin chấm công hàng ngày của nhân viên",
@@ -9612,6 +11548,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Area",
+            "description": "API for managing and viewing land areas / sales boards"
+        },
         {
             "name": "Department Transfers",
             "description": "API for managing department transfer requests"

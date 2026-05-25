@@ -145,6 +145,45 @@ interface LearningServiceInterface
     public function adminUpdateCourse(string $courseId, \App\Modules\Learning\DTO\AdminUpdateCourseDTO $dto, string $adminId): ServiceReturn;
 
     /**
+     * Cập nhật trạng thái hoạt động (Khóa/Mở khóa) của khóa học (UC-072).
+     *
+     * @param string $courseId
+     * @param \App\Modules\Learning\DTO\AdminUpdateCourseStatusDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminUpdateCourseStatus(string $courseId, \App\Modules\Learning\DTO\AdminUpdateCourseStatusDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Tạo bài quiz cho khóa học (UC-073).
+     *
+     * @param string $courseId
+     * @param \App\Modules\Learning\DTO\AdminCreateCourseQuizDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminCreateCourseQuiz(string $courseId, \App\Modules\Learning\DTO\AdminCreateCourseQuizDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Cập nhật bài quiz cho khóa học (UC-074).
+     *
+     * @param string $courseId
+     * @param \App\Modules\Learning\DTO\AdminUpdateCourseQuizDTO $dto
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminUpdateCourseQuiz(string $courseId, \App\Modules\Learning\DTO\AdminUpdateCourseQuizDTO $dto, string $adminId): ServiceReturn;
+
+    /**
+     * Xóa bài quiz của khóa học (UC-075).
+     *
+     * @param string $courseId
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminDeleteCourseQuiz(string $courseId, string $adminId): ServiceReturn;
+
+    /**
      * Xóa khóa học.
      *
      * @param string $courseId
@@ -218,4 +257,23 @@ interface LearningServiceInterface
      * @return ServiceReturn
      */
     public function adminConfirmOnboarding(string $courseId, string $userId, string $adminId): ServiceReturn;
+
+    /**
+     * Tải danh sách tiến độ onboarding của nhân viên.
+     *
+     * @param array $filters
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminGetOnboardingList(array $filters, string $adminId): ServiceReturn;
+
+    /**
+     * Tải chi tiết tiến độ onboarding của một nhân viên đối với khóa học.
+     *
+     * @param string $courseId
+     * @param string $userId
+     * @param string $adminId
+     * @return ServiceReturn
+     */
+    public function adminGetOnboardingDetail(string $courseId, string $userId, string $adminId): ServiceReturn;
 }

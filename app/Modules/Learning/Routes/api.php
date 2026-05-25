@@ -51,6 +51,10 @@ Route::middleware('auth:api')->prefix('v1/learning/admin')->group(function () {
     Route::get('/courses/{id}', [LearningAdminController::class, 'getCourseDetails'])->name('learning.admin.courses.show');
     Route::post('/courses', [LearningAdminController::class, 'createCourse'])->name('learning.admin.courses.store');
     Route::put('/courses/{id}', [LearningAdminController::class, 'updateCourse'])->name('learning.admin.courses.update');
+    Route::patch('/courses/{id}/status', [LearningAdminController::class, 'updateCourseStatus'])->name('learning.admin.courses.update-status');
+    Route::post('/courses/{id}/quiz', [LearningAdminController::class, 'createCourseQuiz'])->name('learning.admin.courses.store-quiz');
+    Route::put('/courses/{id}/quiz', [LearningAdminController::class, 'updateCourseQuiz'])->name('learning.admin.courses.update-quiz');
+    Route::delete('/courses/{id}/quiz', [LearningAdminController::class, 'deleteCourseQuiz'])->name('learning.admin.courses.destroy-quiz');
     Route::delete('/courses/{id}', [LearningAdminController::class, 'deleteCourse'])->name('learning.admin.courses.destroy');
 
     // Quản lý bài học
@@ -63,6 +67,8 @@ Route::middleware('auth:api')->prefix('v1/learning/admin')->group(function () {
     Route::put('/quizzes/{id}', [LearningAdminController::class, 'updateQuiz'])->name('learning.admin.quizzes.update');
     Route::delete('/quizzes/{id}', [LearningAdminController::class, 'deleteQuiz'])->name('learning.admin.quizzes.destroy');
 
-    // Xác nhận onboarding
+    // Quản lý onboarding
+    Route::get('/onboarding', [LearningAdminController::class, 'getOnboardingList'])->name('learning.admin.onboarding.index');
+    Route::get('/courses/{courseId}/enrollments/{userId}', [LearningAdminController::class, 'getOnboardingDetail'])->name('learning.admin.courses.onboarding-detail');
     Route::post('/courses/{courseId}/enrollments/{userId}/complete', [LearningAdminController::class, 'confirmOnboarding'])->name('learning.admin.courses.confirm-onboarding');
 });

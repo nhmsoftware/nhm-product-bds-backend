@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Planning\Models;
 
+use App\Modules\Planning\Models\Enums\PlanningStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -16,7 +17,7 @@ use OpenApi\Attributes as OA;
  * @property string $id
  * @property string $title
  * @property string $map_image
- * @property string $status
+ * @property PlanningStatus $status
  * @property int $updated_year
  * @property string $description
  * @property string $city
@@ -97,5 +98,15 @@ class Planning extends Model
         'updated_year' => 'integer',
         'latitude' => 'float',
         'longitude' => 'float',
+        'status' => PlanningStatus::class,
     ];
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        if (isset($array['status']) && $this->status instanceof PlanningStatus) {
+            $array['status'] = $this->status->serialize();
+        }
+        return $array;
+    }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Project\Models;
 
+use App\Modules\Project\Models\Enums\ProjectStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +21,7 @@ use OpenApi\Attributes as OA;
  * @property string $image
  * @property string $banner
  * @property string $price
- * @property string $status
+ * @property ProjectStatus $status
  * @property string $type
  * @property bool $is_public
  * @property string $description
@@ -96,5 +97,15 @@ class Project extends Model
         'legal_info' => 'array',
         'contact_info' => 'array',
         'planning_info' => 'array',
+        'status' => ProjectStatus::class,
     ];
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        if (isset($array['status']) && $this->status instanceof ProjectStatus) {
+            $array['status'] = $this->status->serialize();
+        }
+        return $array;
+    }
 }

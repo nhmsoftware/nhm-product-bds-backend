@@ -53,6 +53,13 @@ class AdminUpdateCourseRequest extends FormRequest
             'lessons.required' => 'Vui lòng thêm ít nhất một bài học.',
             'lessons.min' => 'Vui lòng thêm ít nhất một bài học.',
             'lessons.*.title.required' => 'Thông tin khóa học không hợp lệ.',
+            'lessons.*.duration_minutes.required' => 'Thông tin khóa học không hợp lệ.',
+            'lessons.*.duration_minutes.integer' => 'Thông tin khóa học không hợp lệ.',
+            'lessons.*.attachments.*.name.required_with' => 'Thông tin khóa học không hợp lệ.',
+            'lessons.*.attachments.*.url.required_with' => 'Thông tin khóa học không hợp lệ.',
+            'lessons.*.quizzes.*.question.required_with' => 'Thông tin khóa học không hợp lệ.',
+            'lessons.*.quizzes.*.options.required_with' => 'Thông tin khóa học không hợp lệ.',
+            'lessons.*.quizzes.*.correct_option.required_with' => 'Thông tin khóa học không hợp lệ.',
             'lessons.*.video_url.url' => 'File video không hợp lệ.',
             'lessons.*.attachments.*.url.url' => 'File tài liệu không hợp lệ.',
         ];

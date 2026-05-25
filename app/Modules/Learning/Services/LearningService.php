@@ -8,6 +8,9 @@ use App\Modules\Learning\DTO\ViewCoursesDTO;
 use App\Modules\Learning\DTO\AdminViewCoursesDTO;
 use App\Modules\Learning\DTO\AdminCreateCourseDTO;
 use App\Modules\Learning\DTO\AdminUpdateCourseDTO;
+use App\Modules\Learning\DTO\AdminUpdateCourseStatusDTO;
+use App\Modules\Learning\DTO\AdminCreateCourseQuizDTO;
+use App\Modules\Learning\DTO\AdminUpdateCourseQuizDTO;
 use App\Modules\Learning\DTO\AdminCreateLessonDTO;
 use App\Modules\Learning\DTO\AdminUpdateLessonDTO;
 use App\Modules\Learning\DTO\AdminCreateQuizDTO;
@@ -18,6 +21,7 @@ use App\Modules\Learning\Interfaces\CourseLessonRepositoryInterface;
 use App\Modules\Learning\Interfaces\CourseQuizRepositoryInterface;
 use App\Modules\Learning\Interfaces\LearningServiceInterface;
 use App\Modules\Learning\Models\Enums\CourseEnrollmentStatus;
+use App\Modules\Learning\Models\Enums\LessonStatus;
 
 /**
  * Class LearningService
@@ -110,7 +114,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'thumbnail' => $course->thumbnail,
                     'description' => $course->description,
                     'progress_percent' => $enrollment ? (float) $enrollment->progress_percent : 0.00,
-                    'status' => $enrollment ? $enrollment->status->serialize() : 'not_started',
+                    'status' => $enrollment ? $enrollment->status->serialize() : CourseEnrollmentStatus::NOT_STARTED->serialize(),
                     'status_label' => $enrollment 
                         ? ($enrollment->status === CourseEnrollmentStatus::COMPLETED ? 'Hoàn thành' : 'Đang học') 
                         : 'Chưa học',
@@ -177,18 +181,15 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 $isCompleted = in_array($lesson->id, $completedLessons);
 
                 if ($isCompleted) {
-                    $status = 'completed';
-                    $statusLabel = 'Hoàn thành';
+                    $lessonStatus = LessonStatus::COMPLETED;
                 } else {
                     // Bài học chưa hoàn thành đầu tiên sẽ ở trạng thái "Đang học"
                     if (!$hasUncompletedPreceding) {
-                        $status = 'learning';
-                        $statusLabel = 'Đang học';
+                        $lessonStatus = LessonStatus::LEARNING;
                         $hasUncompletedPreceding = true; // Đánh dấu đã gặp bài học chưa hoàn thành
                     } else {
                         // Các bài học chưa hoàn thành tiếp theo sẽ bị "Khóa"
-                        $status = 'locked';
-                        $statusLabel = 'Khóa';
+                        $lessonStatus = LessonStatus::LOCKED;
                     }
                 }
 
@@ -199,8 +200,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'video_url' => $lesson->video_url,
                     'duration_minutes' => $lesson->duration_minutes,
                     'order' => $lesson->order,
-                    'status' => $status,
-                    'status_label' => $statusLabel,
+                    'status' => $lessonStatus->serialize(),
+                    'status_label' => $lessonStatus->label(),
                 ];
             }
 
@@ -269,31 +270,26 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             // 7. Tính toán trạng thái các bài học để xác định trạng thái của bài học hiện tại
             $lessons = $course->lessons;
-            $targetStatus = 'locked';
-            $targetStatusLabel = 'Khóa';
+            $targetStatus = LessonStatus::LOCKED;
             $hasUncompletedPreceding = false;
             $nextLesson = null;
             $foundCurrent = false;
 
             foreach ($lessons as $item) {
                 $isCompleted = in_array($item->id, $completedLessons);
-                $status = 'locked';
-                $statusLabel = 'Khóa';
+                $itemStatus = LessonStatus::LOCKED;
 
                 if ($isCompleted) {
-                    $status = 'completed';
-                    $statusLabel = 'Hoàn thành';
+                    $itemStatus = LessonStatus::COMPLETED;
                 } else {
                     if (!$hasUncompletedPreceding) {
-                        $status = 'learning';
-                        $statusLabel = 'Đang học';
+                        $itemStatus = LessonStatus::LEARNING;
                         $hasUncompletedPreceding = true;
                     }
                 }
 
                 if ($item->id === $lesson->id) {
-                    $targetStatus = $status;
-                    $targetStatusLabel = $statusLabel;
+                    $targetStatus = $itemStatus;
                     $foundCurrent = true;
                     continue;
                 }
@@ -305,7 +301,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             }
 
             // 8. A1 – Bài học chưa được mở khóa
-            $this->validate($targetStatus !== 'locked', 'Vui lòng hoàn thành bài học trước để mở khóa.', 403);
+            $this->validate($targetStatus !== LessonStatus::LOCKED, 'Vui lòng hoàn thành bài học trước để mở khóa.', 403);
 
             // 9. Xác định thông báo điều kiện mở khóa bài tiếp theo nếu có
             if ($nextLesson !== null) {
@@ -325,8 +321,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'video_url' => $lesson->video_url,
                 'duration_minutes' => $lesson->duration_minutes,
                 'order' => $lesson->order,
-                'status' => $targetStatus,
-                'status_label' => $targetStatusLabel,
+                'status' => $targetStatus->serialize(),
+                'status_label' => $targetStatus->label(),
                 'attachments' => $attachments,
                 'current_watch_seconds' => $currentWatchSeconds,
                 'unlock_condition' => $unlockCondition,
@@ -1288,6 +1284,264 @@ final class LearningService extends BaseService implements LearningServiceInterf
     }
 
     /**
+     * Cập nhật trạng thái hoạt động (Khóa/Mở khóa) của khóa học (UC-072).
+     */
+    public function adminUpdateCourseStatus(string $courseId, AdminUpdateCourseStatusDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $dto, $adminId) {
+            $this->validateAdmin($adminId);
+
+            // A1 – Khóa học không tồn tại
+            $course = $this->courseRepository->find($courseId);
+            $this->validate($course !== null, 'Khóa học không tồn tại.', 404);
+
+            $updated = $this->courseRepository->updateById($courseId, [
+                'is_active' => $dto->isActive,
+            ]);
+            $this->validate($updated !== false, 'Không thể cập nhật trạng thái khóa học.', 500);
+
+            return $this->success(
+                data: $this->courseRepository->getCourseDetailsForAdmin($courseId),
+                message: 'Cập nhật trạng thái khóa học thành công.'
+            );
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            // A3 – Lỗi cập nhật trạng thái khóa học
+            $code = $e->getCode();
+            $message = $e->getMessage();
+
+            if ($code === 404) {
+                return ServiceReturn::error(message: $message, code: 404);
+            }
+            if ($code === 422) {
+                return ServiceReturn::error(message: $message, code: 422);
+            }
+
+            return ServiceReturn::error(message: 'Không thể cập nhật trạng thái khóa học.', code: 500);
+        });
+    }
+
+    /**
+     * Tạo bài quiz cho khóa học (UC-073).
+     */
+    public function adminCreateCourseQuiz(string $courseId, AdminCreateCourseQuizDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $dto, $adminId) {
+            // 1. Validate Admin
+            $this->validateAdmin($adminId);
+
+            // 2. A1 – Khóa học không tồn tại
+            $course = $this->courseRepository->find($courseId);
+            $this->validate($course !== null, 'Khóa học không tồn tại.', 404);
+
+            // Fetch course lessons to find the last lesson
+            $lessons = \App\Modules\Learning\Models\CourseLesson::where('course_id', $courseId)->get();
+            $this->validate($lessons->isNotEmpty(), 'Khóa học chưa có bài học để tạo quiz.', 400);
+
+            $lessonIds = $lessons->pluck('id')->toArray();
+
+            // 3. A2 – Khóa học đã có quiz
+            $existingQuizCount = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessonIds)->count();
+            $this->validate($existingQuizCount === 0, 'Khóa học đã có bài quiz.', 400);
+
+            // 4. A5 – Điểm đạt yêu cầu không hợp lệ
+            $this->validate($dto->passingScore >= 0 && $dto->passingScore <= 100, 'Điểm đạt yêu cầu không hợp lệ.', 422);
+
+            // 5. A4 – Chưa có câu hỏi quiz
+            $this->validate(!empty($dto->questions), 'Vui lòng thêm ít nhất một câu hỏi.', 422);
+
+            // The quiz is attached to the last lesson of the course
+            $lastLesson = $lessons->sortByDesc('order')->first();
+            $this->validate($lastLesson !== null, 'Không tìm thấy bài học cuối cùng.', 500);
+
+            // Insert questions into course_quizzes
+            $createdQuizzes = [];
+            foreach ($dto->questions as $q) {
+                // Ensure correct_option index is valid for options
+                $optionsCount = isset($q['options']) ? count($q['options']) : 0;
+                $this->validate(
+                    $optionsCount >= 2 && isset($q['correct_option']) && $q['correct_option'] >= 0 && $q['correct_option'] < $optionsCount,
+                    'Vui lòng nhập đầy đủ thông tin bài quiz.',
+                    422
+                );
+
+                $quiz = \App\Modules\Learning\Models\CourseQuiz::create([
+                    'id' => (string) \Illuminate\Support\Str::uuid(),
+                    'lesson_id' => $lastLesson->id,
+                    'question' => $q['question'],
+                    'options' => $q['options'],
+                    'correct_option' => $q['correct_option'],
+                ]);
+                $createdQuizzes[] = $quiz;
+            }
+
+            return $this->success(
+                data: $createdQuizzes,
+                message: 'Tạo bài quiz thành công.'
+            );
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            $code = $e->getCode();
+            $message = $e->getMessage();
+
+            if (in_array($code, [400, 403, 404, 422])) {
+                return ServiceReturn::error(message: $message, code: $code);
+            }
+
+            // A6 – Lỗi tạo bài quiz
+            return ServiceReturn::error(message: 'Không thể tạo bài quiz.', code: 500);
+        });
+    }
+
+    /**
+     * Cập nhật bài quiz cho khóa học (UC-074).
+     */
+    public function adminUpdateCourseQuiz(string $courseId, AdminUpdateCourseQuizDTO $dto, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $dto, $adminId) {
+            // 1. Validate Admin
+            $this->validateAdmin($adminId);
+
+            // 2. Kiểm tra khóa học tồn tại
+            $course = $this->courseRepository->find($courseId);
+            $this->validate($course !== null, 'Khóa học không tồn tại.', 404);
+
+            // Fetch course lessons to find the last lesson
+            $lessons = \App\Modules\Learning\Models\CourseLesson::where('course_id', $courseId)->get();
+            $this->validate($lessons->isNotEmpty(), 'Khóa học chưa có bài học.', 400);
+
+            $lessonIds = $lessons->pluck('id')->toArray();
+
+            // 3. A1 – Quiz không tồn tại
+            // Check if there are any quizzes for this course
+            $existingQuizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessonIds)->get();
+            $this->validate($existingQuizzes->isNotEmpty(), 'Quiz không tồn tại.', 404);
+
+            // 4. A4 – Điểm đạt yêu cầu không hợp lệ
+            $this->validate($dto->passingScore >= 0 && $dto->passingScore <= 100, 'Điểm đạt yêu cầu không hợp lệ.', 422);
+
+            // 5. A3 – Chưa có câu hỏi trong quiz
+            $this->validate(!empty($dto->questions), 'Vui lòng thêm ít nhất một câu hỏi.', 422);
+
+            // The quiz questions are attached to the last lesson of the course
+            $lastLesson = $lessons->sortByDesc('order')->first();
+            $this->validate($lastLesson !== null, 'Không tìm thấy bài học cuối cùng.', 500);
+
+            // Fetch existing quiz ids to clean up / update
+            $existingQuizIds = $existingQuizzes->pluck('id')->toArray();
+            $processedQuizIds = [];
+
+            // Update or create quiz questions
+            foreach ($dto->questions as $q) {
+                // Ensure correct_option index is valid for options
+                $optionsCount = isset($q['options']) ? count($q['options']) : 0;
+                $this->validate(
+                    $optionsCount >= 2 && isset($q['correct_option']) && $q['correct_option'] >= 0 && $q['correct_option'] < $optionsCount,
+                    'Thông tin bài quiz không hợp lệ.',
+                    422
+                );
+
+                $quizId = $q['id'] ?? null;
+                $quizPayload = [
+                    'lesson_id' => $lastLesson->id,
+                    'question' => $q['question'],
+                    'options' => $q['options'],
+                    'correct_option' => $q['correct_option'],
+                ];
+
+                if ($quizId && in_array($quizId, $existingQuizIds)) {
+                    // Update existing
+                    $updated = \App\Modules\Learning\Models\CourseQuiz::where('id', $quizId)->update($quizPayload);
+                    $this->validate($updated !== false, 'Không thể cập nhật bài quiz.', 500);
+                    $processedQuizIds[] = $quizId;
+                } else {
+                    // Create new
+                    $quiz = \App\Modules\Learning\Models\CourseQuiz::create([
+                        'id' => (string) \Illuminate\Support\Str::uuid(),
+                        'lesson_id' => $lastLesson->id,
+                        'question' => $q['question'],
+                        'options' => $q['options'],
+                        'correct_option' => $q['correct_option'],
+                    ]);
+                    $processedQuizIds[] = (string) $quiz->id;
+                }
+            }
+
+            // Delete existing quizzes that are no longer in the payload
+            $toDeleteQuizIds = array_diff($existingQuizIds, $processedQuizIds);
+            if (!empty($toDeleteQuizIds)) {
+                \App\Modules\Learning\Models\CourseQuiz::whereIn('id', $toDeleteQuizIds)->delete();
+            }
+
+            // Fetch the updated quizzes
+            $updatedQuizzes = \App\Modules\Learning\Models\CourseQuiz::where('lesson_id', $lastLesson->id)->get();
+
+            return $this->success(
+                data: $updatedQuizzes,
+                message: 'Cập nhật bài quiz thành công.'
+            );
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            $code = $e->getCode();
+            $message = $e->getMessage();
+
+            if (in_array($code, [400, 403, 404, 422])) {
+                return ServiceReturn::error(message: $message, code: $code);
+            }
+
+            // A5 – Lỗi cập nhật quiz
+            return ServiceReturn::error(message: 'Không thể cập nhật bài quiz.', code: 500);
+        });
+    }
+
+    /**
+     * Xóa bài quiz của khóa học (UC-075).
+     */
+    public function adminDeleteCourseQuiz(string $courseId, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $adminId) {
+            // 1. Validate Admin
+            $this->validateAdmin($adminId);
+
+            // 2. Kiểm tra khóa học tồn tại
+            $course = $this->courseRepository->find($courseId);
+            $this->validate($course !== null, 'Khóa học không tồn tại.', 404);
+
+            // Fetch course lessons
+            $lessons = \App\Modules\Learning\Models\CourseLesson::where('course_id', $courseId)->get();
+            $this->validate($lessons->isNotEmpty(), 'Khóa học chưa có bài học.', 400);
+
+            $lessonIds = $lessons->pluck('id')->toArray();
+
+            // 3. A1 – Quiz không tồn tại
+            // Check if there are any quizzes for this course
+            $existingQuizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessonIds)->get();
+            $this->validate($existingQuizzes->isNotEmpty(), 'Quiz không tồn tại.', 404);
+
+            // 4. A2 – Quiz đã có nhân viên làm bài
+            $quizIds = $existingQuizzes->pluck('id')->toArray();
+            $attemptsCount = \App\Modules\Learning\Models\QuizAttempt::whereIn('quiz_id', $quizIds)->count();
+            $this->validate($attemptsCount === 0, 'Không thể xóa quiz đã có nhân viên làm bài.', 400);
+
+            // 5. Xóa quiz (soft delete)
+            $deleted = \App\Modules\Learning\Models\CourseQuiz::whereIn('id', $quizIds)->delete();
+            $this->validate($deleted !== false, 'Không thể xóa quiz.', 500);
+
+            return $this->success(
+                data: null,
+                message: 'Xóa quiz thành công.'
+            );
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            $code = $e->getCode();
+            $message = $e->getMessage();
+
+            if (in_array($code, [400, 403, 404])) {
+                return ServiceReturn::error(message: $message, code: $code);
+            }
+
+            // A4 – Lỗi xóa quiz
+            return ServiceReturn::error(message: 'Không thể xóa quiz.', code: 500);
+        });
+    }
+
+    /**
      * Xóa khóa học.
      */
     public function adminDeleteCourse(string $courseId, string $adminId): ServiceReturn
@@ -1419,6 +1673,71 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $this->validate($course !== null, 'Không tìm thấy khóa học.', 404);
 
             $enrollment = $this->courseEnrollmentRepository->findByUserAndCourse($userId, $courseId);
+
+            // A6 - Nhân viên đã được xác nhận onboarding trước đó
+            if ($enrollment !== null && $enrollment->status === \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::COMPLETED) {
+                return ServiceReturn::error(
+                    message: 'Nhân viên đã hoàn thành onboarding.',
+                    code: 400
+                );
+            }
+
+            $lessons = \App\Modules\Learning\Models\CourseLesson::where('course_id', $courseId)->get();
+            $this->validate($lessons->isNotEmpty(), 'Khóa học này không có bài học nào.', 400);
+
+            $completedLessonIds = [];
+            if ($enrollment) {
+                $completedLessonIds = \App\Modules\Learning\Models\LessonProgress::where('enrollment_id', $enrollment->id)
+                    ->where('is_completed', true)
+                    ->pluck('lesson_id')
+                    ->toArray();
+            }
+
+            $totalLessonsCount = $lessons->count();
+            $completedLessonsCount = count($completedLessonIds);
+
+            if ($completedLessonsCount < $totalLessonsCount) {
+                // Determine whether they missed video completion (A4) or course completion (A3)
+                $incompleteLessons = $lessons->filter(function($l) use ($completedLessonIds) {
+                    return !in_array($l->id, $completedLessonIds);
+                });
+
+                $hasIncompleteVideo = $incompleteLessons->contains(function($l) {
+                    return !empty($l->video_url);
+                });
+
+                if ($hasIncompleteVideo) {
+                    return ServiceReturn::error(
+                        message: 'Nhân viên chưa hoàn thành video đào tạo.',
+                        code: 400
+                    );
+                } else {
+                    return ServiceReturn::error(
+                        message: 'Nhân viên chưa hoàn thành khóa học onboarding.',
+                        code: 400
+                    );
+                }
+            }
+
+            // Check quiz requirements (A5)
+            $quizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessons->pluck('id'))->get();
+            if ($quizzes->isNotEmpty()) {
+                $correctAttemptsCount = \App\Modules\Learning\Models\QuizAttempt::where('user_id', $userId)
+                    ->whereIn('quiz_id', $quizzes->pluck('id'))
+                    ->where('is_correct', true)
+                    ->count();
+
+                $totalQuestionsCount = $quizzes->count();
+                // Passing score is 80%
+                if (($correctAttemptsCount / $totalQuestionsCount) < 0.8) {
+                    return ServiceReturn::error(
+                        message: 'Nhân viên chưa đạt điểm yêu cầu của bài quiz.',
+                        code: 400
+                    );
+                }
+            }
+
+            // Perform actual completion updates
             if (!$enrollment) {
                 $enrollment = $this->courseEnrollmentRepository->create([
                     'user_id' => $userId,
@@ -1445,7 +1764,206 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 ],
                 message: 'Xác nhận hoàn thành onboarding cho nhân viên thành công.'
             );
-        }, useTransaction: true);
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            $code = $e->getCode();
+            $message = $e->getMessage();
+
+            if (in_array($code, [400, 403, 404, 422])) {
+                return ServiceReturn::error(message: $message, code: $code);
+            }
+
+            // A7 - Lỗi cập nhật trạng thái onboarding
+            return ServiceReturn::error(message: 'Không thể cập nhật trạng thái onboarding.', code: 500);
+        });
+    }
+
+    /**
+     * Tải danh sách tiến độ onboarding của nhân viên.
+     */
+    public function adminGetOnboardingList(array $filters, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($filters, $adminId) {
+            $this->validateAdmin($adminId);
+
+            // Fetch base onboarding enrollments
+            // We join users and courses to filter on departments, and select enrollments for required courses
+            $query = \App\Modules\Learning\Models\CourseEnrollment::join('users', 'course_enrollments.user_id', '=', 'users.id')
+                ->join('courses', 'course_enrollments.course_id', '=', 'courses.id')
+                ->where('courses.is_required', true)
+                ->select('course_enrollments.*');
+
+            $allOnboardingCount = $query->count();
+            if ($allOnboardingCount === 0) {
+                return $this->success(
+                    data: [],
+                    message: 'Không có dữ liệu onboarding.'
+                );
+            }
+
+            // Apply filters
+            // 1. Department filter
+            if (!empty($filters['department'])) {
+                $query->where('users.department', 'like', '%' . $filters['department'] . '%');
+            }
+
+            // 2. Status filter
+            if (isset($filters['status'])) {
+                $query->where('course_enrollments.status', $filters['status']);
+            }
+
+            $enrollments = $query->get();
+
+            // Transform data & calculate quiz score
+            $data = [];
+            foreach ($enrollments as $enrollment) {
+                $lessons = \App\Modules\Learning\Models\CourseLesson::where('course_id', $enrollment->course_id)->get();
+                $quizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessons->pluck('id'))->get();
+                if ($quizzes->isEmpty()) {
+                    $quizScore = null;
+                } else {
+                    $correctAttempts = \App\Modules\Learning\Models\QuizAttempt::where('user_id', $enrollment->user_id)
+                        ->whereIn('quiz_id', $quizzes->pluck('id'))
+                        ->where('is_correct', true)
+                        ->count();
+                    $quizScore = round(($correctAttempts / $quizzes->count()) * 10, 2);
+                }
+
+                $data[] = [
+                    'id' => $enrollment->id,
+                    'user_id' => $enrollment->user_id,
+                    'employee_name' => $enrollment->user->name ?? '',
+                    'department' => $enrollment->user->department ?? '',
+                    'course_id' => $enrollment->course_id,
+                    'course_title' => $enrollment->course->title ?? '',
+                    'progress_percent' => (float) $enrollment->progress_percent,
+                    'status' => $enrollment->status instanceof \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus 
+                        ? $enrollment->status->serialize() 
+                        : $enrollment->status,
+                    'quiz_score' => $quizScore,
+                ];
+            }
+
+            // 3. Quiz Score Filter (e.g. filter by passing score / ranges or specific score)
+            if (isset($filters['quiz_score'])) {
+                $targetScore = (float) $filters['quiz_score'];
+                $data = array_values(array_filter($data, function($item) use ($targetScore) {
+                    return $item['quiz_score'] == $targetScore;
+                }));
+            }
+
+            if (count($data) === 0) {
+                return $this->success(
+                    data: [],
+                    message: 'Không tìm thấy nhân viên phù hợp.'
+                );
+            }
+
+            return $this->success(
+                data: $data,
+                message: 'Tải danh sách onboarding thành công.'
+            );
+        });
+    }
+
+    /**
+     * Tải chi tiết tiến độ onboarding của một nhân viên đối với khóa học.
+     */
+    public function adminGetOnboardingDetail(string $courseId, string $userId, string $adminId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $userId, $adminId) {
+            $this->validateAdmin($adminId);
+
+            $user = \App\Modules\Auth\Models\User::find($userId);
+            $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
+
+            $course = $this->courseRepository->find($courseId);
+            $this->validate($course !== null, 'Không tìm thấy khóa học.', 404);
+
+            $enrollment = $this->courseEnrollmentRepository->findByUserAndCourse($userId, $courseId);
+
+            $lessons = \App\Modules\Learning\Models\CourseLesson::where('course_id', $courseId)->get();
+
+            $lessonProgressDetails = [];
+            foreach ($lessons as $lesson) {
+                $progress = null;
+                if ($enrollment) {
+                    $progress = \App\Modules\Learning\Models\LessonProgress::where('enrollment_id', $enrollment->id)
+                        ->where('lesson_id', $lesson->id)
+                        ->first();
+                }
+
+                $lessonProgressDetails[] = [
+                    'lesson_id' => $lesson->id,
+                    'title' => $lesson->title,
+                    'video_url' => $lesson->video_url,
+                    'duration_minutes' => $lesson->duration_minutes,
+                    'is_completed' => $progress ? (bool) $progress->is_completed : false,
+                    'completed_at' => $progress && $progress->completed_at ? $progress->completed_at->toIso8601String() : null,
+                    'current_watch_seconds' => $progress ? (int) $progress->current_watch_seconds : 0,
+                    'video_completed' => $progress ? (bool) $progress->is_completed : false,
+                ];
+            }
+
+            // Quizzes
+            $quizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessons->pluck('id'))->get();
+            $quizDetails = [];
+            $correctAttempts = 0;
+            $quizScore = null;
+            $isPassed = false;
+
+            if ($quizzes->isNotEmpty()) {
+                $totalQuestions = $quizzes->count();
+                foreach ($quizzes as $quiz) {
+                    $attempt = \App\Modules\Learning\Models\QuizAttempt::where('user_id', $userId)
+                        ->where('quiz_id', $quiz->id)
+                        ->first();
+
+                    $selectedOption = $attempt ? $attempt->selected_option : null;
+                    $isCorrect = $attempt ? (bool) $attempt->is_correct : false;
+
+                    if ($isCorrect) {
+                        $correctAttempts++;
+                    }
+
+                    $quizDetails[] = [
+                        'quiz_id' => $quiz->id,
+                        'question' => $quiz->question,
+                        'options' => $quiz->options,
+                        'selected_option' => $selectedOption,
+                        'correct_option' => $quiz->correct_option,
+                        'is_correct' => $isCorrect,
+                    ];
+                }
+
+                $quizScore = round(($correctAttempts / $totalQuestions) * 10, 2);
+                $isPassed = ($correctAttempts / $totalQuestions) >= 0.8;
+            }
+
+            $payload = [
+                'user_id' => $userId,
+                'employee_name' => $user->name,
+                'department' => $user->department,
+                'course_id' => $courseId,
+                'course_title' => $course->title,
+                'progress_percent' => $enrollment ? (float) $enrollment->progress_percent : 0.00,
+                'status' => $enrollment
+                    ? $enrollment->status->serialize()
+                    : CourseEnrollmentStatus::NOT_STARTED->serialize(),
+                'lessons' => $lessonProgressDetails,
+                'quiz' => [
+                    'score' => $quizScore,
+                    'total_questions' => $quizzes->count(),
+                    'correct_count' => $correctAttempts,
+                    'is_passed' => $isPassed,
+                    'details' => $quizDetails,
+                ]
+            ];
+
+            return $this->success(
+                data: $payload,
+                message: 'Tải thông tin chi tiết onboarding thành công.'
+            );
+        });
     }
 }
 

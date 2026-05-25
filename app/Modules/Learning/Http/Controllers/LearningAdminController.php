@@ -6,6 +6,9 @@ use App\Core\Controller\BaseController;
 use App\Modules\Learning\DTO\AdminViewCoursesDTO;
 use App\Modules\Learning\DTO\AdminCreateCourseDTO;
 use App\Modules\Learning\DTO\AdminUpdateCourseDTO;
+use App\Modules\Learning\DTO\AdminUpdateCourseStatusDTO;
+use App\Modules\Learning\DTO\AdminCreateCourseQuizDTO;
+use App\Modules\Learning\DTO\AdminUpdateCourseQuizDTO;
 use App\Modules\Learning\DTO\AdminCreateLessonDTO;
 use App\Modules\Learning\DTO\AdminUpdateLessonDTO;
 use App\Modules\Learning\DTO\AdminCreateQuizDTO;
@@ -13,6 +16,9 @@ use App\Modules\Learning\DTO\AdminUpdateQuizDTO;
 use App\Modules\Learning\Http\Requests\AdminViewCoursesRequest;
 use App\Modules\Learning\Http\Requests\AdminCreateCourseRequest;
 use App\Modules\Learning\Http\Requests\AdminUpdateCourseRequest;
+use App\Modules\Learning\Http\Requests\AdminUpdateCourseStatusRequest;
+use App\Modules\Learning\Http\Requests\AdminCreateCourseQuizRequest;
+use App\Modules\Learning\Http\Requests\AdminUpdateCourseQuizRequest;
 use App\Modules\Learning\Http\Requests\AdminCreateLessonRequest;
 use App\Modules\Learning\Http\Requests\AdminUpdateLessonRequest;
 use App\Modules\Learning\Http\Requests\AdminCreateQuizRequest;
@@ -92,25 +98,74 @@ final class LearningAdminController extends BaseController
 
     #[OA\Post(
         path: '/api/v1/learning/admin/courses',
-        summary: 'Tạo khóa học mới (UC-069)',
-        tags: ['Learning Admin'],
+        summary: 'Tạo khóa học mới (UC-070)',
         security: [['sanctum' => []]],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
+                required: ['title', 'lessons'],
                 properties: [
-                    new OA\Property(property: 'title', type: 'string'),
-                    new OA\Property(property: 'description', type: 'string', nullable: true),
-                    new OA\Property(property: 'thumbnail', type: 'string', nullable: true),
-                    new OA\Property(property: 'is_required', type: 'boolean', default: true),
-                    new OA\Property(property: 'department', type: 'string', nullable: true),
-                    new OA\Property(property: 'job_position', type: 'string', nullable: true),
-                    new OA\Property(property: 'order', type: 'integer', default: 0),
-                    new OA\Property(property: 'is_active', type: 'boolean', default: true),
-                    new OA\Property(property: 'has_certificate', type: 'boolean', default: true)
+                    new OA\Property(property: 'title', type: 'string', example: 'Khóa học thiết kế Figma'),
+                    new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Hướng dẫn thiết kế UI/UX'),
+                    new OA\Property(property: 'thumbnail', type: 'string', nullable: true, example: 'https://example.com/thumbnail.png'),
+                    new OA\Property(property: 'is_required', type: 'boolean', default: true, example: false),
+                    new OA\Property(property: 'department', type: 'string', nullable: true, example: 'Design'),
+                    new OA\Property(property: 'job_position', type: 'string', nullable: true, example: 'UI/UX Designer'),
+                    new OA\Property(property: 'order', type: 'integer', default: 0, example: 5),
+                    new OA\Property(property: 'is_active', type: 'boolean', default: true, example: true),
+                    new OA\Property(property: 'has_certificate', type: 'boolean', default: true, example: true),
+                    new OA\Property(
+                        property: 'lessons',
+                        type: 'array',
+                        items: new OA\Items(
+                            type: 'object',
+                            required: ['title', 'duration_minutes'],
+                            properties: [
+                                new OA\Property(property: 'title', type: 'string', example: 'Bài học Figma 1'),
+                                new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung Figma'),
+                                new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://example.com/figma1.mp4'),
+                                new OA\Property(property: 'duration_minutes', type: 'integer', example: 30),
+                                new OA\Property(property: 'order', type: 'integer', example: 1),
+                                new OA\Property(property: 'is_active', type: 'boolean', example: true),
+                                new OA\Property(
+                                    property: 'attachments',
+                                    type: 'array',
+                                    items: new OA\Items(
+                                        type: 'object',
+                                        required: ['name', 'url'],
+                                        properties: [
+                                            new OA\Property(property: 'name', type: 'string', example: 'Tài liệu hướng dẫn'),
+                                            new OA\Property(property: 'url', type: 'string', example: 'https://example.com/doc1.pdf')
+                                        ]
+                                    ),
+                                    nullable: true
+                                ),
+                                new OA\Property(
+                                    property: 'quizzes',
+                                    type: 'array',
+                                    items: new OA\Items(
+                                        type: 'object',
+                                        required: ['question', 'options', 'correct_option'],
+                                        properties: [
+                                            new OA\Property(property: 'question', type: 'string', example: 'Figma là gì?'),
+                                            new OA\Property(
+                                                property: 'options',
+                                                type: 'array',
+                                                items: new OA\Items(type: 'string'),
+                                                example: ['Công cụ design', 'Công cụ soạn thảo', 'Trình duyệt']
+                                            ),
+                                            new OA\Property(property: 'correct_option', type: 'integer', example: 0)
+                                        ]
+                                    ),
+                                    nullable: true
+                                )
+                            ]
+                        )
+                    )
                 ]
             )
         ),
+        tags: ['Learning Admin'],
         responses: [
             new OA\Response(response: 200, description: 'Tạo khóa học thành công'),
             new OA\Response(response: 422, description: 'Dữ liệu không hợp lệ')
@@ -130,28 +185,79 @@ final class LearningAdminController extends BaseController
 
     #[OA\Put(
         path: '/api/v1/learning/admin/courses/{id}',
-        summary: 'Cập nhật thông tin khóa học (UC-069)',
-        tags: ['Learning Admin'],
+        summary: 'Cập nhật thông tin khóa học (UC-071)',
         security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
-        ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
+                required: ['title', 'lessons'],
                 properties: [
-                    new OA\Property(property: 'title', type: 'string', nullable: true),
-                    new OA\Property(property: 'description', type: 'string', nullable: true),
-                    new OA\Property(property: 'thumbnail', type: 'string', nullable: true),
-                    new OA\Property(property: 'is_required', type: 'boolean', nullable: true),
-                    new OA\Property(property: 'department', type: 'string', nullable: true),
-                    new OA\Property(property: 'job_position', type: 'string', nullable: true),
-                    new OA\Property(property: 'order', type: 'integer', nullable: true),
-                    new OA\Property(property: 'is_active', type: 'boolean', nullable: true),
-                    new OA\Property(property: 'has_certificate', type: 'boolean', nullable: true)
+                    new OA\Property(property: 'title', type: 'string', example: 'Khóa học thiết kế Figma - Cập nhật'),
+                    new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Hướng dẫn thiết kế UI/UX nâng cao'),
+                    new OA\Property(property: 'thumbnail', type: 'string', nullable: true, example: 'https://example.com/thumbnail-updated.png'),
+                    new OA\Property(property: 'is_required', type: 'boolean', nullable: true, example: false),
+                    new OA\Property(property: 'department', type: 'string', nullable: true, example: 'Design'),
+                    new OA\Property(property: 'job_position', type: 'string', nullable: true, example: 'Senior UI/UX Designer'),
+                    new OA\Property(property: 'order', type: 'integer', nullable: true, example: 5),
+                    new OA\Property(property: 'is_active', type: 'boolean', nullable: true, example: true),
+                    new OA\Property(property: 'has_certificate', type: 'boolean', nullable: true, example: true),
+                    new OA\Property(
+                        property: 'lessons',
+                        type: 'array',
+                        items: new OA\Items(
+                            required: ['title', 'duration_minutes'],
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', nullable: true, example: 'b0f80a44-df42-493e-9081-305128362678'),
+                                new OA\Property(property: 'title', type: 'string', example: 'Bài học Figma 1 updated'),
+                                new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung Figma nâng cao'),
+                                new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://example.com/figma1_new.mp4'),
+                                new OA\Property(property: 'duration_minutes', type: 'integer', example: 35),
+                                new OA\Property(property: 'order', type: 'integer', example: 1),
+                                new OA\Property(property: 'is_active', type: 'boolean', example: true),
+                                new OA\Property(
+                                    property: 'attachments',
+                                    type: 'array',
+                                    items: new OA\Items(
+                                        required: ['name', 'url'],
+                                        properties: [
+                                            new OA\Property(property: 'name', type: 'string', example: 'Tài liệu hướng dẫn mới'),
+                                            new OA\Property(property: 'url', type: 'string', example: 'https://example.com/doc1_new.pdf')
+                                        ],
+                                        type: 'object'
+                                    ),
+                                    nullable: true
+                                ),
+                                new OA\Property(
+                                    property: 'quizzes',
+                                    type: 'array',
+                                    items: new OA\Items(
+                                        required: ['question', 'options', 'correct_option'],
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid', nullable: true, example: 'c0a80e12-4217-47b2-8c90-215106a7cd5b'),
+                                            new OA\Property(property: 'question', type: 'string', example: 'Figma là gì?'),
+                                            new OA\Property(
+                                                property: 'options',
+                                                type: 'array',
+                                                items: new OA\Items(type: 'string'),
+                                                example: ['Công cụ design chuyên nghiệp', 'Công cụ soạn thảo', 'Trình duyệt']
+                                            ),
+                                            new OA\Property(property: 'correct_option', type: 'integer', example: 0)
+                                        ],
+                                        type: 'object'
+                                    ),
+                                    nullable: true
+                                )
+                            ],
+                            type: 'object'
+                        )
+                    )
                 ]
             )
         ),
+        tags: ['Learning Admin'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
+        ],
         responses: [
             new OA\Response(response: 200, description: 'Cập nhật khóa học thành công'),
             new OA\Response(response: 404, description: 'Không tìm thấy khóa học')
@@ -161,6 +267,179 @@ final class LearningAdminController extends BaseController
     {
         $dto = AdminUpdateCourseDTO::fromRequest($request);
         $result = $this->learningService->adminUpdateCourse($id, $dto, $request->user()->id);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Patch(
+        path: '/api/v1/learning/admin/courses/{id}/status',
+        summary: 'Cập nhật trạng thái khóa học (UC-072)',
+        security: [['sanctum' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['is_active'],
+                properties: [
+                    new OA\Property(property: 'is_active', type: 'boolean', example: false)
+                ]
+            )
+        ),
+        tags: ['Learning Admin'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Cập nhật trạng thái khóa học thành công'),
+            new OA\Response(response: 404, description: 'Không tìm thấy khóa học'),
+            new OA\Response(response: 422, description: 'Dữ liệu không hợp lệ')
+        ]
+    )]
+    public function updateCourseStatus(string $id, AdminUpdateCourseStatusRequest $request): JsonResponse
+    {
+        $dto = AdminUpdateCourseStatusDTO::fromRequest($request);
+        $result = $this->learningService->adminUpdateCourseStatus($id, $dto, $request->user()->id);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Post(
+        path: '/api/v1/learning/admin/courses/{id}/quiz',
+        summary: 'Tạo bài quiz cho khóa học (UC-073)',
+        security: [['sanctum' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['title', 'passing_score', 'questions'],
+                properties: [
+                    new OA\Property(property: 'title', type: 'string', example: 'Quiz văn hóa doanh nghiệp'),
+                    new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Bài kiểm tra cuối khóa học'),
+                    new OA\Property(property: 'passing_score', type: 'number', example: 80.00),
+                    new OA\Property(
+                        property: 'questions',
+                        type: 'array',
+                        items: new OA\Items(
+                            type: 'object',
+                            required: ['question', 'options', 'correct_option'],
+                            properties: [
+                                new OA\Property(property: 'question', type: 'string', example: 'Giá trị cốt lõi đầu tiên là gì?'),
+                                new OA\Property(
+                                    property: 'options',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string'),
+                                    example: ['Khách hàng là trọng tâm', 'Tự do sáng tạo', 'Kỷ luật tối đa']
+                                ),
+                                new OA\Property(property: 'correct_option', type: 'integer', example: 0)
+                            ]
+                        )
+                    )
+                ]
+            )
+        ),
+        tags: ['Learning Admin'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Tạo bài quiz thành công'),
+            new OA\Response(response: 400, description: 'Yêu cầu không hợp lệ'),
+            new OA\Response(response: 404, description: 'Không tìm thấy khóa học'),
+            new OA\Response(response: 422, description: 'Dữ liệu không hợp lệ')
+        ]
+    )]
+    public function createCourseQuiz(string $id, AdminCreateCourseQuizRequest $request): JsonResponse
+    {
+        $dto = AdminCreateCourseQuizDTO::fromRequest($request);
+        $result = $this->learningService->adminCreateCourseQuiz($id, $dto, $request->user()->id);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Put(
+        path: '/api/v1/learning/admin/courses/{id}/quiz',
+        summary: 'Cập nhật bài quiz cho khóa học (UC-074)',
+        security: [['sanctum' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['title', 'passing_score', 'questions'],
+                properties: [
+                    new OA\Property(property: 'title', type: 'string', example: 'Quiz văn hóa doanh nghiệp cập nhật'),
+                    new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Bài kiểm tra cuối khóa học đã cập nhật'),
+                    new OA\Property(property: 'passing_score', type: 'number', example: 80.00),
+                    new OA\Property(
+                        property: 'questions',
+                        type: 'array',
+                        items: new OA\Items(
+                            type: 'object',
+                            required: ['question', 'options', 'correct_option'],
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', nullable: true, example: 'd3b07384-d113-4ec5-a3d6-444455556666'),
+                                new OA\Property(property: 'question', type: 'string', example: 'Giá trị cốt lõi đầu tiên là gì?'),
+                                new OA\Property(
+                                    property: 'options',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string'),
+                                    example: ['Khách hàng là trọng tâm', 'Tự do sáng tạo', 'Kỷ luật tối đa']
+                                ),
+                                new OA\Property(property: 'correct_option', type: 'integer', example: 0)
+                            ]
+                        )
+                    )
+                ]
+            )
+        ),
+        tags: ['Learning Admin'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Cập nhật bài quiz thành công'),
+            new OA\Response(response: 400, description: 'Yêu cầu không hợp lệ'),
+            new OA\Response(response: 404, description: 'Quiz hoặc khóa học không tồn tại'),
+            new OA\Response(response: 422, description: 'Dữ liệu không hợp lệ')
+        ]
+    )]
+    public function updateCourseQuiz(string $id, AdminUpdateCourseQuizRequest $request): JsonResponse
+    {
+        $dto = AdminUpdateCourseQuizDTO::fromRequest($request);
+        $result = $this->learningService->adminUpdateCourseQuiz($id, $dto, $request->user()->id);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Delete(
+        path: '/api/v1/learning/admin/courses/{id}/quiz',
+        summary: 'Xóa bài quiz của khóa học (UC-075)',
+        tags: ['Learning Admin'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Xóa quiz thành công'),
+            new OA\Response(response: 400, description: 'Yêu cầu không hợp lệ hoặc quiz đã có nhân viên làm bài'),
+            new OA\Response(response: 404, description: 'Quiz hoặc khóa học không tồn tại')
+        ]
+    )]
+    public function deleteCourseQuiz(string $id, \Illuminate\Http\Request $request): JsonResponse
+    {
+        $result = $this->learningService->adminDeleteCourseQuiz($id, $request->user()->id);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());
@@ -233,11 +512,7 @@ final class LearningAdminController extends BaseController
     #[OA\Put(
         path: '/api/v1/learning/admin/lessons/{id}',
         summary: 'Cập nhật thông tin bài học (UC-069)',
-        tags: ['Learning Admin'],
         security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
-        ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -252,6 +527,10 @@ final class LearningAdminController extends BaseController
                 ]
             )
         ),
+        tags: ['Learning Admin'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
+        ],
         responses: [
             new OA\Response(response: 200, description: 'Cập nhật bài học thành công'),
             new OA\Response(response: 404, description: 'Không tìm thấy bài học')
@@ -387,7 +666,7 @@ final class LearningAdminController extends BaseController
 
     #[OA\Post(
         path: '/api/v1/learning/admin/courses/{courseId}/enrollments/{userId}/complete',
-        summary: 'Xác nhận hoàn thành onboarding cho nhân viên (UC-069)',
+        summary: 'Xác nhận hoàn thành onboarding cho nhân viên (UC-076)',
         tags: ['Learning Admin'],
         security: [['sanctum' => []]],
         parameters: [
@@ -396,12 +675,65 @@ final class LearningAdminController extends BaseController
         ],
         responses: [
             new OA\Response(response: 200, description: 'Xác nhận hoàn thành onboarding thành công'),
-            new OA\Response(response: 404, description: 'Không tìm thấy nhân viên hoặc khóa học')
+            new OA\Response(response: 404, description: 'Không tìm thấy nhân viên hoặc khóa học'),
+            new OA\Response(response: 400, description: 'Nhân viên chưa đạt yêu cầu hoặc đã hoàn thành trước đó')
         ]
     )]
     public function confirmOnboarding(string $courseId, string $userId, AdminViewCoursesRequest $request): JsonResponse
     {
         $result = $this->learningService->adminConfirmOnboarding($courseId, $userId, $request->user()->id);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Get(
+        path: '/api/v1/learning/admin/onboarding',
+        summary: 'Tải danh sách tiến độ onboarding của nhân viên (UC-076)',
+        tags: ['Learning Admin'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'department', in: 'query', required: false, schema: new OA\Schema(type: 'string'), description: 'Lọc theo phòng ban'),
+            new OA\Parameter(name: 'status', in: 'query', required: false, schema: new OA\Schema(type: 'integer'), description: 'Lọc theo trạng thái (1: Chưa bắt đầu, 2: Đang học, 3: Hoàn thành)'),
+            new OA\Parameter(name: 'quiz_score', in: 'query', required: false, schema: new OA\Schema(type: 'number', format: 'float'), description: 'Lọc theo điểm quiz')
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Tải danh sách onboarding thành công'),
+            new OA\Response(response: 403, description: 'Không có quyền thực hiện chức năng này')
+        ]
+    )]
+    public function getOnboardingList(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $filters = $request->only(['department', 'status', 'quiz_score']);
+        $result = $this->learningService->adminGetOnboardingList($filters, $request->user()->id);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Get(
+        path: '/api/v1/learning/admin/courses/{courseId}/enrollments/{userId}',
+        summary: 'Tải chi tiết tiến độ onboarding của một nhân viên (UC-076)',
+        tags: ['Learning Admin'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'courseId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+            new OA\Parameter(name: 'userId', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Tải thông tin chi tiết onboarding thành công'),
+            new OA\Response(response: 404, description: 'Không tìm thấy thông tin tài khoản hoặc khóa học')
+        ]
+    )]
+    public function getOnboardingDetail(string $courseId, string $userId, \Illuminate\Http\Request $request): JsonResponse
+    {
+        $result = $this->learningService->adminGetOnboardingDetail($courseId, $userId, $request->user()->id);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());
