@@ -28,9 +28,9 @@ trait EnumHelper
         return $this->label();
     }
 
-    public function serialize(): string
+    public function serialize(): int
     {
-        return strtolower($this->name);
+        return $this->value;
     }
 
     public static function deserialize(string|int $value): self
