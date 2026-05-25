@@ -191,7 +191,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền quản lý (role phải là broker hoặc admin)
             $this->validate(
-                in_array($user->role, [UserRole::BROKER, UserRole::ADMIN], true),
+                in_array($user->role, [UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true),
                 'Bạn không có quyền xem danh sách yêu cầu nghỉ phép.',
                 403
             );
@@ -265,7 +265,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền duyệt nghỉ phép (role phải là broker hoặc admin)
             $this->validate(
-                in_array($user->role, [UserRole::BROKER, UserRole::ADMIN], true),
+                in_array($user->role, [UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true),
                 'Bạn không có quyền duyệt nghỉ phép.',
                 403
             );
@@ -324,7 +324,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền duyệt nghỉ phép (role phải là broker hoặc admin)
             $this->validate(
-                in_array($user->role, [UserRole::BROKER, UserRole::ADMIN], true),
+                in_array($user->role, [UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true),
                 'Bạn không có quyền từ chối nghỉ phép.',
                 403
             );

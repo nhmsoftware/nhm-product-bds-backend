@@ -33,7 +33,7 @@ final class EvidenceService extends BaseService implements EvidenceServiceInterf
 
             // Kiểm tra quyền nhân viên
             $this->validate(
-                in_array($user->role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true),
+                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
                 'Bạn không có quyền tải lên minh chứng hoạt động.',
                 403
             );

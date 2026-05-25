@@ -116,12 +116,14 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
     {
         $query = $this->model->where('is_published', true);
 
-        if (in_array($user->role, [UserRole::AGENT, UserRole::BROKER], true)) {
-            // Employee (agent) or Team Leader (broker): Chỉ xem bài viết thuộc phòng ban của mình
+        if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
+            // Employee or Manager: Chỉ xem bài viết thuộc phòng ban của mình
             $query->where('department', $user->department);
-        } elseif ($user->role === UserRole::ADMIN) {
-            // Director (admin): Xem bài viết của tất cả phòng ban thuộc khu vực mình quản lý
+        } elseif ($user->role === UserRole::DIRECTOR) {
+            // Director: Xem bài viết của tất cả phòng ban thuộc khu vực mình quản lý
             $query->where('area', $user->area);
+        } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+            // Toàn quyền
         } else {
             $query->whereRaw('1 = 0');
         }

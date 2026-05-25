@@ -48,7 +48,7 @@ final class SiteTourService extends BaseService implements SiteTourServiceInterf
 
             // Kiểm tra phân quyền nhân viên (admin, agent, broker)
             $this->validate(
-                in_array($user->role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true),
+                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
                 'Bạn không có quyền thực hiện chức năng dẫn khách.',
                 403
             );
@@ -151,7 +151,7 @@ final class SiteTourService extends BaseService implements SiteTourServiceInterf
 
             // Kiểm tra phân quyền nhân viên (admin, agent, broker)
             $this->validate(
-                in_array($user->role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true),
+                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
                 'Bạn không có quyền thực hiện chức năng dẫn khách.',
                 403
             );

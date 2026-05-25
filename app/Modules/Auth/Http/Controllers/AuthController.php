@@ -535,7 +535,7 @@ final class AuthController extends BaseController
                                         new OA\Property(property: 'phone', type: 'string', example: '0901234567'),
                                         new OA\Property(property: 'email', type: 'string', example: 'staff@example.com'),
                                         new OA\Property(property: 'avatar', type: 'string', nullable: true),
-                                        new OA\Property(property: 'role', type: 'integer', example: \App\Modules\Auth\Models\Enums\UserRole::AGENT->value),
+                                        new OA\Property(property: 'role', type: 'integer', example: \App\Modules\Auth\Models\Enums\UserRole::EMPLOYEE->value),
                                         new OA\Property(property: 'address', type: 'string', example: '123 Đường ABC, Quận 1, TP. HCM'),
                                     ]
                                 ),
@@ -665,7 +665,7 @@ final class AuthController extends BaseController
                                         new OA\Property(property: 'phone', type: 'string', example: '0987654321'),
                                         new OA\Property(property: 'email', type: 'string', example: 'staff@example.com'),
                                         new OA\Property(property: 'avatar', type: 'string', nullable: true),
-                                        new OA\Property(property: 'role', type: 'integer', example: \App\Modules\Auth\Models\Enums\UserRole::AGENT->value),
+                                        new OA\Property(property: 'role', type: 'integer', example: \App\Modules\Auth\Models\Enums\UserRole::EMPLOYEE->value),
                                         new OA\Property(property: 'address', type: 'string', example: '123 Đường XYZ, Quận 3, TP. HCM'),
                                     ]
                                 ),

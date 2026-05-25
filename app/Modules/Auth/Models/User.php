@@ -49,7 +49,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'name', type: 'string', example: 'Nguyen Van A'),
         new OA\Property(property: 'email', type: 'string', format: 'email', example: 'nguyenvana@example.com'),
         new OA\Property(property: 'phone', type: 'string', example: '0901234567'),
-        new OA\Property(property: 'role', type: 'integer', example: \App\Modules\Auth\Models\Enums\UserRole::AGENT->value),
+        new OA\Property(property: 'role', type: 'integer', example: \App\Modules\Auth\Models\Enums\UserRole::EMPLOYEE->value),
         new OA\Property(property: 'avatar', type: 'string', nullable: true),
         new OA\Property(property: 'address', type: 'string', nullable: true, example: '123 Đường ABC, Quận 1, TP. HCM'),
         new OA\Property(property: 'department', type: 'string', nullable: true, example: 'Kinh doanh', description: 'Phòng ban của nhân viên'),

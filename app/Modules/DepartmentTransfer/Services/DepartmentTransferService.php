@@ -97,7 +97,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             // 3. Kiểm tra Preconditions: Quyền xem yêu cầu chuyển phòng ban (chỉ Director hoặc Admin)
             $this->validate(
-                $user->role === UserRole::ADMIN,
+                in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true),
                 'Bạn không có quyền xem yêu cầu chuyển phòng ban.',
                 403
             );
@@ -167,7 +167,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             // 3. Kiểm tra Preconditions: Quyền duyệt chuyển phòng ban (role phải là admin)
             $this->validate(
-                $user->role === UserRole::ADMIN,
+                in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true),
                 'Bạn không có quyền duyệt yêu cầu chuyển phòng ban.',
                 403
             );
@@ -226,7 +226,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             // 3. Kiểm tra Preconditions: Quyền từ chối chuyển phòng ban (role phải là admin)
             $this->validate(
-                $user->role === UserRole::ADMIN,
+                in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true),
                 'Bạn không có quyền từ chối yêu cầu chuyển phòng ban.',
                 403
             );

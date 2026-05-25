@@ -116,7 +116,7 @@ final class DashboardService extends BaseService implements DashboardServiceInte
         // Default modules for everyone
         $authorized[] = $allModules['notifications'];
 
-        if (in_array($role, [UserRole::ADMIN, UserRole::AGENT, UserRole::BROKER], true)) {
+        if (in_array($role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true)) {
             $authorized[] = $allModules['lms'];
             $authorized[] = $allModules['warehouse'];
             $authorized[] = $allModules['kpi'];

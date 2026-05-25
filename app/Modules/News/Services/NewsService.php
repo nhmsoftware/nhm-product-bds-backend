@@ -272,11 +272,12 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($news !== null, 'Bài viết không tồn tại.', 404);
             $this->validate($news->is_published === true, 'Bài viết không tồn tại.', 404);
 
-            // 3. Kiểm tra phân quyền truy cập bài viết nội bộ (A1)
-            if (in_array($user->role, [UserRole::AGENT, UserRole::BROKER], true)) {
+            if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền truy cập bài viết này.', 403);
-            } elseif ($user->role === UserRole::ADMIN) {
+            } elseif ($user->role === UserRole::DIRECTOR) {
                 $this->validate($news->area === $user->area, 'Bạn không có quyền truy cập bài viết này.', 403);
+            } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+                // Toàn quyền
             } else {
                 $this->throw('Bạn không có quyền truy cập bài viết này.', 403);
             }
@@ -362,11 +363,12 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($news !== null, 'Bài viết không tồn tại.', 404);
             $this->validate($news->is_published === true, 'Bài viết không tồn tại.', 404);
 
-            // 3. Kiểm tra phân quyền truy cập bài viết nội bộ
-            if (in_array($user->role, [UserRole::AGENT, UserRole::BROKER], true)) {
+            if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền bình luận bài viết này.', 403);
-            } elseif ($user->role === UserRole::ADMIN) {
+            } elseif ($user->role === UserRole::DIRECTOR) {
                 $this->validate($news->area === $user->area, 'Bạn không có quyền bình luận bài viết này.', 403);
+            } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+                // Toàn quyền
             } else {
                 $this->throw('Bạn không có quyền bình luận bài viết này.', 403);
             }
@@ -418,9 +420,9 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
-            // Kiểm tra phân quyền: Employee (agent), Team Leader (broker), Director (admin)
+            // Kiểm tra phân quyền: Employee, Manager, Director, CEO, Super Admin
             $this->validate(
-                in_array($user->role, [UserRole::AGENT, UserRole::BROKER, UserRole::ADMIN], true),
+                in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true),
                 'Bạn không có quyền đăng bài viết nội bộ.',
                 403
             );
@@ -464,12 +466,14 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $department = null;
             $area = null;
 
-            if ($user->role === UserRole::ADMIN) {
-                // Director (admin): Xem bài viết của khu vực
+            if (in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+                // Director, CEO, SuperAdmin: Xem bài viết của khu vực hoặc toàn bộ
                 $area = $user->area;
-                $this->validate(!empty($area), 'Khu vực quản lý của giám đốc không xác định.', 400);
+                if ($user->role === UserRole::DIRECTOR) {
+                    $this->validate(!empty($area), 'Khu vực quản lý của giám đốc không xác định.', 400);
+                }
             } else {
-                // Employee (agent) & Team Leader (broker): Xem bài viết của phòng ban
+                // Employee & Manager: Xem bài viết của phòng ban
                 $department = $user->department;
                 $area = $user->area;
                 $this->validate(!empty($department), 'Phòng ban của nhân viên không xác định.', 400);
@@ -596,10 +600,12 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($news !== null && $news->is_published === true, 'Bài viết không tồn tại.', 404);
 
             // 3. Kiểm tra phân quyền truy cập bài viết nội bộ (A1)
-            if (in_array($user->role, [UserRole::AGENT, UserRole::BROKER], true)) {
+            if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền tương tác bài viết này.', 403);
-            } elseif ($user->role === UserRole::ADMIN) {
+            } elseif ($user->role === UserRole::DIRECTOR) {
                 $this->validate($news->area === $user->area, 'Bạn không có quyền tương tác bài viết này.', 403);
+            } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+                // Toàn quyền
             } else {
                 $this->throw('Bạn không có quyền tương tác bài viết này.', 403);
             }
