@@ -39,7 +39,7 @@ use App\Modules\Area\Models\Enums\LotStatus;
         new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
         new OA\Property(property: 'area_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b2234567'),
         new OA\Property(property: 'code', type: 'string', example: 'A-01'),
-        new OA\Property(property: 'status', type: 'string', enum: ['available', 'sold', 'reserved', 'unavailable'], example: 'available'),
+        new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Area\Models\Enums\LotStatus::AVAILABLE->value),
         new OA\Property(property: 'area_size', type: 'number', format: 'float', nullable: true, example: 120.5),
         new OA\Property(property: 'direction', type: 'string', nullable: true, example: 'Đông Nam'),
         new OA\Property(property: 'price', type: 'integer', nullable: true, example: 5000000000),

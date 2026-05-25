@@ -40,7 +40,7 @@ use App\Modules\DepartmentTransfer\Models\Enums\RequestStatus;/**
         new OA\Property(property: 'target_department', type: 'string', example: 'Phòng Kinh doanh'),
         new OA\Property(property: 'reason', type: 'string', example: 'Muốn thử thách ở lĩnh vực mới'),
         new OA\Property(property: 'desired_transfer_date', type: 'string', format: 'date', example: '2026-06-01'),
-        new OA\Property(property: 'status', type: 'string', enum: ['pending', 'approved', 'rejected'], example: 'pending'),
+        new OA\Property(property: 'status', type: 'integer', example: \App\Modules\DepartmentTransfer\Models\Enums\RequestStatus::PENDING->value),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
         new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
     ]

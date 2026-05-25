@@ -46,7 +46,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'uuid-string'),
         new OA\Property(property: 'title', type: 'string', example: 'Quy hoạch khu đô thị Thủ Thiêm'),
         new OA\Property(property: 'map_image', type: 'string', example: 'https://example.com/map.jpg'),
-        new OA\Property(property: 'status', type: 'string', example: 'Đang triển khai'),
+        new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Planning\Models\Enums\PlanningStatus::PUBLIC->value),
         new OA\Property(property: 'updated_year', type: 'integer', example: 2024),
         new OA\Property(property: 'description', type: 'string', example: 'Mô tả ngắn về quy hoạch khu vực này.'),
         new OA\Property(property: 'city', type: 'string', example: 'TP. Hồ Chí Minh'),

@@ -54,7 +54,7 @@ use App\Modules\Attendance\Models\Enums\AttendanceStatus;/**
         new OA\Property(property: 'check_out_method', type: 'string', enum: ['gps', 'wifi', 'qr'], nullable: true, example: null),
         new OA\Property(property: 'check_out_wifi_ssid', type: 'string', nullable: true, example: null),
         new OA\Property(property: 'check_out_device_name', type: 'string', nullable: true, example: null),
-        new OA\Property(property: 'status', type: 'string', enum: ['present', 'late', 'absent', 'half_day'], example: 'present'),
+        new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Attendance\Models\Enums\AttendanceStatus::PRESENT->value),
         new OA\Property(property: 'note', type: 'string', nullable: true, example: 'Đi làm đúng giờ'),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time', example: '2026-05-19T08:15:23+07:00'),
         new OA\Property(property: 'updated_at', type: 'string', format: 'date-time', example: '2026-05-19T08:15:23+07:00'),

@@ -46,7 +46,7 @@ use App\Modules\Leave\Models\Enums\RequestStatus;/**
         new OA\Property(property: 'start_date', type: 'string', format: 'date', example: '2026-05-20', description: 'Ngày bắt đầu nghỉ phép (Y-m-d)'),
         new OA\Property(property: 'end_date', type: 'string', format: 'date', example: '2026-05-22', description: 'Ngày kết thúc nghỉ phép (Y-m-d)'),
         new OA\Property(property: 'reason', type: 'string', example: 'Có việc gia đình đột xuất cần giải quyết', description: 'Lý do nghỉ'),
-        new OA\Property(property: 'status', type: 'string', enum: ['pending', 'approved', 'rejected'], example: 'pending', description: 'Trạng thái duyệt: pending (đang chờ), approved (đã duyệt), rejected (từ chối)'),
+        new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Leave\Models\Enums\RequestStatus::PENDING->value, description: 'Trạng thái duyệt: 1 (pending), 2 (approved), 3 (rejected)'),
         new OA\Property(property: 'rejection_reason', type: 'string', nullable: true, example: 'Không đủ phép năm', description: 'Lý do từ chối (nếu có)'),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time', example: '2026-05-19T08:15:23+07:00'),
         new OA\Property(property: 'updated_at', type: 'string', format: 'date-time', example: '2026-05-19T08:15:23+07:00'),

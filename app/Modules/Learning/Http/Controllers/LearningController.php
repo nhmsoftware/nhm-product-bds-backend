@@ -57,7 +57,7 @@ final class LearningController extends BaseController
                                     new OA\Property(property: 'thumbnail', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/thumbnails/culture.jpg'),
                                     new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Giới thiệu về giá trị cốt lõi và sứ mệnh của công ty.'),
                                     new OA\Property(property: 'progress_percent', type: 'number', format: 'float', example: 0.00),
-                                    new OA\Property(property: 'status', type: 'string', example: 'not_started'),
+                                    new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::NOT_STARTED->value),
                                     new OA\Property(property: 'status_label', type: 'string', example: 'Chưa học')
                                 ],
                                 type: 'object'
@@ -124,7 +124,7 @@ final class LearningController extends BaseController
                                 new OA\Property(property: 'thumbnail', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/thumbnails/culture.jpg'),
                                 new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Giới thiệu về giá trị cốt lõi và sứ mệnh của công ty.'),
                                 new OA\Property(property: 'progress_percent', type: 'number', format: 'float', example: 0.00),
-                                new OA\Property(property: 'status', type: 'string', example: 'in_progress'),
+                                new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::IN_PROGRESS->value),
                                 new OA\Property(
                                     property: 'lessons',
                                     type: 'array',
@@ -136,7 +136,7 @@ final class LearningController extends BaseController
                                             new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/videos/lesson1.mp4'),
                                             new OA\Property(property: 'duration_minutes', type: 'integer', example: 15),
                                             new OA\Property(property: 'order', type: 'integer', example: 1),
-                                            new OA\Property(property: 'status', type: 'string', example: 'learning', description: 'Trạng thái bài học: learning (đang học), completed (hoàn thành), locked (khóa)'),
+                                            new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\LessonStatus::LEARNING->value, description: 'Trạng thái bài học: 1 (completed), 2 (learning), 3 (locked)'),
                                             new OA\Property(property: 'status_label', type: 'string', example: 'Đang học')
                                         ],
                                         type: 'object'
@@ -210,7 +210,7 @@ final class LearningController extends BaseController
                                 new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/videos/lesson1.mp4'),
                                 new OA\Property(property: 'duration_minutes', type: 'integer', example: 15),
                                 new OA\Property(property: 'order', type: 'integer', example: 1),
-                                new OA\Property(property: 'status', type: 'string', example: 'learning', description: 'Trạng thái bài học: learning (đang học), completed (hoàn thành), locked (khóa)'),
+                                new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\LessonStatus::LEARNING->value, description: 'Trạng thái bài học: 1 (completed), 2 (learning), 3 (locked)'),
                                 new OA\Property(property: 'status_label', type: 'string', example: 'Đang học'),
                                 new OA\Property(
                                     property: 'attachments',

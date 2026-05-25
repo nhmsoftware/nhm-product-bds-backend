@@ -271,7 +271,7 @@ final class LeaveController extends BaseController
                                             new OA\Property(property: 'end_date', type: 'string', format: 'date', example: '2026-05-22'),
                                             new OA\Property(property: 'number_of_days', type: 'integer', example: 3),
                                             new OA\Property(property: 'reason', type: 'string', example: 'Có việc gia đình đột xuất'),
-                                            new OA\Property(property: 'status', type: 'string', example: 'pending'),
+                                            new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Leave\Models\Enums\RequestStatus::PENDING->value),
                                             new OA\Property(property: 'created_at', type: 'string', format: 'date-time', example: '2026-05-19T08:15:23+07:00'),
                                         ],
                                         type: 'object'
@@ -342,7 +342,7 @@ final class LeaveController extends BaseController
                                 new OA\Property(property: 'start_date', type: 'string', format: 'date', example: '2026-05-20'),
                                 new OA\Property(property: 'end_date', type: 'string', format: 'date', example: '2026-05-22'),
                                 new OA\Property(property: 'reason', type: 'string', example: 'Nghỉ phép năm'),
-                                new OA\Property(property: 'status', type: 'string', example: 'approved'),
+                                new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Leave\Models\Enums\RequestStatus::APPROVED->value),
                             ],
                             type: 'object'
                         )
@@ -408,7 +408,7 @@ final class LeaveController extends BaseController
                                 new OA\Property(property: 'leave_type', type: 'string', example: 'annual'),
                                 new OA\Property(property: 'start_date', type: 'string', format: 'date', example: '2026-05-20'),
                                 new OA\Property(property: 'end_date', type: 'string', format: 'date', example: '2026-05-22'),
-                                new OA\Property(property: 'status', type: 'string', example: 'rejected'),
+                                new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Leave\Models\Enums\RequestStatus::REJECTED->value),
                                 new OA\Property(property: 'rejection_reason', type: 'string', example: 'Dự án đang trong giai đoạn gấp, không thể duyệt phép dài ngày.'),
                             ],
                             type: 'object'

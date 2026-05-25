@@ -118,7 +118,7 @@ class DepartmentTransferController extends BaseController
                                             new OA\Property(property: 'target_department', type: 'string', example: 'Phòng Kinh doanh'),
                                             new OA\Property(property: 'desired_transfer_date', type: 'string', format: 'date', example: '2026-06-01'),
                                             new OA\Property(property: 'reason', type: 'string', example: 'Muốn thử thách ở lĩnh vực mới'),
-                                            new OA\Property(property: 'status', type: 'string', example: 'pending'),
+                                            new OA\Property(property: 'status', type: 'integer', example: \App\Modules\DepartmentTransfer\Models\Enums\RequestStatus::PENDING->value),
                                             new OA\Property(property: 'created_at', type: 'string', format: 'date-time', example: '2026-05-19T08:15:23+07:00'),
                                         ],
                                         type: 'object'
@@ -189,7 +189,7 @@ class DepartmentTransferController extends BaseController
                                 new OA\Property(property: 'target_department', type: 'string', example: 'Phòng Kinh doanh'),
                                 new OA\Property(property: 'desired_transfer_date', type: 'string', format: 'date', example: '2026-06-01'),
                                 new OA\Property(property: 'reason', type: 'string', example: 'Muốn thử thách ở lĩnh vực mới'),
-                                new OA\Property(property: 'status', type: 'string', example: 'approved'),
+                                new OA\Property(property: 'status', type: 'integer', example: \App\Modules\DepartmentTransfer\Models\Enums\RequestStatus::APPROVED->value),
                             ],
                             type: 'object'
                         )
@@ -294,7 +294,7 @@ class DepartmentTransferController extends BaseController
                                 new OA\Property(property: 'target_department', type: 'string', example: 'Phòng Kinh doanh'),
                                 new OA\Property(property: 'desired_transfer_date', type: 'string', format: 'date', example: '2026-06-01'),
                                 new OA\Property(property: 'reason', type: 'string', example: 'Muốn thử thách ở lĩnh vực mới'),
-                                new OA\Property(property: 'status', type: 'string', example: 'rejected'),
+                                new OA\Property(property: 'status', type: 'integer', example: \App\Modules\DepartmentTransfer\Models\Enums\RequestStatus::REJECTED->value),
                                 new OA\Property(property: 'rejection_reason', type: 'string', example: 'Phòng ban hiện tại đang thiếu nhân sự trầm trọng, chưa thể điều chuyển.'),
                             ],
                             type: 'object'

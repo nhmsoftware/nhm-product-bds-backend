@@ -39,7 +39,7 @@ final class DashboardController extends BaseController
                                         new OA\Property(property: 'id', type: 'string'),
                                         new OA\Property(property: 'name', type: 'string'),
                                         new OA\Property(property: 'avatar', type: 'string', nullable: true),
-                                        new OA\Property(property: 'role', type: 'string')
+                                        new OA\Property(property: 'role', type: 'integer')
                                     ],
                                     type: 'object'
                                 ),

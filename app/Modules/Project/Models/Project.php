@@ -49,7 +49,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'image', type: 'string', example: 'https://example.com/image.jpg'),
         new OA\Property(property: 'banner', type: 'string', example: 'https://example.com/banner.jpg'),
         new OA\Property(property: 'price', type: 'string', example: '3500000000'),
-        new OA\Property(property: 'status', type: 'string', example: 'opening'),
+        new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Project\Models\Enums\ProjectStatus::OPENING->value),
         new OA\Property(property: 'type', type: 'string', example: 'apartment'),
         new OA\Property(property: 'is_public', type: 'boolean', example: true),
         new OA\Property(property: 'description', type: 'string', example: 'Dự án căn hộ cao cấp...'),
