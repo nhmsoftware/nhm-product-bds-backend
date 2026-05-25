@@ -506,8 +506,8 @@
                                                     "example": "A-01"
                                                 },
                                                 "status": {
-                                                    "type": "string",
-                                                    "example": "available"
+                                                    "type": "integer",
+                                                    "example": 1
                                                 },
                                                 "area_size": {
                                                     "type": "number",
@@ -939,8 +939,8 @@
                                                             "type": "string"
                                                         },
                                                         "status": {
-                                                            "type": "string",
-                                                            "example": "reserved"
+                                                            "type": "integer",
+                                                            "example": 3
                                                         }
                                                     },
                                                     "type": "object"
@@ -1122,8 +1122,8 @@
                                                         "example": 45
                                                     },
                                                     "status": {
-                                                        "type": "string",
-                                                        "example": "Đang mở bán"
+                                                        "type": "integer",
+                                                        "example": 1
                                                     },
                                                     "target_id": {
                                                         "type": "string",
@@ -2033,8 +2033,8 @@
                                                     "nullable": true
                                                 },
                                                 "role": {
-                                                    "type": "string",
-                                                    "example": "buyer"
+                                                    "type": "integer",
+                                                    "example": 4
                                                 },
                                                 "is_active": {
                                                     "type": "boolean",
@@ -2194,8 +2194,8 @@
                                                     "nullable": true
                                                 },
                                                 "role": {
-                                                    "type": "string",
-                                                    "example": "buyer"
+                                                    "type": "integer",
+                                                    "example": 4
                                                 },
                                                 "is_active": {
                                                     "type": "boolean",
@@ -2382,8 +2382,8 @@
                                                             "nullable": true
                                                         },
                                                         "role": {
-                                                            "type": "string",
-                                                            "example": "agent"
+                                                            "type": "integer",
+                                                            "example": 2
                                                         },
                                                         "address": {
                                                             "type": "string",
@@ -2633,8 +2633,8 @@
                                                             "nullable": true
                                                         },
                                                         "role": {
-                                                            "type": "string",
-                                                            "example": "agent"
+                                                            "type": "integer",
+                                                            "example": 2
                                                         },
                                                         "address": {
                                                             "type": "string",
@@ -3412,7 +3412,7 @@
                                                             "nullable": true
                                                         },
                                                         "role": {
-                                                            "type": "string"
+                                                            "type": "integer"
                                                         }
                                                     },
                                                     "type": "object"
@@ -3592,8 +3592,8 @@
                                                                 "example": "Muốn thử thách ở lĩnh vực mới"
                                                             },
                                                             "status": {
-                                                                "type": "string",
-                                                                "example": "pending"
+                                                                "type": "integer",
+                                                                "example": 1
                                                             },
                                                             "created_at": {
                                                                 "type": "string",
@@ -3826,8 +3826,8 @@
                                                     "example": "Muốn thử thách ở lĩnh vực mới"
                                                 },
                                                 "status": {
-                                                    "type": "string",
-                                                    "example": "approved"
+                                                    "type": "integer",
+                                                    "example": 2
                                                 }
                                             },
                                             "type": "object"
@@ -4013,8 +4013,8 @@
                                                     "example": "Muốn thử thách ở lĩnh vực mới"
                                                 },
                                                 "status": {
-                                                    "type": "string",
-                                                    "example": "rejected"
+                                                    "type": "integer",
+                                                    "example": 3
                                                 },
                                                 "rejection_reason": {
                                                     "type": "string",
@@ -5450,8 +5450,8 @@
                                                         "example": 0
                                                     },
                                                     "status": {
-                                                        "type": "string",
-                                                        "example": "not_started"
+                                                        "type": "integer",
+                                                        "example": 1
                                                     },
                                                     "status_label": {
                                                         "type": "string",
@@ -5546,8 +5546,8 @@
                                                     "example": 0
                                                 },
                                                 "status": {
-                                                    "type": "string",
-                                                    "example": "in_progress"
+                                                    "type": "integer",
+                                                    "example": 2
                                                 },
                                                 "lessons": {
                                                     "type": "array",
@@ -5581,9 +5581,9 @@
                                                                 "example": 1
                                                             },
                                                             "status": {
-                                                                "description": "Trạng thái bài học: learning (đang học), completed (hoàn thành), locked (khóa)",
-                                                                "type": "string",
-                                                                "example": "learning"
+                                                                "description": "Trạng thái bài học: 1 (completed), 2 (learning), 3 (locked)",
+                                                                "type": "integer",
+                                                                "example": 2
                                                             },
                                                             "status_label": {
                                                                 "type": "string",
@@ -5692,9 +5692,9 @@
                                                     "example": 1
                                                 },
                                                 "status": {
-                                                    "description": "Trạng thái bài học: learning (đang học), completed (hoàn thành), locked (khóa)",
-                                                    "type": "string",
-                                                    "example": "learning"
+                                                    "description": "Trạng thái bài học: 1 (completed), 2 (learning), 3 (locked)",
+                                                    "type": "integer",
+                                                    "example": 2
                                                 },
                                                 "status_label": {
                                                     "type": "string",
@@ -6935,8 +6935,8 @@
                                                                 "example": "Có việc gia đình đột xuất"
                                                             },
                                                             "status": {
-                                                                "type": "string",
-                                                                "example": "pending"
+                                                                "type": "integer",
+                                                                "example": 1
                                                             },
                                                             "created_at": {
                                                                 "type": "string",
@@ -7498,8 +7498,8 @@
                                                     "example": "Nghỉ phép năm"
                                                 },
                                                 "status": {
-                                                    "type": "string",
-                                                    "example": "approved"
+                                                    "type": "integer",
+                                                    "example": 2
                                                 }
                                             },
                                             "type": "object"
@@ -7617,8 +7617,8 @@
                                                     "example": "2026-05-22"
                                                 },
                                                 "status": {
-                                                    "type": "string",
-                                                    "example": "rejected"
+                                                    "type": "integer",
+                                                    "example": 3
                                                 },
                                                 "rejection_reason": {
                                                     "type": "string",
@@ -10066,14 +10066,8 @@
                         "example": "A-01"
                     },
                     "status": {
-                        "type": "string",
-                        "example": "available",
-                        "enum": [
-                            "available",
-                            "sold",
-                            "reserved",
-                            "unavailable"
-                        ]
+                        "type": "integer",
+                        "example": 1
                     },
                     "area_size": {
                         "type": "number",
@@ -10295,14 +10289,8 @@
                         "nullable": true
                     },
                     "status": {
-                        "type": "string",
-                        "example": "present",
-                        "enum": [
-                            "present",
-                            "late",
-                            "absent",
-                            "half_day"
-                        ]
+                        "type": "integer",
+                        "example": 1
                     },
                     "note": {
                         "type": "string",
@@ -10445,8 +10433,8 @@
                         "example": "0901234567"
                     },
                     "role": {
-                        "type": "string",
-                        "example": "agent"
+                        "type": "integer",
+                        "example": 2
                     },
                     "avatar": {
                         "type": "string",
@@ -10522,8 +10510,8 @@
                         "nullable": true
                     },
                     "status": {
-                        "type": "string",
-                        "example": "pending"
+                        "type": "integer",
+                        "example": 1
                     },
                     "created_at": {
                         "type": "string",
@@ -10711,13 +10699,8 @@
                         "example": "2026-06-01"
                     },
                     "status": {
-                        "type": "string",
-                        "example": "pending",
-                        "enum": [
-                            "pending",
-                            "approved",
-                            "rejected"
-                        ]
+                        "type": "integer",
+                        "example": 1
                     },
                     "created_at": {
                         "type": "string",
@@ -10825,14 +10808,9 @@
                         "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
                     },
                     "status": {
-                        "description": "Trạng thái học tập",
-                        "type": "string",
-                        "example": "in_progress",
-                        "enum": [
-                            "not_started",
-                            "in_progress",
-                            "completed"
-                        ]
+                        "description": "Trạng thái học tập: 1 (not_started), 2 (in_progress), 3 (completed)",
+                        "type": "integer",
+                        "example": 2
                     },
                     "progress_percent": {
                         "description": "Tiến độ hoàn thành (%)",
@@ -11102,14 +11080,9 @@
                         "example": "Có việc gia đình đột xuất cần giải quyết"
                     },
                     "status": {
-                        "description": "Trạng thái duyệt: pending (đang chờ), approved (đã duyệt), rejected (từ chối)",
-                        "type": "string",
-                        "example": "pending",
-                        "enum": [
-                            "pending",
-                            "approved",
-                            "rejected"
-                        ]
+                        "description": "Trạng thái duyệt: 1 (pending), 2 (approved), 3 (rejected)",
+                        "type": "integer",
+                        "example": 1
                     },
                     "rejection_reason": {
                         "description": "Lý do từ chối (nếu có)",
@@ -11275,8 +11248,8 @@
                         "example": "https://example.com/map.jpg"
                     },
                     "status": {
-                        "type": "string",
-                        "example": "Đang triển khai"
+                        "type": "integer",
+                        "example": 2
                     },
                     "updated_year": {
                         "type": "integer",
@@ -11407,8 +11380,8 @@
                         "example": "3500000000"
                     },
                     "status": {
-                        "type": "string",
-                        "example": "opening"
+                        "type": "integer",
+                        "example": 1
                     },
                     "type": {
                         "type": "string",
