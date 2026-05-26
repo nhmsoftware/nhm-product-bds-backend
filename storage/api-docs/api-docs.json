@@ -4593,6 +4593,677 @@
                 ]
             }
         },
+        "/api/v1/employee-referrals/commissions": {
+            "get": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Xem danh sách hoa hồng referral (UC-097)",
+                "description": "Lấy danh sách hoa hồng giới thiệu của nhân viên.",
+                "operationId": "89b8cbd1d3e22ee9ca3c6c51956c2025",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số bản ghi mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "filters[referral_type]",
+                        "in": "query",
+                        "description": "Lọc theo loại QR (1: Tuyển dụng, 2: Giới thiệu khách hàng)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2
+                            ]
+                        }
+                    },
+                    {
+                        "name": "filters[status]",
+                        "in": "query",
+                        "description": "Lọc theo trạng thái thanh toán (1: Chờ thanh toán, 2: Đã thanh toán)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2
+                            ]
+                        }
+                    },
+                    {
+                        "name": "filters[search]",
+                        "in": "query",
+                        "description": "Tìm kiếm theo tên hoặc số điện thoại người được giới thiệu",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "Nguyễn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải dữ liệu hoa hồng referral thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải dữ liệu hoa hồng referral thành công."
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "total_commission": {
+                                                    "description": "Tổng số tiền hoa hồng của danh sách đã lọc",
+                                                    "type": "string",
+                                                    "example": "15000000"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 100
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/ReferralCommission"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/employee-referrals/commissions/{id}": {
+            "get": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Xem chi tiết thông tin hoa hồng referral (UC-097)",
+                "description": "Lấy chi tiết bản ghi hoa hồng giới thiệu của nhân viên.",
+                "operationId": "71d2e91c3fa9935df8e7ccf4960c2237",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của hoa hồng referral",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải chi tiết referral commission thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải chi tiết referral commission thành công."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReferralCommission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    },
+                    "404": {
+                        "description": "Thông tin hoa hồng không tồn tại."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/employee-referrals/scan": {
+            "post": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Ghi nhận lượt quét mã QR giới thiệu (Public)",
+                "description": "Lưu thông tin khi có người quét mã QR tuyển dụng hoặc QR giới thiệu khách hàng của nhân viên.",
+                "operationId": "ddf479e5d90f06493bd1b2faf05cab84",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "referral_code",
+                                    "referral_type",
+                                    "name",
+                                    "phone"
+                                ],
+                                "properties": {
+                                    "referral_code": {
+                                        "description": "Mã giới thiệu của nhân viên",
+                                        "type": "string",
+                                        "example": "ST-ABCXYZ"
+                                    },
+                                    "referral_type": {
+                                        "description": "1: QR Tuyển dụng, 2: QR Giới thiệu khách hàng",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "description": "Họ tên người quét QR",
+                                        "type": "string",
+                                        "example": "Nguyễn Văn Khách"
+                                    },
+                                    "phone": {
+                                        "description": "Số điện thoại người quét QR",
+                                        "type": "string",
+                                        "example": "0901234567"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Lưu lượt quét QR thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Lưu lượt quét QR thành công."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReferralHistory"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Cập nhật lượt quét QR thành công (khi đã quét trước đó)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cập nhật lượt quét QR thành công."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReferralHistory"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Mã giới thiệu không hợp lệ hoặc không tồn tại."
+                    },
+                    "422": {
+                        "description": "Dữ liệu đầu vào không hợp lệ."
+                    }
+                }
+            }
+        },
+        "/api/v1/employee-referrals/history": {
+            "get": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Xem lịch sử danh sách referral (UC-096)",
+                "description": "Lấy danh sách những người đã quét mã QR giới thiệu của nhân viên.",
+                "operationId": "4dbe1e58d55719ad4128499da3f1cba5",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số bản ghi mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "filters[referral_type]",
+                        "in": "query",
+                        "description": "Lọc theo loại QR (1: Tuyển dụng, 2: Giới thiệu khách hàng)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2
+                            ]
+                        }
+                    },
+                    {
+                        "name": "filters[search]",
+                        "in": "query",
+                        "description": "Tìm kiếm theo tên hoặc số điện thoại",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "0901"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải lịch sử referral thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải lịch sử referral thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 100
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/ReferralHistory"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/employee-referrals/history/{id}": {
+            "get": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Xem chi tiết thông tin referral (UC-096)",
+                "description": "Lấy chi tiết bản ghi quét mã QR giới thiệu của nhân viên.",
+                "operationId": "89674a5c0a9adafab46ca887ea4684a7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của lịch sử referral",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải chi tiết referral thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải chi tiết referral thành công."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReferralHistory"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    },
+                    "404": {
+                        "description": "Thông tin referral không tồn tại."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/employee-referrals/recruitment-qr": {
+            "get": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Xem mã QR tuyển dụng (UC-098)",
+                "operationId": "21145dd07257407e50e1b3e844e62a49",
+                "responses": {
+                    "200": {
+                        "description": "Tải mã QR tuyển dụng thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải mã QR tuyển dụng thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "qr_url": {
+                                                    "type": "string",
+                                                    "example": "https://bdsapp.vn/storage/qrs/recruitment_ST-ABCXYZ.svg"
+                                                },
+                                                "referral_code": {
+                                                    "type": "string",
+                                                    "example": "ST-ABCXYZ"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Sử dụng mã này để giới thiệu nhân sự mới tham gia hệ thống."
+                                                },
+                                                "share_text": {
+                                                    "type": "string",
+                                                    "example": "Hãy tham gia mạng lưới của chúng tôi trên BDS App! Mã giới thiệu của tôi: ST-ABCXYZ"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Lỗi chưa có mã giới thiệu",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bạn chưa có mã giới thiệu tuyển dụng."
+                                        },
+                                        "error_code": {
+                                            "type": "integer",
+                                            "example": 404
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi tải/tạo mã QR",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Không thể tạo mã QR tuyển dụng."
+                                        },
+                                        "error_code": {
+                                            "type": "integer",
+                                            "example": 500
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/employee-referrals/customer-qr": {
+            "get": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Xem mã QR giới thiệu khách hàng (UC-100)",
+                "operationId": "8d1a1790d992c7fca1b7d2b94032c4fc",
+                "responses": {
+                    "200": {
+                        "description": "Tải mã QR khách hàng thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải mã QR khách hàng thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "qr_url": {
+                                                    "type": "string",
+                                                    "example": "https://bdsapp.vn/storage/qrs/customer_ST-ABCXYZ.svg"
+                                                },
+                                                "referral_code": {
+                                                    "type": "string",
+                                                    "example": "ST-ABCXYZ"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Sử dụng mã này để giới thiệu khách hàng tham gia hệ thống."
+                                                },
+                                                "share_text": {
+                                                    "type": "string",
+                                                    "example": "Tìm hiểu các dự án hấp dẫn tại BDS App! Mã giới thiệu khách hàng của tôi: ST-ABCXYZ"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Lỗi chưa có mã giới thiệu khách hàng",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Bạn chưa có mã giới thiệu khách hàng."
+                                        },
+                                        "error_code": {
+                                            "type": "integer",
+                                            "example": 404
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi tải/tạo mã QR khách hàng",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Không thể tạo mã QR khách hàng."
+                                        },
+                                        "error_code": {
+                                            "type": "integer",
+                                            "example": 500
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/learning/admin/courses": {
             "get": {
                 "tags": [
@@ -11663,6 +12334,104 @@
                 },
                 "type": "object"
             },
+            "ReferralCommission": {
+                "title": "Referral Commission Model",
+                "description": "Thông tin hoa hồng giới thiệu của nhân viên",
+                "properties": {
+                    "id": {
+                        "description": "Class ReferralCommission",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "uuid-string"
+                    },
+                    "referrer_id": {
+                        "description": "ID của nhân viên nhận hoa hồng",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "referral_history_id": {
+                        "description": "ID của lượt giới thiệu phát sinh hoa hồng",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "amount": {
+                        "description": "Số tiền hoa hồng (trả về dạng string để tránh mất mát dữ liệu do giới hạn độ lớn của JS)",
+                        "type": "string",
+                        "example": "500000"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "ReferralHistory": {
+                "title": "Referral History Model",
+                "description": "Lịch sử người dùng quét mã QR giới thiệu",
+                "properties": {
+                    "id": {
+                        "description": "Class ReferralHistory",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "uuid-string"
+                    },
+                    "referrer_id": {
+                        "description": "ID của nhân viên giới thiệu",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "referee_id": {
+                        "description": "ID của người đăng ký",
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Nguyễn Văn Khách"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "example": "0901234567"
+                    },
+                    "referral_type": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "status": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "scanned_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-05-26T10:00:00Z"
+                    },
+                    "registered_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "Course": {
                 "title": "Course Model",
                 "description": "Thông tin khóa học",
@@ -12575,6 +13344,10 @@
         {
             "name": "Site Tour",
             "description": "Dẫn khách tham quan thực tế: nhân viên check-in hoạt động dẫn khách tại dự án bằng GPS và ảnh minh chứng; xem lịch sử và các lượt dẫn khách gần đây."
+        },
+        {
+            "name": "Employee Referral",
+            "description": "Employee Referral"
         }
     ]
 }

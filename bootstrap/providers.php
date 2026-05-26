@@ -32,4 +32,5 @@ return [
     \App\Modules\DepartmentTransfer\Providers\DepartmentTransferServiceProvider::class,
     \App\Modules\Learning\Providers\LearningServiceProvider::class,
     \App\Modules\Area\Providers\AreaServiceProvider::class,
+    \App\Modules\EmployeeReferral\Providers\EmployeeReferralServiceProvider::class,
 ];

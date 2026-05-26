@@ -5,13 +5,19 @@ namespace App\Modules\Auth\Services;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
 use App\Modules\Auth\DTO\ForgotPasswordDTO;
+use App\Modules\Auth\DTO\LoginDTO;
 use App\Modules\Auth\DTO\RegisterDTO;
 use App\Modules\Auth\DTO\ResetPasswordDTO;
+use App\Modules\Auth\DTO\UpdateProfileDTO;
 use App\Modules\Auth\DTO\VerifyOtpDTO;
 use App\Modules\Auth\Events\UserRegistered;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Interfaces\AuthServiceInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\User;
+use App\Modules\EmployeeReferral\Models\Enums\ReferralStatus;
+use App\Modules\EmployeeReferral\Models\Enums\ReferralType;
+use App\Modules\EmployeeReferral\Models\ReferralHistory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -25,7 +31,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Đăng ký tài khoản người dùng mới (UC-01).
-     * 
+     *
      * @param RegisterDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
@@ -56,6 +62,35 @@ final class AuthService extends BaseService implements AuthServiceInterface
             // 3. Tạo user
             $user = $this->authRepository->create($data);
 
+            // Xử lý Referral Code nếu có
+            if (!empty($dto->referral_code)) {
+                $employee = User::where('staff_code', $dto->referral_code)->first();
+                if ($employee) {
+                    $referralHistory = ReferralHistory::where('referrer_id', $employee->id)
+                        ->where('phone', $dto->phone)
+                        ->first();
+
+                    if ($referralHistory) {
+                        $referralHistory->update([
+                            'referee_id' => $user->id,
+                            'status' => ReferralStatus::REGISTERED->value,
+                            'registered_at' => now(),
+                        ]);
+                    } else {
+                        ReferralHistory::create([
+                            'referrer_id' => $employee->id,
+                            'referee_id' => $user->id,
+                            'name' => $user->name,
+                            'phone' => $user->phone,
+                            'referral_type' => ReferralType::RECRUITMENT->value,
+                            'status' => ReferralStatus::REGISTERED->value,
+                            'scanned_at' => now(),
+                            'registered_at' => now(),
+                        ]);
+                    }
+                }
+            }
+
             // 4. Bắn Event
             event(new UserRegistered($user));
 
@@ -65,12 +100,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Đăng nhập hệ thống và cấp JWT token (UC-02).
-     * 
-     * @param \App\Modules\Auth\DTO\LoginDTO $dto
+     *
+     * @param LoginDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
      */
-    public function login(\App\Modules\Auth\DTO\LoginDTO $dto): ServiceReturn
+    public function login(LoginDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
             // 1. Xác định là email hay phone
@@ -113,7 +148,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Yêu cầu gửi mã OTP quên mật khẩu (UC-03).
-     * 
+     *
      * @param ForgotPasswordDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
@@ -147,7 +182,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Xác thực mã OTP người dùng nhập (UC-03).
-     * 
+     *
      * @param VerifyOtpDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
@@ -177,7 +212,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Đặt lại mật khẩu mới sau khi xác thực OTP thành công (UC-03).
-     * 
+     *
      * @param ResetPasswordDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
@@ -215,7 +250,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Đăng xuất hệ thống và vô hiệu hóa token (UC-05).
-     * 
+     *
      * @return ServiceReturn
      * @throws \Throwable
      */
@@ -229,7 +264,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Lấy thông tin hồ sơ cá nhân của người dùng (UC-030).
-     * 
+     *
      * @param string $userId
      * @return ServiceReturn
      * @throws \Throwable
@@ -274,12 +309,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Cập nhật thông tin hồ sơ cá nhân của người dùng (UC-031).
-     * 
-     * @param \App\Modules\Auth\DTO\UpdateProfileDTO $dto
+     *
+     * @param UpdateProfileDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
      */
-    public function updateProfile(\App\Modules\Auth\DTO\UpdateProfileDTO $dto): ServiceReturn
+    public function updateProfile(UpdateProfileDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
             // 1. Tải thông tin tài khoản
@@ -329,7 +364,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Thay đổi mật khẩu tài khoản của người dùng (UC-032).
-     * 
+     *
      * @param \App\Modules\Auth\DTO\ChangePasswordDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
@@ -379,7 +414,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Lấy thông tin hồ sơ nhân sự cá nhân (UC-033).
-     * 
+     *
      * @param string $userId
      * @return ServiceReturn
      * @throws \Throwable
@@ -457,7 +492,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Cập nhật thông tin hồ sơ nhân sự cá nhân (UC-034).
-     * 
+     *
      * @param \App\Modules\Auth\DTO\UpdateEmployeeProfileDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
@@ -575,7 +610,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Tải lên tài liệu hồ sơ nhân sự (UC-035).
-     * 
+     *
      * @param \App\Modules\Auth\DTO\UploadEmployeeDocumentDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
@@ -601,7 +636,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             // 2. Lưu file vào storage
             $path = $dto->file->store('employee_documents', 'public');
-            
+
             // A5 - Lỗi tải file lên hệ thống
             $this->validate(
                 $path !== false && $path !== null,
@@ -642,9 +677,9 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Helper tìm user qua email hoặc phone.
-     * 
+     *
      * @param string $username
-     * @return \App\Modules\Auth\Models\User|null
+     * @return User|null
      */
     private function findUserByUsername(string $username)
     {
@@ -656,7 +691,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
     /**
      * Tự động sinh mã nhân viên: ví dụ STAFF-XXXXX.
-     * 
+     *
      * @return string
      */
     private function generateStaffCode(): string
