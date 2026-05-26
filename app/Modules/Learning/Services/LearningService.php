@@ -98,37 +98,50 @@ final class LearningService extends BaseService implements LearningServiceInterf
             // A1 – Không có khóa học bắt buộc
             if ($courses->isEmpty()) {
                 return $this->success(
-                    data: [],
+                    data: null,
                     message: 'Hiện chưa có khóa học bắt buộc.'
                 );
             }
 
-            // 4. Chuẩn hóa dữ liệu theo đặc tả
-            $result = $courses->map(function ($course) {
-                // Lấy enrollment tương ứng (đã được load eager via relation)
-                $enrollment = $course->enrollments->first();
+            // Lấy khóa học đầu tiên (duy nhất)
+            $course = $courses->first();
+            $course->load('lessons');
+            $enrollment = $course->enrollments->first();
 
-                return [
-                    'id' => (string) $course->id,
-                    'title' => $course->title,
-                    'thumbnail' => $course->thumbnail,
-                    'description' => $course->description,
-                    'progress_percent' => $enrollment ? (float) $enrollment->progress_percent : 0.00,
-                    'status' => $enrollment ? $enrollment->status->serialize() : CourseEnrollmentStatus::NOT_STARTED->serialize(),
-                    'status_label' => $enrollment 
-                        ? ($enrollment->status === CourseEnrollmentStatus::COMPLETED ? 'Hoàn thành' : 'Đang học') 
-                        : 'Chưa học',
-                ];
-            });
+            $attachments = [];
+            foreach ($course->lessons as $lesson) {
+                if (is_array($lesson->attachments)) {
+                    foreach ($lesson->attachments as $att) {
+                        $attachments[] = [
+                            'type' => $att['type'] ?? '',
+                            'url'  => $att['url'] ?? '',
+                            'name' => $att['name'] ?? '',
+                        ];
+                    }
+                }
+            }
+
+            $result = [
+                'id' => (string) $course->id,
+                'title' => $course->title,
+                'thumbnail' => $course->thumbnail,
+                'description' => $course->description,
+                'progress_percent' => $enrollment ? (float) $enrollment->progress_percent : 0.00,
+                'status' => $enrollment ? $enrollment->status->serialize() : CourseEnrollmentStatus::NOT_STARTED->serialize(),
+                'status_label' => $enrollment 
+                    ? ($enrollment->status === CourseEnrollmentStatus::COMPLETED ? 'Hoàn thành' : 'Đang học') 
+                    : 'Chưa học',
+                'attachments' => $attachments,
+            ];
 
             return $this->success(
-                data: $result->toArray(),
-                message: 'Tải danh sách khóa học bắt buộc thành công.'
+                data: $result,
+                message: 'Tải khóa học bắt buộc thành công.'
             );
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
             // A2 – Lỗi tải khóa học
             return ServiceReturn::error(
-                message: 'Không thể tải danh sách khóa học.',
+                message: 'Không thể tải thông tin khóa học.',
                 code: 500
             );
         });

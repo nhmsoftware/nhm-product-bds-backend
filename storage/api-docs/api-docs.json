@@ -4593,6 +4593,115 @@
                 ]
             }
         },
+        "/api/v1/employee-referrals/commission-configs": {
+            "get": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Xem cấu hình hoa hồng referral (UC-103)",
+                "description": "Lấy danh sách cấu hình hoa hồng referral hiện tại đang áp dụng trên hệ thống. Yêu cầu quyền: General Director hoặc Super Admin.",
+                "operationId": "c968e64dc8279a60959b17bf6c8b4917",
+                "responses": {
+                    "200": {
+                        "description": "Tải cấu hình hoa hồng referral thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải cấu hình hoa hồng referral thành công."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ReferralCommissionConfig"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    },
+                    "404": {
+                        "description": "Cấu hình hoa hồng không tồn tại."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Cập nhật cấu hình hoa hồng referral (UC-104)",
+                "description": "Cập nhật danh sách cấu hình hoa hồng referral. Yêu cầu quyền: General Director hoặc Super Admin.",
+                "operationId": "a0eca54c93ad7934fad9ead6b7db5e36",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateReferralCommissionConfigRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật cấu hình hoa hồng thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cập nhật cấu hình hoa hồng thành công."
+                                        },
+                                        "data": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Dữ liệu không hợp lệ."
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/employee-referrals/commissions": {
             "get": {
                 "tags": [
@@ -6701,44 +6810,61 @@
                                             "example": "Tải danh sách khóa học bắt buộc thành công."
                                         },
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "id": {
-                                                        "type": "string",
-                                                        "format": "uuid",
-                                                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
-                                                    },
-                                                    "title": {
-                                                        "type": "string",
-                                                        "example": "Khóa đào tạo văn hóa doanh nghiệp"
-                                                    },
-                                                    "thumbnail": {
-                                                        "type": "string",
-                                                        "example": "https://bds-app.s3.amazonaws.com/thumbnails/culture.jpg",
-                                                        "nullable": true
-                                                    },
-                                                    "description": {
-                                                        "type": "string",
-                                                        "example": "Giới thiệu về giá trị cốt lõi và sứ mệnh của công ty.",
-                                                        "nullable": true
-                                                    },
-                                                    "progress_percent": {
-                                                        "type": "number",
-                                                        "format": "float",
-                                                        "example": 0
-                                                    },
-                                                    "status": {
-                                                        "type": "integer",
-                                                        "example": 1
-                                                    },
-                                                    "status_label": {
-                                                        "type": "string",
-                                                        "example": "Chưa học"
-                                                    }
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
                                                 },
-                                                "type": "object"
-                                            }
+                                                "title": {
+                                                    "type": "string",
+                                                    "example": "Khóa đào tạo văn hóa doanh nghiệp"
+                                                },
+                                                "thumbnail": {
+                                                    "type": "string",
+                                                    "example": "https://bds-app.s3.amazonaws.com/thumbnails/culture.jpg",
+                                                    "nullable": true
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Giới thiệu về giá trị cốt lõi và sứ mệnh của công ty.",
+                                                    "nullable": true
+                                                },
+                                                "progress_percent": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 0
+                                                },
+                                                "status": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "status_label": {
+                                                    "type": "string",
+                                                    "example": "Chưa học"
+                                                },
+                                                "attachments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "pdf"
+                                                            },
+                                                            "url": {
+                                                                "type": "string",
+                                                                "example": "https://example.com/file.pdf"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "report.pdf"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -12486,6 +12612,38 @@
                 },
                 "type": "object"
             },
+            "UpdateReferralCommissionConfigRequest": {
+                "title": "Update Referral Commission Config Request",
+                "description": "Yêu cầu cập nhật cấu hình hoa hồng referral",
+                "required": [
+                    "configs"
+                ],
+                "properties": {
+                    "configs": {
+                        "type": "array",
+                        "items": {
+                            "required": [
+                                "referral_type",
+                                "amount"
+                            ],
+                            "properties": {
+                                "referral_type": {
+                                    "description": "1: Tuyển dụng, 2: Khách hàng",
+                                    "type": "integer",
+                                    "example": 1
+                                },
+                                "amount": {
+                                    "description": "Số tiền hoa hồng mới",
+                                    "type": "string",
+                                    "example": "500000"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
             "ReferralCommission": {
                 "title": "Referral Commission Model",
                 "description": "Thông tin hoa hồng giới thiệu của nhân viên",
@@ -12514,6 +12672,37 @@
                     "status": {
                         "type": "integer",
                         "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "ReferralCommissionConfig": {
+                "title": "Referral Commission Config Model",
+                "description": "Cấu hình hoa hồng giới thiệu",
+                "properties": {
+                    "id": {
+                        "description": "Class ReferralCommissionConfig",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "uuid-string"
+                    },
+                    "referral_type": {
+                        "description": "1: QR Tuyển dụng, 2: QR Giới thiệu khách hàng",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "amount": {
+                        "description": "Số tiền hoa hồng (trả về dạng string)",
+                        "type": "string",
+                        "example": "500000"
                     },
                     "created_at": {
                         "type": "string",

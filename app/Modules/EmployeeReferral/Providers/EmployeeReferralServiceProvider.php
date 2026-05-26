@@ -33,5 +33,14 @@ class EmployeeReferralServiceProvider extends BaseModuleServiceProvider
             \App\Modules\EmployeeReferral\Interfaces\ReferralCommissionServiceInterface::class,
             \App\Modules\EmployeeReferral\Services\ReferralCommissionService::class
         );
+        $this->app->singleton(
+            \App\Modules\EmployeeReferral\Interfaces\ReferralCommissionConfigRepositoryInterface::class,
+            \App\Modules\EmployeeReferral\Repositories\ReferralCommissionConfigRepository::class
+        );
+
+        $this->app->singleton(
+            \App\Modules\EmployeeReferral\Interfaces\ReferralCommissionConfigServiceInterface::class,
+            \App\Modules\EmployeeReferral\Services\ReferralCommissionConfigService::class
+        );
     }
 }

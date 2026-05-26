@@ -49,19 +49,28 @@ final class LearningController extends BaseController
                         new OA\Property(property: 'message', type: 'string', example: 'Tải danh sách khóa học bắt buộc thành công.'),
                         new OA\Property(
                             property: 'data',
-                            type: 'array',
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
-                                    new OA\Property(property: 'title', type: 'string', example: 'Khóa đào tạo văn hóa doanh nghiệp'),
-                                    new OA\Property(property: 'thumbnail', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/thumbnails/culture.jpg'),
-                                    new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Giới thiệu về giá trị cốt lõi và sứ mệnh của công ty.'),
-                                    new OA\Property(property: 'progress_percent', type: 'number', format: 'float', example: 0.00),
-                                    new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::NOT_STARTED->value),
-                                    new OA\Property(property: 'status_label', type: 'string', example: 'Chưa học')
-                                ],
-                                type: 'object'
-                            )
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
+                                new OA\Property(property: 'title', type: 'string', example: 'Khóa đào tạo văn hóa doanh nghiệp'),
+                                new OA\Property(property: 'thumbnail', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/thumbnails/culture.jpg'),
+                                new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Giới thiệu về giá trị cốt lõi và sứ mệnh của công ty.'),
+                                new OA\Property(property: 'progress_percent', type: 'number', format: 'float', example: 0.00),
+                                new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::NOT_STARTED->value),
+                                new OA\Property(property: 'status_label', type: 'string', example: 'Chưa học'),
+                                new OA\Property(
+                                    property: 'attachments',
+                                    type: 'array',
+                                    items: new OA\Items(
+                                        properties: [
+                                            new OA\Property(property: 'type', type: 'string', example: 'pdf'),
+                                            new OA\Property(property: 'url', type: 'string', example: 'https://example.com/file.pdf'),
+                                            new OA\Property(property: 'name', type: 'string', example: 'report.pdf')
+                                        ],
+                                        type: 'object'
+                                    )
+                                )
+                            ]
                         )
                     ]
                 )

@@ -33,4 +33,10 @@ Route::middleware('auth:api')->prefix('v1/employee-referrals')->group(function (
     
     // Xem chi tiết hoa hồng referral (UC-097)
     Route::get('/commissions/{id}', [\App\Modules\EmployeeReferral\Http\Controllers\ReferralCommissionController::class, 'detail'])->name('employee-referrals.commissions.detail');
+
+    // Xem cấu hình hoa hồng referral (UC-103)
+    Route::get('/commission-configs', [\App\Modules\EmployeeReferral\Http\Controllers\ReferralCommissionConfigController::class, 'index'])->name('employee-referrals.commission-configs.index');
+    
+    // Cập nhật cấu hình hoa hồng referral (UC-104)
+    Route::put('/commission-configs', [\App\Modules\EmployeeReferral\Http\Controllers\ReferralCommissionConfigController::class, 'update'])->name('employee-referrals.commission-configs.update');
 });
