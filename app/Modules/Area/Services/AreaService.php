@@ -252,6 +252,17 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // 4. Kiểm tra Lô đất tồn tại
             $lot = $this->lotRepository->findById($dto->lotId);
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
+            $lot->load('area.project');
+
+            // 4.5. Kiểm tra dự án có bị khoá không
+            if ($lot->area && $lot->area->project && $lot->area->project->is_locked) {
+                $this->throw('Dự án đã bị khóa. Không thể thực hiện thao tác trên bảng hàng.', 403);
+            }
+
+            // Kiểm tra lô đất có bị khóa không
+            if ($lot->is_locked) {
+                $this->throw('Lô đất đã bị khóa.', 403);
+            }
 
             // 5. Kiểm tra Quyền truy cập khu đất của lô đất này
             $this->validate(
@@ -277,6 +288,9 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 'content' => $comment->content,
                 'created_at' => $comment->created_at ? $comment->created_at->toIso8601String() : null,
             ];
+
+            // 7. Fire Realtime Event
+            event(new \App\Modules\Area\Events\LotCommentAdded($comment));
 
             return $this->success($data, 'Thêm bình luận thành công.');
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
@@ -319,6 +333,17 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // 4. Kiểm tra Lô đất tồn tại
             $lot = $this->lotRepository->findById($dto->lotId);
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
+            $lot->load('area.project');
+
+            // 4.5. Kiểm tra dự án có bị khoá không
+            if ($lot->area && $lot->area->project && $lot->area->project->is_locked) {
+                $this->throw('Dự án đã bị khóa. Không thể thực hiện thao tác trên bảng hàng.', 403);
+            }
+
+            // Kiểm tra lô đất có bị khóa không
+            if ($lot->is_locked) {
+                $this->throw('Lô đất đã bị khóa.', 403);
+            }
 
             // 5. Kiểm tra Quyền truy cập khu đất của lô đất này
             $this->validate(
@@ -466,6 +491,151 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 code: 500
             );
         });
+    }
+
+    /**
+     * Tạo Area và danh sách Lots. Trả về Area model.
+     * (Hàm này dùng nội bộ hoặc trong CUD qua Service khác orchestration).
+     *
+     * @param \App\Modules\Area\DTO\CreateAreaDTO $areaDto
+     * @param \App\Modules\Area\DTO\CreateLotDTO[] $lotDtos
+     * @return \App\Modules\Area\Models\Area
+     */
+    public function createAreaWithLots(\App\Modules\Area\DTO\CreateAreaDTO $areaDto, array $lotDtos): \App\Modules\Area\Models\Area
+    {
+        // Tạo Area
+        $area = $this->areaRepository->create($areaDto->toArray());
+
+        // Tạo danh sách Lots liên kết với Area
+        foreach ($lotDtos as $lotDto) {
+            $lotData = $lotDto->toArray();
+            $lotData['area_id'] = $area->id;
+            $this->lotRepository->create($lotData);
+        }
+
+        return $area;
+    }
+
+    /**
+     * [Admin] Khóa/Mở khóa lô đất.
+     */
+    public function lockUnlockLot(string $userId, string $id, bool $isLocked): ServiceReturn
+    {
+        return $this->execute(function () use ($userId, $id, $isLocked) {
+            $user = User::find($userId);
+            $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
+
+            $lot = $this->lotRepository->findById($id);
+            $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
+
+            $lot->load('area.project');
+
+            // General Director chỉ được Lock/Unlock Lot chi nhánh của bản thân
+            if ($user->role === UserRole::DIRECTOR) {
+                if ($lot->area && $lot->area->project) {
+                    $this->validate($lot->area->project->branch === $user->department, 'Bạn không có quyền thực hiện chức năng này trên lô đất của chi nhánh khác.', 403);
+                }
+            }
+
+            // Kiểm tra trạng thái hiện tại
+            if ($isLocked && $lot->is_locked) {
+                $this->throw('Lô đất đã được khóa.', 400);
+            }
+            if (!$isLocked && !$lot->is_locked) {
+                $this->throw('Lô đất đang hoạt động.', 400);
+            }
+
+            $updatedLot = $this->lotRepository->updateById($id, ['is_locked' => $isLocked]);
+
+            $message = $isLocked ? 'Khóa lô đất thành công.' : 'Cập nhật trạng thái lô đất thành công.';
+
+            return $this->success(
+                $updatedLot,
+                $message
+            );
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            if ($e instanceof \App\Core\Services\ServiceException) {
+                return ServiceReturn::error($e->getMessage(), $e->getCode());
+            }
+            return ServiceReturn::error('Không thể cập nhật trạng thái lô đất.', 500);
+        });
+    }
+
+    /**
+     * Đồng bộ bảng hàng (Area & Lot) cho một dự án.
+     */
+    public function bulkSyncAreasWithLots(string $projectId, array $areasData): void
+    {
+        $keepAreaIds = [];
+
+        foreach ($areasData as $areaData) {
+            $areaId = $areaData['id'] ?? null;
+            if ($areaId) {
+                // Kiểm tra xem area có tồn tại và thuộc projectId không
+                $area = clone $this->areaRepository->getModelInstance();
+                $area = $area->where('id', $areaId)->where('project_id', $projectId)->first();
+                $this->validate($area !== null, "Khu đất không hợp lệ: $areaId", 400);
+
+                $this->areaRepository->updateById($areaId, $areaData);
+            } else {
+                $areaData['project_id'] = $projectId;
+                $area = $this->areaRepository->create($areaData);
+                $areaId = $area->id;
+            }
+
+            $keepAreaIds[] = $areaId;
+            $keepLotIds = [];
+
+            $lotsData = $areaData['lots'] ?? [];
+            foreach ($lotsData as $lotData) {
+                $lotId = $lotData['id'] ?? null;
+                if ($lotId) {
+                    $lot = clone $this->lotRepository->getModelInstance();
+                    $lot = $lot->where('id', $lotId)->where('area_id', $areaId)->first();
+                    $this->validate($lot !== null, "Lô đất không hợp lệ: $lotId", 400);
+
+                    $this->lotRepository->updateById($lotId, $lotData);
+                } else {
+                    $lotData['area_id'] = $areaId;
+                    $lot = $this->lotRepository->create($lotData);
+                    $lotId = $lot->id;
+                }
+                $keepLotIds[] = $lotId;
+            }
+
+            // Xóa các Lot không còn trong danh sách
+            $lotsToDelete = clone $this->lotRepository->getModelInstance();
+            $lotsToDelete = $lotsToDelete->where('area_id', $areaId)
+                ->whereNotIn('id', $keepLotIds)
+                ->get();
+
+            foreach ($lotsToDelete as $lotToDelete) {
+                if (in_array($lotToDelete->status, [LotStatus::SOLD, LotStatus::RESERVED], true)) {
+                    $this->throw("Không thể xóa lô đất '{$lotToDelete->name}' vì đang ở trạng thái đã giao dịch/giữ chỗ.", 400);
+                }
+                $this->lotRepository->deleteById((string)$lotToDelete->id);
+            }
+        }
+
+        // Xóa các Area không còn trong danh sách
+        $areasToDelete = clone $this->areaRepository->getModelInstance();
+        $areasToDelete = $areasToDelete->where('project_id', $projectId)
+            ->whereNotIn('id', $keepAreaIds)
+            ->get();
+
+        foreach ($areasToDelete as $areaToDelete) {
+            // Kiểm tra xem area này có lot nào SOLD hoặc RESERVED không
+            $hasLockedLots = clone $this->lotRepository->getModelInstance();
+            $hasLockedLots = $hasLockedLots->where('area_id', $areaToDelete->id)
+                ->whereIn('status', [LotStatus::SOLD, LotStatus::RESERVED])
+                ->exists();
+
+            if ($hasLockedLots) {
+                $this->throw("Không thể xóa phân khu '{$areaToDelete->name}' vì có chứa lô đất đã giao dịch/giữ chỗ.", 400);
+            }
+
+            $this->areaRepository->deleteById((string)$areaToDelete->id);
+        }
     }
 }
 

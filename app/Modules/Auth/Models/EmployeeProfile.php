@@ -80,6 +80,8 @@ class EmployeeProfile extends Model
         'major',
         'experience',
         'attachments',
+        'reward_points',
+        'kpi_stars',
     ];
 
     protected $casts = [

@@ -16,7 +16,7 @@ use App\Modules\Area\Interfaces\AreaServiceInterface;
 use Illuminate\Http\JsonResponse;
 use OpenApi\Attributes as OA;
 
-#[OA\Tag(name: 'Area', description: 'API for managing and viewing land areas / sales boards')]
+#[OA\Tag(name: 'Area', description: 'API quản lý và xem khu đất / bảng hàng')]
 class AreaController extends BaseController
 {
     /**

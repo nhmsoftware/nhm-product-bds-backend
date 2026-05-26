@@ -14,6 +14,7 @@ use OpenApi\Attributes as OA;
  * Class Area
  *
  * @property string $id
+ * @property string|null $project_id
  * @property string $name
  * @property string|null $sales_board_image
  * @property int $total_lots
@@ -30,6 +31,7 @@ use OpenApi\Attributes as OA;
     description: 'Thông tin khu đất / bảng hàng',
     properties: [
         new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
+        new OA\Property(property: 'project_id', type: 'string', format: 'uuid', nullable: true, example: 'd3b07384-d113-4ec2-a5d6-c734b1234568'),
         new OA\Property(property: 'name', type: 'string', example: 'Phân khu A - Golden Land'),
         new OA\Property(property: 'sales_board_image', type: 'string', nullable: true, example: 'https://example.com/images/sales_board.jpg'),
         new OA\Property(property: 'total_lots', type: 'integer', example: 100),
@@ -46,6 +48,7 @@ class Area extends Model
     protected $table = 'areas';
 
     protected $fillable = [
+        'project_id',
         'name',
         'sales_board_image',
         'total_lots',
@@ -79,6 +82,14 @@ class Area extends Model
     public function lots(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Lot::class, 'area_id');
+    }
+
+    /**
+     * Thuộc về dự án nào.
+     */
+    public function project(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Project\Models\Project::class, 'project_id');
     }
 }
 

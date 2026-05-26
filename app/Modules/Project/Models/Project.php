@@ -31,6 +31,11 @@ use OpenApi\Attributes as OA;
  * @property string $brochure
  * @property array|null $contact_info
  * @property string $google_maps_url
+ * @property string|null $branch
+ * @property int $total_lots
+ * @property int $remaining_lots
+ * @property bool $is_featured
+ * @property bool $is_locked
  * @property array|null $planning_info
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -60,6 +65,11 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'contact_info', type: 'object', example: ['hotline: 1900xxxx', 'email: contact@example.com']),
         new OA\Property(property: 'google_maps_url', type: 'string', example: 'https://maps.google.com/...'),
         new OA\Property(property: 'planning_info', type: 'object', example: ['quy hoạch 1/500']),
+        new OA\Property(property: 'branch', type: 'string', nullable: true, example: 'Hà Nội'),
+        new OA\Property(property: 'total_lots', type: 'integer', example: 100),
+        new OA\Property(property: 'remaining_lots', type: 'integer', example: 50),
+        new OA\Property(property: 'is_featured', type: 'boolean', example: false),
+        new OA\Property(property: 'is_locked', type: 'boolean', example: false),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
         new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
     ]
@@ -86,11 +96,20 @@ class Project extends Model
         'contact_info',
         'google_maps_url',
         'planning_info',
+        'branch',
+        'total_lots',
+        'remaining_lots',
+        'is_featured',
+        'is_locked',
     ];
 
     protected $casts = [
         'price' => 'string',
         'is_public' => 'boolean',
+        'is_featured' => 'boolean',
+        'is_locked' => 'boolean',
+        'total_lots' => 'integer',
+        'remaining_lots' => 'integer',
         'keywords' => 'array',
         'amenities' => 'array',
         'floor_plans' => 'array',
@@ -107,5 +126,13 @@ class Project extends Model
             $array['status'] = $this->status->serialize();
         }
         return $array;
+    }
+
+    /**
+     * Danh sách khu đất/bảng hàng thuộc dự án.
+     */
+    public function areas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Modules\Area\Models\Area::class, 'project_id');
     }
 }

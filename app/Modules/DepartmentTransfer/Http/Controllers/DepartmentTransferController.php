@@ -11,7 +11,7 @@ use App\Modules\DepartmentTransfer\Interfaces\DepartmentTransferServiceInterface
 use Illuminate\Http\JsonResponse;
 use OpenApi\Attributes as OA;
 
-#[OA\Tag(name: 'Department Transfers', description: 'API for managing department transfer requests')]
+#[OA\Tag(name: 'Department Transfers', description: 'API quản lý các yêu cầu chuyển phòng ban')]
 class DepartmentTransferController extends BaseController
 {
     protected DepartmentTransferServiceInterface $departmentTransferService;

@@ -13,7 +13,7 @@ use OpenApi\Attributes as OA;
 final class PlanningController extends BaseController
 {
     /**
-     * PlanningController constructor.
+     * Khởi tạo PlanningController và inject PlanningService qua Interface.
      *
      * @param PlanningServiceInterface $planningService
      */
@@ -211,6 +211,38 @@ final class PlanningController extends BaseController
     public function show(string $id): JsonResponse
     {
         $result = $this->planningService->getDetail($id);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Post(
+        path: '/api/v1/admin/planning/check-lot',
+        summary: 'Kiểm tra quy hoạch bên thứ 3 (Mock UC-086)',
+        description: 'Mô phỏng gọi API bên thứ 3 để kiểm tra quy hoạch của lô đất.',
+        security: [['bearerAuth' => []]],
+        tags: ['Planning'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'coordinates', type: 'array', items: new OA\Items(type: 'number')),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Kiểm tra quy hoạch lô đất thành công')
+        ]
+    )]
+    public function checkLot(Request $request): JsonResponse
+    {
+        $userId = (string) $request->user()->id;
+        $coordinates = $request->input('coordinates', []);
+
+        $result = $this->planningService->checkLotPlanning($userId, $coordinates);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());

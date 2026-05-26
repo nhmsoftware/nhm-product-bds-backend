@@ -60,5 +60,34 @@ interface AreaServiceInterface
      * @return ServiceReturn
      */
     public function searchInventory(string $userId, \App\Modules\Area\DTO\SearchInventoryDTO $dto): ServiceReturn;
-}
 
+    /**
+     * Tạo Area và danh sách Lots. Trả về Area model.
+     * (Hàm này dùng nội bộ hoặc trong CUD qua Service khác orchestration).
+     *
+     * @param \App\Modules\Area\DTO\CreateAreaDTO $areaDto
+     * @param \App\Modules\Area\DTO\CreateLotDTO[] $lotDtos
+     * @return \App\Modules\Area\Models\Area
+     */
+    public function createAreaWithLots(\App\Modules\Area\DTO\CreateAreaDTO $areaDto, array $lotDtos): \App\Modules\Area\Models\Area;
+    /**
+     * [Admin] Khóa/Mở khóa lô đất.
+     * 
+     * @param string $userId
+     * @param string $id
+     * @param bool $isLocked
+     * @return \App\Core\Services\ServiceReturn
+     */
+    public function lockUnlockLot(string $userId, string $id, bool $isLocked): \App\Core\Services\ServiceReturn;
+
+    /**
+     * Đồng bộ bảng hàng (Area & Lot) cho một dự án.
+     * Cập nhật, tạo mới và xóa (nếu không có trong danh sách).
+     *
+     * @param string $projectId
+     * @param array $areasData
+     * @return void
+     * @throws \App\Core\Services\ServiceException
+     */
+    public function bulkSyncAreasWithLots(string $projectId, array $areasData): void;
+}

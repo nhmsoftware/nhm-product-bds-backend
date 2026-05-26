@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Route;
 | UC-020: View Planning Detail (Future)
 */
 
+Route::group(['prefix' => 'v1/admin/planning', 'middleware' => ['auth:api']], function () {
+    Route::post('/check-lot', [PlanningController::class, 'checkLot'])->name('planning.admin.check_lot');
+});
+
 Route::prefix('v1/public/plannings')->group(function () {
     Route::get('/', [PlanningController::class, 'index'])->name('public.plannings.index');
     Route::get('/cities', [PlanningController::class, 'getCities'])->name('public.plannings.cities');

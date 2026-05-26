@@ -1,14 +1,14 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "NHM Product BDS Backend API",
-        "description": "API documentation for NHM Product BDS Backend",
+        "title": "NHM BDS Platform — API Documentation",
+        "description": "Tài liệu API cho hệ thống nền tảng bất động sản NHM. Bao gồm toàn bộ API dành cho khách hàng công khai, nhân viên bán hàng, quản lý và quản trị viên.",
         "version": "1.0.0"
     },
     "servers": [
         {
             "url": "",
-            "description": "API Server"
+            "description": "Máy chủ API chính"
         }
     ],
     "paths": {
@@ -124,6 +124,295 @@
                 "security": [
                     {
                         "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/lots/{id}/lock": {
+            "patch": {
+                "tags": [
+                    "Admin Area & Lots"
+                ],
+                "summary": "Khóa/Mở khóa lô đất (UC-089)",
+                "operationId": "1a7ff3226647c908e847da7f3908159c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "is_locked": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/deposit-requests": {
+            "get": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Lấy danh sách yêu cầu đặt cọc (Admin) [UC-091]",
+                "operationId": "ca6d5d7c4461d86f919378c01f3f5ba9",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Lọc theo trạng thái",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "project_id",
+                        "in": "query",
+                        "description": "Lọc theo dự án",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "employee_id",
+                        "in": "query",
+                        "description": "Lọc theo nhân viên",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "branch",
+                        "in": "query",
+                        "description": "Lọc theo chi nhánh",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Tìm kiếm theo tên khách hàng, mã lô, v.v.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số bản ghi trên mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh sách yêu cầu đặt cọc."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/deposit-requests/{id}": {
+            "get": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Xem chi tiết yêu cầu đặt cọc (Admin) [UC-091]",
+                "operationId": "1d3251f921a9e061b245e7ec8a97a483",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID yêu cầu đặt cọc",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Chi tiết yêu cầu đặt cọc."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/deposit-requests/{id}/approve": {
+            "patch": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Duyệt yêu cầu đặt cọc (Admin) [UC-091]",
+                "operationId": "64dab98691c6cb12fdf35dc1299fd4e1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID yêu cầu",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã duyệt yêu cầu đặt cọc."
+                    },
+                    "400": {
+                        "description": "Lỗi nghiệp vụ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/deposit-requests/{id}/reject": {
+            "patch": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Từ chối yêu cầu đặt cọc (Admin) [UC-091, UC-093]",
+                "operationId": "61ced4d4e842d1ade09dd1bc86f8f33d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID yêu cầu",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "reject_reason"
+                                ],
+                                "properties": {
+                                    "reject_reason": {
+                                        "description": "Lý do từ chối",
+                                        "type": "string",
+                                        "example": "Lô đất đã được khách khác đặt cọc"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã từ chối yêu cầu đặt cọc."
+                    },
+                    "400": {
+                        "description": "Lỗi nghiệp vụ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/deposit-requests/{id}/confirm-transaction": {
+            "patch": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Xác nhận giao dịch thành công (Admin) [UC-091]",
+                "operationId": "463eb1c329f2f72f0d2e4595b6bac8d4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID yêu cầu",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xác nhận giao dịch thành công."
+                    },
+                    "400": {
+                        "description": "Lỗi nghiệp vụ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
                     }
                 ]
             }
@@ -1226,6 +1515,60 @@
                 ]
             }
         },
+        "/api/lots/{lot}/deposit-requests": {
+            "post": {
+                "tags": [
+                    "Area"
+                ],
+                "summary": "Tạo yêu cầu đặt cọc lô đất [UC-083]",
+                "operationId": "afc865a34e17dbfb441f4abdf7a5f24c",
+                "parameters": [
+                    {
+                        "name": "lot",
+                        "in": "path",
+                        "description": "ID lô đất",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "reason": {
+                                        "description": "Lý do đặt cọc",
+                                        "type": "string",
+                                        "example": "Khách cọc sớm 50 triệu"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Yêu cầu đặt cọc đã được gửi thành công."
+                    },
+                    "400": {
+                        "description": "Lỗi nghiệp vụ (lô đất đã bán, đang có yêu cầu khác...)."
+                    },
+                    "404": {
+                        "description": "Lô đất không tồn tại."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/attendance/check-in": {
             "post": {
                 "tags": [
@@ -2034,7 +2377,7 @@
                                                 },
                                                 "role": {
                                                     "type": "integer",
-                                                    "example": 4
+                                                    "example": 6
                                                 },
                                                 "is_active": {
                                                     "type": "boolean",
@@ -2195,7 +2538,7 @@
                                                 },
                                                 "role": {
                                                     "type": "integer",
-                                                    "example": 4
+                                                    "example": 6
                                                 },
                                                 "is_active": {
                                                     "type": "boolean",
@@ -2383,7 +2726,7 @@
                                                         },
                                                         "role": {
                                                             "type": "integer",
-                                                            "example": 2
+                                                            "example": 1
                                                         },
                                                         "address": {
                                                             "type": "string",
@@ -2634,7 +2977,7 @@
                                                         },
                                                         "role": {
                                                             "type": "integer",
-                                                            "example": 2
+                                                            "example": 1
                                                         },
                                                         "address": {
                                                             "type": "string",
@@ -3372,6 +3715,119 @@
                         "sanctum": []
                     }
                 ]
+            }
+        },
+        "/api/dashboard/admin/comments": {
+            "get": {
+                "tags": [
+                    "Dashboard",
+                    "Manage Comment"
+                ],
+                "summary": "Lấy danh sách tất cả bình luận (UC-095)",
+                "operationId": "932b22283eedf2f59037282a09755c38",
+                "parameters": [
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "lot_internal",
+                                "news_public",
+                                "news_internal"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "project_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "area_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    }
+                }
+            }
+        },
+        "/api/dashboard/admin/comments/{id}": {
+            "delete": {
+                "tags": [
+                    "Dashboard",
+                    "Manage Comment"
+                ],
+                "summary": "Xóa bình luận (UC-095)",
+                "operationId": "92e4f577546993a522d9a05a3df52aec",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "lot_internal",
+                                "news_public",
+                                "news_internal"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa thành công"
+                    }
+                }
             }
         },
         "/api/v1/dashboard": {
@@ -8629,7 +9085,7 @@
                                         "nullable": true
                                     },
                                     "_method": {
-                                        "description": "Spoof method (PUT/PATCH) if using multipart/form-data",
+                                        "description": "Giả lập HTTP method (PUT/PATCH) khi sử dụng multipart/form-data",
                                         "type": "string",
                                         "nullable": true,
                                         "default": "PUT"
@@ -9286,6 +9742,367 @@
                         "description": "Lỗi hệ thống"
                     }
                 }
+            }
+        },
+        "/api/v1/admin/planning/check-lot": {
+            "post": {
+                "tags": [
+                    "Planning"
+                ],
+                "summary": "Kiểm tra quy hoạch bên thứ 3 (Mock UC-086)",
+                "description": "Mô phỏng gọi API bên thứ 3 để kiểm tra quy hoạch của lô đất.",
+                "operationId": "6388d1beb52aa009d66129a27e7592ab",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "coordinates": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "number"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Kiểm tra quy hoạch lô đất thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/projects/{project}/assignments": {
+            "post": {
+                "tags": [
+                    "Admin Project Assignments"
+                ],
+                "summary": "Phân quyền truy cập inventory (UC-090)",
+                "description": "Cấp quyền truy cập dự án/bảng hàng cho nhân viên hoặc phòng ban.",
+                "operationId": "eab0f8defd4345af4c75fa92a2920f30",
+                "parameters": [
+                    {
+                        "name": "project",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "assignable_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "assignable_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "user",
+                                            "department"
+                                        ]
+                                    },
+                                    "permissions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tạo mới hoặc cập nhật thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/projects": {
+            "get": {
+                "tags": [
+                    "Admin Project"
+                ],
+                "summary": "Xem danh sách dự án (UC-085)",
+                "description": "Super Admin, General Director xem danh sách dự án. General Director chỉ xem dự án của chi nhánh mình.",
+                "operationId": "041ca56dd0a453495e939dbf3523c5c8",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "created_at"
+                        }
+                    },
+                    {
+                        "name": "direction",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "desc"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh sách dự án thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin Project"
+                ],
+                "summary": "Tạo dự án mới (UC-085)",
+                "operationId": "063481a65182024ed8c6382aa24633e0",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Project"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tạo dự án thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/projects/{id}": {
+            "get": {
+                "tags": [
+                    "Admin Project"
+                ],
+                "summary": "Xem chi tiết dự án và sơ đồ bảng hàng (UC-085)",
+                "description": "Xem chi tiết dự án kèm theo các phân khu/bảng hàng và lô đất.",
+                "operationId": "fef4064786f4f649ad92ba77a659c7fc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Chi tiết dự án thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin Project"
+                ],
+                "summary": "Cập nhật dự án (UC-087)",
+                "operationId": "e893809238631d585aae6abcccbf0ccb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Project"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật dự án thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/projects/bulk-create": {
+            "post": {
+                "tags": [
+                    "Admin Project"
+                ],
+                "summary": "Hoàn tất tạo dự án (Bulk Create UC-086)",
+                "description": "Tạo dự án kèm theo khu đất (bảng hàng) và danh sách lô đất trong một transaction duy nhất.",
+                "operationId": "22dcb8efdf0ac6ab36568b8dff81d2ee",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "location": {
+                                        "type": "string"
+                                    },
+                                    "price": {
+                                        "type": "integer"
+                                    },
+                                    "status": {
+                                        "type": "integer"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    },
+                                    "area": {
+                                        "type": "object"
+                                    },
+                                    "lots": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tạo dự án và lô đất hàng loạt thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/projects/{id}/lock": {
+            "patch": {
+                "tags": [
+                    "Admin Project"
+                ],
+                "summary": "Khóa/Mở khóa dự án (UC-088)",
+                "operationId": "6a5a185bdae41ef543b634d28a9ff2a4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "is_locked": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Khóa/Mở khóa dự án thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/public/projects": {
@@ -9983,6 +10800,12 @@
                         "format": "uuid",
                         "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
                     },
+                    "project_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234568",
+                        "nullable": true
+                    },
                     "name": {
                         "type": "string",
                         "example": "Phân khu A - Golden Land"
@@ -10144,6 +10967,46 @@
                     "content": {
                         "type": "string",
                         "example": "Lô đất này có vị trí rất đẹp."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "LotDepositRequest": {
+                "title": "LotDepositRequest Model",
+                "description": "Thông tin yêu cầu đặt cọc lô đất",
+                "properties": {
+                    "id": {
+                        "description": "Class LotDepositRequest",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                    },
+                    "lot_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b3234567"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "reason": {
+                        "type": "string",
+                        "example": "Khách hàng đặt cọc 50 triệu.",
+                        "nullable": true
                     },
                     "created_at": {
                         "type": "string",
@@ -10405,6 +11268,44 @@
                 },
                 "type": "object"
             },
+            "RewardPointHistory": {
+                "title": "Reward Point History",
+                "properties": {
+                    "id": {
+                        "description": "Class RewardPointHistory",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "points_changed": {
+                        "type": "integer"
+                    },
+                    "stars_changed": {
+                        "type": "integer"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "related_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "User": {
                 "title": "User Model",
                 "description": "Thông tin người dùng",
@@ -10434,7 +11335,7 @@
                     },
                     "role": {
                         "type": "integer",
-                        "example": 2
+                        "example": 1
                     },
                     "avatar": {
                         "type": "string",
@@ -10626,6 +11527,55 @@
                         "type": "number",
                         "format": "float",
                         "example": 106.7009
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "SystemComment": {
+                "title": "SystemComment Model",
+                "description": "Thông tin bình luận hệ thống (gộp)",
+                "properties": {
+                    "id": {
+                        "description": "Class SystemComment",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "source_type": {
+                        "type": "string",
+                        "example": "lot_internal"
+                    },
+                    "source_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "department": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "area_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
                     },
                     "created_at": {
                         "type": "string",
@@ -11437,6 +12387,27 @@
                             "quy hoạch 1/500"
                         ]
                     },
+                    "branch": {
+                        "type": "string",
+                        "example": "Hà Nội",
+                        "nullable": true
+                    },
+                    "total_lots": {
+                        "type": "integer",
+                        "example": 100
+                    },
+                    "remaining_lots": {
+                        "type": "integer",
+                        "example": 50
+                    },
+                    "is_featured": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "is_locked": {
+                        "type": "boolean",
+                        "example": false
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time"
@@ -11514,7 +12485,7 @@
         "securitySchemes": {
             "sanctum": {
                 "type": "apiKey",
-                "description": "Enter 'Bearer ' followed by your token",
+                "description": "Nhập 'Bearer ' theo sau là token xác thực của bạn (ví dụ: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...)",
                 "name": "Authorization",
                 "in": "header"
             }
@@ -11522,72 +12493,88 @@
     },
     "tags": [
         {
-            "name": "Area",
-            "description": "API for managing and viewing land areas / sales boards"
-        },
-        {
-            "name": "Department Transfers",
-            "description": "API for managing department transfer requests"
-        },
-        {
-            "name": "Activity Evidence",
-            "description": "Activity Evidence"
-        },
-        {
-            "name": "Attendance",
-            "description": "Attendance"
-        },
-        {
             "name": "Auth",
-            "description": "Auth"
-        },
-        {
-            "name": "Public Consultation",
-            "description": "Public Consultation"
-        },
-        {
-            "name": "Customer Meeting",
-            "description": "Customer Meeting"
+            "description": "Xác thực và quản lý tài khoản người dùng: đăng ký, đăng nhập, đăng xuất, đổi mật khẩu, cập nhật hồ sơ cá nhân và tải tài liệu nhân viên."
         },
         {
             "name": "Dashboard",
-            "description": "Dashboard"
+            "description": "Trang chủ hệ thống: tải dữ liệu tổng quan (KPI, tin tức, module điều hướng) dựa theo vai trò và quyền hạn của người dùng đang đăng nhập."
         },
         {
-            "name": "Learning Admin",
-            "description": "Learning Admin"
+            "name": "Activity Evidence",
+            "description": "Minh chứng hoạt động sale: cho phép nhân viên tải ảnh minh chứng thực tế (chụp tại hiện trường) lên hệ thống để ghi nhận hoạt động bán hàng."
         },
         {
-            "name": "Learning",
-            "description": "Learning"
+            "name": "Attendance",
+            "description": "Chấm công và điểm danh: nhân viên thực hiện check-in/check-out ca làm việc bằng GPS hoặc WiFi văn phòng, xem lịch sử chấm công và thống kê của bản thân."
+        },
+        {
+            "name": "Public Consultation",
+            "description": "Tư vấn công khai dành cho khách hàng: xem thông tin liên hệ hỗ trợ (hotline, yêu cầu gọi lại), gửi tin nhắn tư vấn và theo dõi lịch sử tư vấn."
+        },
+        {
+            "name": "Customer Meeting",
+            "description": "Gặp gỡ khách hàng: nhân viên sale check-in hoạt động gặp khách tại dự án bằng GPS và ảnh minh chứng, xem lịch sử các lượt gặp khách."
+        },
+        {
+            "name": "Department Transfers",
+            "description": "API quản lý các yêu cầu chuyển phòng ban"
         },
         {
             "name": "Leave",
-            "description": "Leave"
+            "description": "Quản lý nghỉ phép: nhân viên gửi đơn xin nghỉ phép và xem lịch sử; Team Leader/Admin xem danh sách, phê duyệt hoặc từ chối đơn nghỉ phép."
         },
         {
             "name": "LegalVideo",
-            "description": "LegalVideo"
+            "description": "Thư viện video pháp lý: xem và tìm kiếm các video kiến thức pháp lý bất động sản theo danh mục (pháp lý dự án, hợp đồng, quy hoạch, quy trình giao dịch)."
+        },
+        {
+            "name": "Learning",
+            "description": "Học tập và đào tạo bắt buộc của nhân viên: xem danh sách khóa học, học bài, làm quiz, nộp bài kiểm tra và nhận chứng nhận hoàn thành."
+        },
+        {
+            "name": "Learning Admin",
+            "description": "Quản lý LMS dành cho Super Admin: tạo/sửa/xóa khóa học, bài học, quiz; theo dõi tiến độ onboarding nhân viên và xác nhận hoàn thành."
         },
         {
             "name": "News",
-            "description": "News"
+            "description": "Tin tức và bảng tin nội bộ: xem/tìm kiếm tin tức công khai; đọc, đăng, chỉnh sửa, bình luận và tương tác bài viết bảng tin nội bộ theo phòng ban."
+        },
+        {
+            "name": "Manage Comment",
+            "description": "Quản lý bình luận (Admin): xem danh sách toàn bộ bình luận trên hệ thống và xóa bình luận vi phạm theo loại nguồn (lô đất, tin tức công khai, bảng tin nội bộ)."
         },
         {
             "name": "Public Planning",
-            "description": "Public Planning"
+            "description": "Thông tin quy hoạch công khai: khách hàng và người dùng chưa đăng nhập có thể xem danh sách, chi tiết và tìm kiếm thông tin quy hoạch bất động sản theo khu vực."
         },
         {
             "name": "Planning",
-            "description": "Planning"
+            "description": "Quy hoạch có yêu cầu đăng nhập: khách hàng tải PDF hồ sơ quy hoạch; Admin mô phỏng kiểm tra quy hoạch lô đất qua API bên thứ ba."
         },
         {
             "name": "Public Project",
-            "description": "Public Project"
+            "description": "Dự án bất động sản công khai: khách hàng và người dùng chưa đăng nhập xem danh sách, chi tiết, tìm kiếm dự án, tải brochure và lấy số hotline tư vấn."
+        },
+        {
+            "name": "Admin Project",
+            "description": "API quản lý dự án bất động sản (Admin)"
+        },
+        {
+            "name": "Admin Project Assignments",
+            "description": "API quản lý phân quyền truy cập dự án (UC-090)"
+        },
+        {
+            "name": "Admin Area & Lots",
+            "description": "API quản lý khu đất và lô đất bất động sản (Admin)"
+        },
+        {
+            "name": "Area",
+            "description": "API quản lý và xem khu đất / bảng hàng"
         },
         {
             "name": "Site Tour",
-            "description": "Site Tour"
+            "description": "Dẫn khách tham quan thực tế: nhân viên check-in hoạt động dẫn khách tại dự án bằng GPS và ảnh minh chứng; xem lịch sử và các lượt dẫn khách gần đây."
         }
     ]
 }

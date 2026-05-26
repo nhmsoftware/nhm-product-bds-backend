@@ -4,6 +4,7 @@ namespace App\Modules\Project\Repositories;
 
 use App\Core\Repository\BaseRepository;
 use App\Modules\Project\DTO\ProjectListDTO;
+use App\Modules\Project\DTO\ListAdminProjectDTO;
 use App\Modules\Project\Interfaces\ProjectRepositoryInterface;
 use App\Modules\Project\Models\Project;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -87,5 +88,39 @@ final class ProjectRepository extends BaseRepository implements ProjectRepositor
             })
             ->latest()
             ->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * [Admin] Lấy danh sách dự án.
+     *
+     * @param ListAdminProjectDTO $dto
+     * @param string|null $branch
+     * @return LengthAwarePaginator
+     */
+    public function listAdminProjects(ListAdminProjectDTO $dto, ?string $branch = null): LengthAwarePaginator
+    {
+        $query = $this->model->newQuery();
+
+        if ($branch) {
+            $query->where('branch', $branch);
+        }
+
+        if ($dto->keyword) {
+            $query->where(function ($q) use ($dto) {
+                $q->where('name', 'like', '%' . $dto->keyword . '%')
+                  ->orWhere('location', 'like', '%' . $dto->keyword . '%');
+            });
+        }
+
+        if ($dto->filters) {
+            foreach ($dto->filters as $key => $value) {
+                if ($value === 'true') $value = true;
+                if ($value === 'false') $value = false;
+                $query->where($key, $value);
+            }
+        }
+
+        return $query->orderBy($dto->sortBy, $dto->direction)
+            ->paginate($dto->perPage, ['*'], 'page', $dto->page);
     }
 }

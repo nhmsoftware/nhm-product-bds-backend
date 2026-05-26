@@ -145,4 +145,32 @@ final class PlanningService extends BaseService implements PlanningServiceInterf
             ], 'Tải PDF quy hoạch thành công.');
         });
     }
+
+    /**
+     * [Admin] Kiểm tra quy hoạch của lô đất qua hệ thống bên thứ 3 (Mock).
+     */
+    public function checkLotPlanning(string $userId, array $coordinates): ServiceReturn
+    {
+        return $this->execute(function () use ($coordinates) {
+            // Giả lập gọi API bên thứ 3 mất 1s
+            sleep(1);
+
+            // Giả lập logic trả về:
+            // 80% hợp lệ (trả về planning_id mock), 20% không hợp lệ
+            $isOk = rand(1, 100) > 20;
+
+            if (!$isOk) {
+                return $this->error('Thông tin lô đất không hợp lệ theo quy hoạch.', 400);
+            }
+
+            // Trả về một planning id giả lập hoặc lấy planning record đầu tiên
+            $firstPlanning = $this->planningRepository->getModelInstance()->first();
+
+            return $this->success([
+                'is_valid' => true,
+                'planning_id' => $firstPlanning ? $firstPlanning->id : null,
+                'message' => 'Lô đất hợp lệ với quy hoạch hiện hành.'
+            ], 'Kiểm tra quy hoạch thành công.');
+        });
+    }
 }

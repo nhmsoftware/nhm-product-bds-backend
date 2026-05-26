@@ -75,6 +75,7 @@ class Lot extends Model
         'legal',
         'description',
         'planning_id',
+        'is_locked',
     ];
 
     protected $casts = [
@@ -90,6 +91,7 @@ class Lot extends Model
         'height' => 'integer',
         'frontage' => 'float',
         'planning_id' => 'string',
+        'is_locked' => 'boolean',
     ];
 
     /**
@@ -122,6 +124,14 @@ class Lot extends Model
     public function lockRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(LotLockRequest::class, 'lot_id');
+    }
+
+    /**
+     * Relationship to Lot deposit requests
+     */
+    public function depositRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(LotDepositRequest::class, 'lot_id');
     }
 
     public function setStatusAttribute($value)

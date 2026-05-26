@@ -13,7 +13,7 @@ use OpenApi\Attributes as OA;
 final class ConsultationController extends BaseController
 {
     /**
-     * ConsultationController constructor.
+     * Khởi tạo ConsultationController và inject các service cần thiết.
      *
      * @param ConsultationSettingServiceInterface $consultationSettingService
      * @param ConsultationMessageServiceInterface $consultationMessageService

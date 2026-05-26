@@ -4,6 +4,7 @@ namespace App\Modules\Project\Interfaces;
 
 use App\Core\Interfaces\BaseRepositoryInterface;
 use App\Modules\Project\DTO\ProjectListDTO;
+use App\Modules\Project\DTO\ListAdminProjectDTO;
 use App\Modules\Project\Models\Project;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -39,4 +40,13 @@ interface ProjectRepositoryInterface extends BaseRepositoryInterface
      * @return LengthAwarePaginator
      */
     public function searchPublic(string $keyword, int $perPage = 10, int $page = 1): LengthAwarePaginator;
+
+    /**
+     * [Admin] Lấy danh sách dự án.
+     *
+     * @param ListAdminProjectDTO $dto
+     * @param string|null $branch
+     * @return LengthAwarePaginator
+     */
+    public function listAdminProjects(ListAdminProjectDTO $dto, ?string $branch = null): LengthAwarePaginator;
 }

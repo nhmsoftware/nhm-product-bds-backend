@@ -52,4 +52,13 @@ interface PlanningServiceInterface
      * @return ServiceReturn
      */
     public function getDownloadLink(string $id): ServiceReturn;
+
+    /**
+     * [Admin] Kiểm tra quy hoạch của lô đất qua hệ thống bên thứ 3 (Mock).
+     *
+     * @param string $userId
+     * @param array $coordinates
+     * @return ServiceReturn
+     */
+    public function checkLotPlanning(string $userId, array $coordinates): ServiceReturn;
 }

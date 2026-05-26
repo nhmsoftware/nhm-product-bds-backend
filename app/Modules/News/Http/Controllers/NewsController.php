@@ -543,7 +543,7 @@ final class NewsController extends BaseController
                         new OA\Property(property: 'title', type: 'string', description: 'Tiêu đề bài viết (không bắt buộc)', nullable: true),
                         new OA\Property(property: 'content', type: 'string', description: 'Nội dung bài viết'),
                         new OA\Property(property: 'thumbnail', type: 'string', format: 'binary', description: 'Ảnh đại diện/ảnh đính kèm bài viết (jpeg, png, jpg, gif, svg, tối đa 2MB)', nullable: true),
-                        new OA\Property(property: '_method', type: 'string', description: 'Spoof method (PUT/PATCH) if using multipart/form-data', default: 'PUT', nullable: true)
+                        new OA\Property(property: '_method', type: 'string', description: 'Giả lập HTTP method (PUT/PATCH) khi sử dụng multipart/form-data', default: 'PUT', nullable: true)
                     ]
                 )
             )
