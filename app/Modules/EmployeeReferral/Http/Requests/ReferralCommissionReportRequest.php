@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\EmployeeReferral\Http\Requests;
 
-use App\Core\Request\BaseRequest;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Modules\EmployeeReferral\Models\Enums\ReferralType;
 
-final class ReferralCommissionReportRequest extends BaseRequest
+final class ReferralCommissionReportRequest extends FormRequest
 {
     /**
      * Xác định quyền truy cập (được kiểm tra ở controller).

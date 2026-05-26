@@ -1,386 +1,544 @@
-# 06 — DATABASE SCHEMA (BDD)
-# BDS APP — Thiết kế toàn bộ bảng dữ liệu
+# Database Schema (BDS App Backend)
 
-> **Tài liệu tham chiếu schema chuẩn. AI PHẢI đọc file này trước khi tạo Migration hoặc Model mới.**
-> Mọi bảng mới phải tuân thủ quy tắc trong `05-DATABASE-RULES.md`.
-
----
-
-## TỔNG QUAN — 17 BẢNG / 4 NHÓM
-
-| Nhóm | Bảng |
-|---|---|
-| Core BDS | `users`, `broker_agent`, `properties`, `property_media`, `conversations`, `chat_messages` |
-| Notification & Search | `notifications`, `saved_searches` |
-| Khóa học | `courses`, `course_lessons`, `course_quizzes`, `course_enrollments`, `lesson_progress`, `quiz_attempts` |
-| Chấm công & Bảng tin | `attendances`, `announcements`, `announcement_reads` |
+> Tài liệu này được sinh tự động từ các file migration thực tế tại `database/migrations/`.  
+> **Cập nhật lần cuối**: 2026-05-26
 
 ---
 
-## NHÓM 1 — CORE BDS
+## Nhóm 1: Người dùng & Hồ sơ nhân viên
 
-### Bảng: `users`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `name` | `varchar(255)` | Họ tên |
-| `email` | `varchar(255)` | Unique |
-| `phone` | `varchar(20)` | Nullable, unique |
-| `password` | `varchar(255)` | Bcrypt hash |
-| `role` | `enum` | `admin` \| `agent` \| `broker` \| `buyer` |
-| `avatar` | `varchar(255)` | Nullable, URL ảnh |
-| `fcm_token` | `varchar(255)` | Nullable, Firebase push token |
-| `is_active` | `boolean` | Default: `true` |
-| `email_verified_at` | `timestamp` | Nullable |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
-
----
-
-### Bảng: `broker_agent`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `broker_id` | `uuid` | FK → `users.id` |
-| `agent_id` | `uuid` | FK → `users.id` |
-| `joined_at` | `timestamp` | Nullable |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-
-> Unique constraint: `(broker_id, agent_id)`
+### `users`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `staff_code` | string | nullable | unique |
+| `name` | string | | |
+| `email` | string | | unique |
+| `phone` | string | nullable | unique |
+| `email_verified_at` | timestamp | nullable | |
+| `password` | string | | |
+| `role` | tinyInteger | `4` | 1: Super Admin, 2: Admin, 3: Manager, 4: Employee |
+| `avatar` | string | nullable | |
+| `address` | string(255) | nullable | |
+| `fcm_token` | string | nullable | FCM push notification token |
+| `is_active` | boolean | `true` | |
+| `department` | string | nullable | Phòng ban nhân viên |
+| `job_position` | string | nullable | Vị trí công việc |
+| `area` | string | nullable | Khu vực quản lý/làm việc |
+| `remember_token` | string | nullable | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
 ---
 
-### Bảng: `properties`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `agent_id` | `uuid` | FK → `users.id` |
-| `title` | `varchar(255)` | Tiêu đề listing |
-| `description` | `text` | Nullable |
-| `type` | `enum` | `apartment` \| `house` \| `land` \| `office` \| `shophouse` |
-| `listing_type` | `enum` | `sale` \| `rent` |
-| `status` | `enum` | `available` \| `reserved` \| `sold` — Default: `available` |
-| `price` | `decimal(15,2)` | Giá (VND) |
-| `area` | `decimal(10,2)` | Nullable, đơn vị m² |
-| `address` | `varchar(255)` | Địa chỉ đầy đủ |
-| `district` | `varchar(100)` | Nullable |
-| `city` | `varchar(100)` | Nullable |
-| `latitude` | `decimal(10,7)` | Nullable |
-| `longitude` | `decimal(10,7)` | Nullable |
-| `bedrooms` | `integer` | Nullable |
-| `bathrooms` | `integer` | Nullable |
-| `floors` | `integer` | Nullable |
-| `is_featured` | `boolean` | Default: `false` |
-| `is_approved` | `boolean` | Default: `false` |
-| `approved_at` | `timestamp` | Nullable |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
+### `employee_profiles`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | unique |
+| `employee_title` | string | nullable | Danh hiệu nhân viên (VD: Nhân viên xuất sắc) |
+| `identity_card` | string | nullable | Số CCCD |
+| `dob` | date | nullable | Ngày sinh |
+| `bank_account_name` | string | nullable | Chủ tài khoản |
+| `bank_account_number` | string | nullable | Số tài khoản |
+| `bank_name` | string | nullable | Tên ngân hàng |
+| `education` | text | nullable | Học vấn |
+| `major` | string | nullable | Chuyên ngành |
+| `experience` | text | nullable | Kinh nghiệm làm việc |
+| `attachments` | jsonb | nullable | Danh sách tài liệu đính kèm `[{type, name, url}]` |
+| `reward_points` | integer | `0` | Điểm thưởng tích lũy |
+| `kpi_stars` | integer | `0` | Số sao KPI |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
 
 ---
 
-### Bảng: `property_media`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `property_id` | `uuid` | FK → `properties.id` |
-| `type` | `enum` | `image` \| `video` |
-| `url` | `varchar(255)` | URL file |
-| `thumbnail_url` | `varchar(255)` | Nullable |
-| `sort_order` | `integer` | Default: `0` |
-| `is_cover` | `boolean` | Default: `false` |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
+### `reward_point_histories`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | |
+| `points_changed` | integer | | Số điểm thay đổi (dương: cộng, âm: trừ) |
+| `stars_changed` | integer | `0` | Số sao thay đổi |
+| `reason` | string | nullable | Lý do |
+| `related_id` | uuid | nullable | ID giao dịch/yêu cầu liên quan |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
 
 ---
 
-### Bảng: `conversations`
+## Nhóm 2: Tin tức
 
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `property_id` | `uuid` | Nullable, FK → `properties.id` |
-| `buyer_id` | `uuid` | FK → `users.id` |
-| `agent_id` | `uuid` | FK → `users.id` |
-| `last_message_at` | `timestamp` | Nullable |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
+### `news`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `title` | string | | |
+| `slug` | string | | unique |
+| `summary` | text | nullable | |
+| `content` | text | | |
+| `thumbnail` | string | nullable | |
+| `category` | string | | indexed |
+| `author_id` | uuid | | FK → users (không có foreign key cứng) |
+| `is_published` | boolean | `false` | |
+| `is_featured` | boolean | `false` | |
+| `likes_count` | integer | `0` | Bộ đếm like (denormalized) |
+| `published_at` | timestamp | nullable | |
+| `department` | string | nullable | Phòng ban đăng tin / được xem |
+| `area` | string | nullable | Khu vực đăng tin / được xem |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
-> Unique constraint: `(buyer_id, agent_id, property_id)`
+### `news_likes`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | unique(user_id, news_id) |
+| `news_id` | uuid | FK → news | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
 
----
-
-### Bảng: `chat_messages`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `conversation_id` | `uuid` | FK → `conversations.id` |
-| `sender_id` | `uuid` | FK → `users.id` |
-| `body` | `text` | Nội dung tin nhắn |
-| `type` | `enum` | `text` \| `image` \| `file` — Default: `text` |
-| `attachment_url` | `varchar(255)` | Nullable |
-| `read_at` | `timestamp` | Nullable |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
-
----
-
-## NHÓM 2 — NOTIFICATION & SEARCH
-
-### Bảng: `notifications`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `user_id` | `uuid` | FK → `users.id` |
-| `type` | `varchar(100)` | Vd: `PropertyApproved`, `NewMessage` |
-| `title` | `varchar(255)` | Tiêu đề thông báo |
-| `body` | `text` | Nội dung |
-| `data` | `jsonb` | Nullable, payload linh hoạt |
-| `channel` | `varchar(50)` | `fcm` \| `reverb` \| `both` — Default: `fcm` |
-| `read_at` | `timestamp` | Nullable |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-
-> ⚠️ Bảng này **KHÔNG có `deleted_at`** — lịch sử notification phải giữ nguyên.
+### `news_comments`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | |
+| `news_id` | uuid | FK → news | |
+| `content` | text | | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
 ---
 
-### Bảng: `saved_searches`
+## Nhóm 3: Bất động sản (Dự án, Phân khu, Lô đất)
 
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `user_id` | `uuid` | FK → `users.id` |
-| `name` | `varchar(100)` | Nullable, tên tìm kiếm |
-| `criteria` | `jsonb` | Filter params lưu dạng JSON |
-| `notify_enabled` | `boolean` | Default: `true` |
-| `geofence_lat` | `decimal(10,7)` | Nullable |
-| `geofence_lng` | `decimal(10,7)` | Nullable |
-| `geofence_radius` | `integer` | Nullable, đơn vị: mét |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
+### `projects`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `name` | string | | |
+| `location` | string | | |
+| `google_maps_url` | string | nullable | |
+| `image` | string | nullable | |
+| `banner` | string | nullable | |
+| `price` | decimal(20,2) | `0` | |
+| `status` | tinyInteger | `1` | 1: opening, 2: coming_soon, 3: sold_out |
+| `is_public` | boolean | `true` | |
+| `description` | text | nullable | |
+| `amenities` | jsonb | nullable | Tiện ích |
+| `floor_plans` | jsonb | nullable | Mặt bằng |
+| `legal_info` | jsonb | nullable | Thông tin pháp lý |
+| `brochure` | string | nullable | |
+| `contact_info` | jsonb | nullable | |
+| `planning_info` | jsonb | nullable | |
+| `keywords` | string | nullable | Từ khóa |
+| `type` | string | nullable | Loại dự án |
+| `supervisor_id` | uuid | nullable | FK → users |
+| `sales_manager_id` | uuid | nullable | FK → users |
+| `marketing_manager_id` | uuid | nullable | FK → users |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
----
+### `areas`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `project_id` | uuid | nullable | FK → projects |
+| `name` | string | | |
+| `sales_board_image` | string | nullable | Ảnh bảng hàng |
+| `total_lots` | integer | `0` | Tổng số lô |
+| `remaining_lots` | integer | `0` | Số lô còn lại |
+| `is_featured` | boolean | `false` | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
-## NHÓM 3 — KHÓA HỌC
+### `area_assignments`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `area_id` | uuid | FK → areas | unique(user_id, area_id) |
+| `user_id` | uuid | FK → users | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
-### Bảng: `courses`
+### `project_assignments`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `project_id` | uuid | FK → projects | |
+| `assignable_id` | uuid | | ID user hoặc department |
+| `assignable_type` | string | | `'user'` hoặc `'department'` |
+| `permissions` | json | nullable | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `title` | `varchar(255)` | Tên khóa học |
-| `description` | `text` | Nullable |
-| `thumbnail` | `varchar(255)` | Nullable, URL ảnh cover |
-| `is_required` | `boolean` | Default: `true` — Bắt buộc với nhân viên mới |
-| `order` | `integer` | Thứ tự hiển thị |
-| `is_active` | `boolean` | Default: `true` |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
+### `lots`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `area_id` | uuid | FK → areas | unique(area_id, code) |
+| `code` | string | | Mã lô |
+| `status` | integer | | 1: available, 2: sold, 3: reserved, 4: unavailable |
+| `image_url` | string | nullable | |
+| `area_size` | decimal(10,2) | nullable | Diện tích (m²) |
+| `frontage` | decimal(8,2) | nullable | Mặt tiền (m) |
+| `direction` | string | nullable | Hướng |
+| `legal` | string | nullable | Tình trạng pháp lý |
+| `description` | text | nullable | |
+| `planning_id` | uuid | nullable | FK → plannings |
+| `price` | bigInteger | nullable | Giá bán |
+| `unit_price` | bigInteger | nullable | Đơn giá |
+| `coordinate_x` | integer | nullable | |
+| `coordinate_y` | integer | nullable | |
+| `width` | integer | nullable | |
+| `height` | integer | nullable | |
+| `is_locked` | boolean | `false` | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
----
+### `lot_comments`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `lot_id` | uuid | FK → lots | |
+| `user_id` | uuid | FK → users | |
+| `content` | text | | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
-### Bảng: `course_lessons`
+### `lot_lock_requests`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `lot_id` | uuid | FK → lots | |
+| `user_id` | uuid | FK → users | |
+| `reason` | text | nullable | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `course_id` | `uuid` | FK → `courses.id` |
-| `title` | `varchar(255)` | Tên bài học |
-| `content` | `text` | Nullable, nội dung text/HTML |
-| `video_url` | `varchar(255)` | Nullable, URL video |
-| `duration_minutes` | `integer` | Nullable, thời lượng |
-| `order` | `integer` | Thứ tự trong khóa |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
-
----
-
-### Bảng: `course_quizzes`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `lesson_id` | `uuid` | FK → `course_lessons.id` |
-| `question` | `text` | Câu hỏi |
-| `options` | `jsonb` | Mảng các đáp án: `["A", "B", "C", "D"]` |
-| `correct_option` | `integer` | Index đáp án đúng (0-based) |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
-
----
-
-### Bảng: `course_enrollments`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `user_id` | `uuid` | FK → `users.id` |
-| `course_id` | `uuid` | FK → `courses.id` |
-| `status` | `enum` | `not_started` \| `in_progress` \| `completed` |
-| `progress_percent` | `decimal(5,2)` | Default: `0.00` |
-| `completed_at` | `timestamp` | Nullable |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-
-> Unique constraint: `(user_id, course_id)`
-
----
-
-### Bảng: `lesson_progress`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `enrollment_id` | `uuid` | FK → `course_enrollments.id` |
-| `lesson_id` | `uuid` | FK → `course_lessons.id` |
-| `is_completed` | `boolean` | Default: `false` |
-| `completed_at` | `timestamp` | Nullable |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-
-> Unique constraint: `(enrollment_id, lesson_id)`
-
----
-
-### Bảng: `quiz_attempts`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `user_id` | `uuid` | FK → `users.id` |
-| `quiz_id` | `uuid` | FK → `course_quizzes.id` |
-| `selected_option` | `integer` | Index đáp án user chọn (0-based) |
-| `is_correct` | `boolean` | Đúng hay sai |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-
----
-
-## NHÓM 4 — CHẤM CÔNG & BẢNG TIN
-
-### Bảng: `attendances`
-
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `user_id` | `uuid` | FK → `users.id` |
-| `work_date` | `date` | Ngày làm việc |
-| `check_in_at` | `timestamp` | Nullable |
-| `check_in_lat` | `decimal(10,7)` | Nullable, tọa độ GPS |
-| `check_in_lng` | `decimal(10,7)` | Nullable, tọa độ GPS |
-| `check_in_qr_code` | `varchar(255)` | Nullable, mã QR đã quét |
-| `check_in_method` | `enum` | Nullable, `gps` \| `qr` |
-| `check_out_at` | `timestamp` | Nullable |
-| `check_out_lat` | `decimal(10,7)` | Nullable |
-| `check_out_lng` | `decimal(10,7)` | Nullable |
-| `check_out_qr_code` | `varchar(255)` | Nullable |
-| `check_out_method` | `enum` | Nullable, `gps` \| `qr` |
-| `status` | `enum` | `present` \| `late` \| `absent` \| `half_day` |
-| `note` | `text` | Nullable, ghi chú |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
-
-> Unique constraint: `(user_id, work_date)`
+### `lot_deposit_requests`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `lot_id` | uuid | FK → lots | |
+| `user_id` | uuid | FK → users | |
+| `status` | integer | `1` | 1: PENDING, 2: APPROVED, 3: REJECTED |
+| `reason` | text | nullable | Lý do từ chối |
+| `reject_reason` | text | nullable | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
 ---
 
-### Bảng: `announcements`
+## Nhóm 4: Quy hoạch
 
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `author_id` | `uuid` | FK → `users.id` (admin hoặc manager) |
-| `title` | `varchar(255)` | Tiêu đề bài đăng |
-| `body` | `text` | Nội dung (HTML/Markdown) |
-| `attachments` | `jsonb` | Nullable, mảng file đính kèm: `[{type, url, name}]` |
-| `visibility` | `enum` | `all` \| `admin` \| `agent` \| `broker` \| `buyer` |
-| `is_pinned` | `boolean` | Default: `false` — Ghim lên đầu |
-| `published_at` | `timestamp` | Nullable — null = nháp |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
-| `deleted_at` | `timestamp` | Soft delete |
-
-> `attachments` JSON structure:
-> ```json
-> [
->   { "type": "image", "url": "...", "name": "photo.jpg" },
->   { "type": "pdf",   "url": "...", "name": "report.pdf" },
->   { "type": "video", "url": "...", "name": "clip.mp4" }
-> ]
-> ```
+### `plannings`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `title` | string | | |
+| `map_image` | string | | |
+| `status` | tinyInteger | | 1: approved, 2: pending, 3: cancelled |
+| `updated_year` | integer | | |
+| `description` | text | | |
+| `city` | string | | |
+| `district` | string | nullable | |
+| `content` | longText | nullable | |
+| `investor` | string | nullable | |
+| `area_size` | string | nullable | |
+| `project_purpose` | string | nullable | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
 ---
 
-### Bảng: `announcement_reads`
+## Nhóm 5: Khóa học (LMS - Learning)
 
-| Cột | Kiểu | Ghi chú |
-|---|---|---|
-| `id` | `uuid` | Primary key |
-| `announcement_id` | `uuid` | FK → `announcements.id` |
-| `user_id` | `uuid` | FK → `users.id` |
-| `read_at` | `timestamp` | Thời điểm đọc |
-| `created_at` | `timestamp` | Auto |
-| `updated_at` | `timestamp` | Auto |
+### `courses`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `title` | string(255) | | |
+| `description` | text | nullable | |
+| `thumbnail` | string(255) | nullable | URL ảnh cover |
+| `is_required` | boolean | `true` | |
+| `department` | string(100) | nullable | Phân bổ theo phòng ban |
+| `job_position` | string(100) | nullable | Phân bổ theo vị trí |
+| `order` | integer | `0` | Thứ tự hiển thị |
+| `is_active` | boolean | `true` | |
+| `has_certificate` | boolean | `true` | Có cấp chứng chỉ không |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
-> Unique constraint: `(announcement_id, user_id)`
+### `course_lessons`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `course_id` | uuid | FK → courses | cascade |
+| `title` | string(255) | | |
+| `content` | text | nullable | Nội dung text/HTML |
+| `video_url` | string(255) | nullable | URL video bài học |
+| `duration_minutes` | integer | nullable | Thời lượng video (phút) |
+| `order` | integer | `0` | Thứ tự trong khóa học |
+| `is_active` | boolean | `true` | |
+| `attachments` | jsonb | nullable | `[{type, url, name}]` |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
+
+### `course_quizzes`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `lesson_id` | uuid | FK → course_lessons | cascade |
+| `question` | text | | Nội dung câu hỏi |
+| `options` | jsonb | | Danh sách đáp án (mảng string) |
+| `correct_option` | integer | | Index đáp án đúng (0-based) |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
+
+### `course_enrollments`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | unique(user_id, course_id) |
+| `course_id` | uuid | FK → courses | |
+| `status` | tinyInteger | `1` | 1: not_started, 2: in_progress, 3: completed |
+| `progress_percent` | decimal(5,2) | `0.00` | Tiến độ hoàn thành (%) |
+| `completed_at` | timestamp | nullable | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+
+### `lesson_progress`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `enrollment_id` | uuid | FK → course_enrollments | unique(enrollment_id, lesson_id) |
+| `lesson_id` | uuid | FK → course_lessons | |
+| `is_completed` | boolean | `false` | |
+| `completed_at` | timestamp | nullable | |
+| `current_watch_seconds` | integer | `0` | Thời lượng video đã xem hiện tại (giây) |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+
+### `quiz_attempts`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | |
+| `quiz_id` | uuid | FK → course_quizzes | |
+| `selected_option` | integer | nullable | Index đáp án đã chọn (0-based) |
+| `is_correct` | boolean | nullable | |
+| `is_draft` | boolean | `false` | Lưu nháp hay đã nộp |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
 
 ---
 
-## QUAN HỆ TỔNG HỢP
+## Nhóm 6: Hoạt động nhân viên
 
-```
-users ──< broker_agent >── users
-users ──< properties
-properties ──< property_media
-properties ──< conversations
-users ──< conversations (buyer)
-users ──< conversations (agent)
-conversations ──< chat_messages
-users ──< notifications
-users ──< saved_searches
+### `attendances`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | unique(user_id, work_date) |
+| `work_date` | date | | |
+| `check_in_at` | timestamp | nullable | |
+| `check_in_lat` | decimal(10,7) | nullable | |
+| `check_in_lng` | decimal(10,7) | nullable | |
+| `check_in_method` | enum | nullable | `gps`, `wifi`, `qr` |
+| `check_in_wifi_ssid` | string | nullable | |
+| `check_in_device_name` | string | nullable | |
+| `check_out_at` | timestamp | nullable | |
+| `check_out_lat` | decimal(10,7) | nullable | |
+| `check_out_lng` | decimal(10,7) | nullable | |
+| `check_out_method` | enum | nullable | `gps`, `wifi`, `qr` |
+| `check_out_wifi_ssid` | string | nullable | |
+| `check_out_device_name` | string | nullable | |
+| `status` | tinyInteger | `1` | 1: on_time, 2: late, 3: absent |
+| `note` | text | nullable | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
-courses ──< course_lessons
-course_lessons ──< course_quizzes
-users ──< course_enrollments >── courses
-course_enrollments ──< lesson_progress >── course_lessons
-users ──< quiz_attempts >── course_quizzes
+### `leave_requests`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | |
+| `leave_type` | string | | annual, unpaid, personal, maternity, business, compensatory |
+| `start_date` | date | | |
+| `end_date` | date | | |
+| `reason` | text | | |
+| `status` | tinyInteger | `1` | 1: pending, 2: approved, 3: rejected |
+| `rejection_reason` | text | nullable | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
-users ──< attendances
-users ──< announcements (author)
-announcements ──< announcement_reads >── users
-```
+### `department_transfer_requests`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | |
+| `current_department` | string | | Phòng ban hiện tại |
+| `target_department` | string | | Phòng ban muốn chuyển |
+| `reason` | text | | |
+| `desired_transfer_date` | date | | |
+| `status` | tinyInteger | `1` | 1: pending, 2: approved, 3: rejected |
+| `rejection_reason` | text | nullable | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
+
+### `customer_meetings`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | |
+| `project_id` | uuid | FK → projects | |
+| `customer_name` | string | | |
+| `customer_phone` | string | | |
+| `image_path` | string | | Ảnh minh chứng |
+| `latitude` | decimal(10,7) | | |
+| `longitude` | decimal(10,7) | | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
+
+### `site_tours`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → users | |
+| `project_id` | uuid | FK → projects | |
+| `unit_code` | string | | Mã căn hộ/lô tham quan |
+| `customer_name` | string | | |
+| `image_path` | string | | Ảnh minh chứng |
+| `latitude` | decimal(10,7) | | |
+| `longitude` | decimal(10,7) | | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
 
 ---
 
-## ENUM TỔNG HỢP
+## Nhóm 7: Tư vấn
 
-| Enum | Giá trị |
-|---|---|
-| `users.role` | `admin`, `agent`, `broker`, `buyer` |
-| `properties.type` | `apartment`, `house`, `land`, `office`, `shophouse` |
-| `properties.listing_type` | `sale`, `rent` |
-| `properties.status` | `available`, `reserved`, `sold` |
-| `property_media.type` | `image`, `video` |
-| `chat_messages.type` | `text`, `image`, `file` |
-| `course_enrollments.status` | `not_started`, `in_progress`, `completed` |
-| `attendances.check_in_method` | `gps`, `qr` |
-| `attendances.check_out_method` | `gps`, `qr` |
-| `attendances.status` | `present`, `late`, `absent`, `half_day` |
-| `announcements.visibility` | `all`, `admin`, `agent`, `broker`, `buyer` |
+### `consultation_settings`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `hotline` | string(20) | | |
+| `email` | string(100) | nullable | |
+| `address` | string(255) | nullable | |
+| `is_callback_enabled` | boolean | `true` | |
+| `is_message_form_enabled` | boolean | `true` | |
+| `working_hours` | string(255) | nullable | |
+| `is_active` | boolean | `true` | |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
+
+### `consultation_messages`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `full_name` | string(255) | | |
+| `phone` | string(20) | | |
+| `email` | string(100) | nullable | |
+| `project_id` | uuid | nullable | FK → projects (set null on delete) |
+| `project_name` | string(255) | nullable | |
+| `content` | text | nullable | |
+| `status` | tinyInteger | `1` | 1: pending, 2: processing, 3: done, 4: cancelled |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
+
+---
+
+## Nhóm 8: Video Pháp lý
+
+### `legal_videos`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `title` | string | | |
+| `slug` | string | | unique |
+| `short_description` | string(500) | nullable | |
+| `description` | text | nullable | |
+| `video_url` | string | | URL video |
+| `thumbnail_url` | string | nullable | |
+| `duration_seconds` | integer | nullable | |
+| `category` | string | | indexed |
+| `is_active` | boolean | `true` | indexed |
+| `published_at` | timestamp | nullable | indexed |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
+
+---
+
+## Nhóm 9: Giới thiệu (Referral)
+
+### `referral_histories`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `name` | string | | Họ tên người quét QR |
+| `phone` | string | | |
+| `referral_type` | smallInteger | | 1: Tuyển dụng, 2: Giới thiệu khách hàng |
+| `status` | smallInteger | `1` | 1: Chưa hoàn tất, 2: Đã đăng ký |
+| `scanned_at` | timestamp | | Thời gian quét |
+| `registered_at` | timestamp | nullable | Thời gian hoàn tất đăng ký |
+| `referrer_id` | uuid | FK → users | Người giới thiệu |
+| `referee_id` | uuid | nullable → users | Người được giới thiệu (sau khi đăng ký) |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
+
+### `referral_commissions`
+| Cột | Kiểu | Mặc định | Ghi chú |
+|-----|------|----------|---------|
+| `id` | uuid | PK | |
+| `referrer_id` | uuid | FK → users | |
+| `referral_history_id` | uuid | FK → referral_histories | |
+| `amount` | bigInteger | `0` | Số tiền hoa hồng (VNĐ) |
+| `status` | smallInteger | `1` | 1: Chờ thanh toán, 2: Đã thanh toán |
+| `created_at` | timestamp | | |
+| `updated_at` | timestamp | | |
+| `deleted_at` | timestamp | nullable | SoftDeletes |
+
+---
+
+## Ghi chú về Kiểu dữ liệu Status (Integer Enum)
+
+Toàn bộ các cột `status` trong dự án đều được chuyển sang **integer** (không dùng string enum) để tối ưu hiệu năng DB:
+
+| Bảng | Giá trị status |
+|------|----------------|
+| `course_enrollments` | 1: not_started, 2: in_progress, 3: completed |
+| `attendances` | 1: on_time, 2: late, 3: absent |
+| `leave_requests` | 1: pending, 2: approved, 3: rejected |
+| `department_transfer_requests` | 1: pending, 2: approved, 3: rejected |
+| `lot_deposit_requests` | 1: PENDING, 2: APPROVED, 3: REJECTED |
+| `lots` | 1: available, 2: sold, 3: reserved, 4: unavailable |
+| `consultation_messages` | 1: pending, 2: processing, 3: done, 4: cancelled |
+| `plannings` | 1: approved, 2: pending, 3: cancelled |
+| `projects` | 1: opening, 2: coming_soon, 3: sold_out |
+| `referral_histories` | 1: Chưa hoàn tất, 2: Đã đăng ký |
+| `referral_commissions` | 1: Chờ thanh toán, 2: Đã thanh toán |

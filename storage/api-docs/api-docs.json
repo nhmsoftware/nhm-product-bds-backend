@@ -4784,6 +4784,158 @@
                 ]
             }
         },
+        "/api/v1/employee-referrals/reports/commissions": {
+            "get": {
+                "tags": [
+                    "Employee Referral"
+                ],
+                "summary": "Xem báo cáo hoa hồng referral (UC-102)",
+                "description": "Lấy báo cáo hoa hồng giới thiệu của nhân viên. Dành cho Giám đốc và Super Admin.",
+                "operationId": "317670608494d93f2320298e43acd5f5",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số bản ghi mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "filters[referrer_id]",
+                        "in": "query",
+                        "description": "Lọc theo nhân viên",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "filters[referral_type]",
+                        "in": "query",
+                        "description": "Lọc theo loại QR (1: Tuyển dụng, 2: Giới thiệu khách hàng)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2
+                            ]
+                        }
+                    },
+                    {
+                        "name": "filters[date_from]",
+                        "in": "query",
+                        "description": "Từ ngày (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "filters[date_to]",
+                        "in": "query",
+                        "description": "Đến ngày (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải báo cáo hoa hồng referral thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải báo cáo hoa hồng referral thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 100
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "referrer_id": {
+                                                                "type": "string",
+                                                                "format": "uuid"
+                                                            },
+                                                            "referrer_name": {
+                                                                "type": "string",
+                                                                "example": "Nguyễn Văn A"
+                                                            },
+                                                            "referral_type": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "referral_count": {
+                                                                "type": "integer",
+                                                                "example": 5
+                                                            },
+                                                            "total_commission": {
+                                                                "type": "string",
+                                                                "example": "2500000"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    },
+                    "404": {
+                        "description": "Chưa có dữ liệu hoa hồng referral."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/employee-referrals/scan": {
             "post": {
                 "tags": [
