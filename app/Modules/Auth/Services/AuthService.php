@@ -132,7 +132,19 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 403
             );
 
-            // 5. Tạo token (Sử dụng JWT)
+            // 5. Kiểm tra Role: Chỉ cho phép các role được định nghĩa
+            $allowedRoles = [
+                UserRole::EMPLOYEE->value,
+                UserRole::MANAGER->value,
+                UserRole::BUYER->value,
+            ];
+            $this->validate(
+                in_array($user->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập.',
+                403
+            );
+
+            // 6. Tạo token (Sử dụng JWT)
             $token = auth('api')->login($user);
 
             $this->validate($token !== false, 'Không thể tạo phiên đăng nhập.', 500);
