@@ -35,40 +35,84 @@ final class LearningController extends BaseController
 
     #[OA\Get(
         path: '/api/v1/learning/courses',
-        summary: 'Xem danh sách khóa học bắt buộc của nhân viên (UC-053)',
-        description: 'Lấy danh sách các khóa học bắt buộc được phân bổ theo phòng ban hoặc vị trí công việc của nhân viên đang đăng nhập.',
+        summary: 'Xem khóa học bắt buộc hiện tại của nhân viên (UC-053)',
+        description: 'Lấy thông tin khóa học bắt buộc được phân bổ theo phòng ban hoặc vị trí công việc của nhân viên đang đăng nhập kèm theo quy tắc học tập và tiến độ.',
         tags: ['Learning'],
         security: [['sanctum' => []]],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Tải danh sách khóa học bắt buộc thành công',
+                description: 'Tải khóa học bắt buộc thành công',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'message', type: 'string', example: 'Tải danh sách khóa học bắt buộc thành công.'),
+                        new OA\Property(property: 'message', type: 'string', example: 'Tải khóa học bắt buộc thành công.'),
                         new OA\Property(
                             property: 'data',
                             type: 'object',
                             properties: [
-                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
-                                new OA\Property(property: 'title', type: 'string', example: 'Khóa đào tạo văn hóa doanh nghiệp'),
-                                new OA\Property(property: 'thumbnail', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/thumbnails/culture.jpg'),
-                                new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Giới thiệu về giá trị cốt lõi và sứ mệnh của công ty.'),
-                                new OA\Property(property: 'progress_percent', type: 'number', format: 'float', example: 0.00),
-                                new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::NOT_STARTED->value),
-                                new OA\Property(property: 'status_label', type: 'string', example: 'Chưa học'),
                                 new OA\Property(
-                                    property: 'attachments',
-                                    type: 'array',
-                                    items: new OA\Items(
-                                        properties: [
-                                            new OA\Property(property: 'type', type: 'string', example: 'pdf'),
-                                            new OA\Property(property: 'url', type: 'string', example: 'https://example.com/file.pdf'),
-                                            new OA\Property(property: 'name', type: 'string', example: 'report.pdf')
-                                        ],
-                                        type: 'object'
-                                    )
+                                    property: 'course',
+                                    type: 'object',
+                                    properties: [
+                                        new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567', description: 'ID của khóa học'),
+                                        new OA\Property(property: 'title', type: 'string', example: 'Nền tảng Kinh doanh Bất động sản', description: 'Tiêu đề khóa học'),
+                                        new OA\Property(property: 'label', type: 'string', example: 'QUY TRÌNH HỌC TỰ CNTR', description: 'Nhãn khóa học'),
+                                        new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Hoàn thành tuần tự các bài giảng dưới đây để nắm vững quy trình bán hàng chuẩn. Bạn không thể bỏ qua bài học.', description: 'Mô tả khóa học'),
+                                        new OA\Property(property: 'thumbnailUrl', type: 'string', nullable: true, example: 'https://cdn.example.com/courses/bds-foundation.jpg', description: 'Đường dẫn ảnh thu nhỏ khóa học'),
+                                        new OA\Property(property: 'isMandatory', type: 'boolean', example: true, description: 'Khóa học có bắt buộc hay không'),
+                                        new OA\Property(
+                                            property: 'learningRule',
+                                            type: 'object',
+                                            description: 'Quy tắc học tập',
+                                            properties: [
+                                                new OA\Property(property: 'type', type: 'string', example: 'sequential', description: 'Loại quy tắc học (sequential: tuần tự)'),
+                                                new OA\Property(property: 'canSkipLesson', type: 'boolean', example: false, description: 'Có thể bỏ qua bài học không'),
+                                                new OA\Property(property: 'requireWatchFullVideo', type: 'boolean', example: true, description: 'Yêu cầu xem hết video không'),
+                                                new OA\Property(property: 'autoTrackProgress', type: 'boolean', example: true, description: 'Tự động ghi nhận tiến trình học tập')
+                                            ]
+                                        ),
+                                        new OA\Property(
+                                            property: 'progress',
+                                            type: 'object',
+                                            description: 'Tiến độ học tập của nhân viên',
+                                            properties: [
+                                                new OA\Property(property: 'status', type: 'string', example: 'in_progress', description: 'Trạng thái tiến độ (not_started, in_progress, completed)'),
+                                                new OA\Property(property: 'percent', type: 'integer', example: 15, description: 'Phần trăm hoàn thành khóa học'),
+                                                new OA\Property(property: 'completedLessons', type: 'integer', example: 0, description: 'Số bài học đã hoàn thành'),
+                                                new OA\Property(property: 'totalLessons', type: 'integer', example: 3, description: 'Tổng số bài học trong khóa học'),
+                                                new OA\Property(property: 'currentLessonId', type: 'string', format: 'uuid', nullable: true, example: 'f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0', description: 'ID bài học hiện tại đang học')
+                                            ]
+                                        ),
+                                        new OA\Property(
+                                            property: 'notice',
+                                            type: 'object',
+                                            description: 'Thông báo/Lưu ý học tập',
+                                            properties: [
+                                                new OA\Property(property: 'type', type: 'string', example: 'warning', description: 'Loại thông báo'),
+                                                new OA\Property(property: 'message', type: 'string', example: 'Bạn cần xem hết thời lượng video trước khi chuyển sang bài tiếp theo. Hệ thống sẽ tự động ghi nhận tiến độ.', description: 'Nội dung thông báo')
+                                            ]
+                                        ),
+                                        new OA\Property(
+                                            property: 'lessons',
+                                            type: 'array',
+                                            description: 'Danh sách bài học trong khóa học',
+                                            items: new OA\Items(
+                                                properties: [
+                                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0', description: 'ID bài học'),
+                                                    new OA\Property(property: 'order', type: 'integer', example: 1, description: 'Thứ tự bài học'),
+                                                    new OA\Property(property: 'title', type: 'string', example: 'Bài 1: Tổng quan về quy trình bán hàng', description: 'Tiêu đề bài học'),
+                                                    new OA\Property(property: 'durationSeconds', type: 'integer', example: 600, description: 'Thời lượng video bài học tính bằng giây'),
+                                                    new OA\Property(property: 'status', type: 'string', example: 'learning', description: 'Trạng thái bài học (completed, learning, locked)'),
+                                                    new OA\Property(property: 'progressPercent', type: 'integer', example: 15, description: 'Tiến độ xem video của bài học (%)'),
+                                                    new OA\Property(property: 'isLocked', type: 'boolean', example: false, description: 'Bài học có bị khóa không'),
+                                                    new OA\Property(property: 'canContinue', type: 'boolean', example: true, description: 'Có thể tiếp tục học bài học này không'),
+                                                    new OA\Property(property: 'actionText', type: 'string', example: 'Tiếp tục', description: 'Nhãn hành động hiển thị trên giao diện')
+                                                ],
+                                                type: 'object'
+                                            )
+                                        )
+                                    ]
                                 )
                             ]
                         )
@@ -85,7 +129,7 @@ final class LearningController extends BaseController
             ),
             new OA\Response(
                 response: 500,
-                description: 'Không thể tải danh sách khóa học bắt buộc do lỗi hệ thống'
+                description: 'Không thể tải khóa học bắt buộc do lỗi hệ thống'
             )
         ]
     )]

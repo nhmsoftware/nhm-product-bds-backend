@@ -110,7 +110,7 @@ class CourseEnrollment extends Model
     {
         $array = parent::toArray();
         if (isset($array['status']) && $this->status instanceof CourseEnrollmentStatus) {
-            $array['status'] = $this->status->serialize();
+            $array['status'] = strtolower($this->status->name);
         }
         return $array;
     }

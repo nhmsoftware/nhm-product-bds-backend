@@ -76,7 +76,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
      * Tải danh sách khóa học bắt buộc được phân bổ cho Employee (UC-053).
      *
      * @param ViewCoursesDTO $dto DTO chứa thông tin phòng ban, vị trí công việc
-     * @return ServiceReturn Chứa danh sách khóa học và tiến độ hoàn thành
+     * @return ServiceReturn
      */
     public function getMandatoryCourses(ViewCoursesDTO $dto): ServiceReturn
     {
@@ -97,41 +97,121 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             // A1 – Không có khóa học bắt buộc
             if ($courses->isEmpty()) {
-                return $this->success(
-                    data: null,
-                    message: 'Hiện chưa có khóa học bắt buộc.'
-                );
+                return $this->success(data: null, message: 'Hiện chưa có khóa học bắt buộc.');
             }
 
-            // Lấy khóa học đầu tiên (duy nhất)
-            $course = $courses->first();
+            // 4. Lấy khóa học đầu tiên và load các bài học
+            $course     = $courses->first();
             $course->load('lessons');
             $enrollment = $course->enrollments->first();
 
-            $attachments = [];
-            foreach ($course->lessons as $lesson) {
-                if (is_array($lesson->attachments)) {
-                    foreach ($lesson->attachments as $att) {
-                        $attachments[] = [
-                            'type' => $att['type'] ?? '',
-                            'url'  => $att['url'] ?? '',
-                            'name' => $att['name'] ?? '',
-                        ];
-                    }
-                }
+            // 5. Tải map tiến độ bài học của enrollment hiện tại (nếu đã đăng ký)
+            $lessonProgressMap  = collect();
+            $completedLessonIds = [];
+
+            if ($enrollment) {
+                $lessonProgressRecords = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id);
+                $lessonProgressMap     = $lessonProgressRecords->keyBy(fn ($lp) => (string) $lp->lesson_id);
+                $completedLessonIds    = $lessonProgressRecords
+                    ->where('is_completed', true)
+                    ->pluck('lesson_id')
+                    ->map(fn ($id) => (string) $id)
+                    ->toArray();
             }
 
+            // 6. Tính toán trạng thái từng bài học và xác định bài đang học hiện tại
+            $mappedLessons           = [];
+            $hasUncompletedPreceding = false;
+            $completedCount          = 0;
+            $currentLessonId         = null;
+
+            foreach ($course->lessons as $lesson) {
+                $lessonId       = (string) $lesson->id;
+                $isCompleted    = in_array($lessonId, $completedLessonIds);
+                $progressRecord = $lessonProgressMap->get($lessonId);
+
+                if ($isCompleted) {
+                    $lessonStatus          = LessonStatus::COMPLETED;
+                    $lessonProgressPercent = 100;
+                    $completedCount++;
+                } elseif (!$hasUncompletedPreceding) {
+                    // Bài học đầu tiên chưa hoàn thành → đang học
+                    $lessonStatus            = LessonStatus::LEARNING;
+                    $hasUncompletedPreceding = true;
+
+                    if ($currentLessonId === null) {
+                        $currentLessonId = $lessonId;
+                    }
+
+                    // Tính % tiến độ xem video của bài đang học
+                    $durationSeconds       = ($lesson->duration_minutes ?? 0) * 60;
+                    $watchedSeconds        = $progressRecord ? (int) $progressRecord->current_watch_seconds : 0;
+                    $lessonProgressPercent = $durationSeconds > 0
+                        ? (int) round(($watchedSeconds / $durationSeconds) * 100)
+                        : 0;
+                } else {
+                    // Các bài sau bài đang học → bị khóa
+                    $lessonStatus          = LessonStatus::LOCKED;
+                    $lessonProgressPercent = 0;
+                }
+
+                $actionText = match ($lessonStatus) {
+                    LessonStatus::COMPLETED => 'Xem lại',
+                    LessonStatus::LEARNING  => ($lessonProgressPercent > 0 ? 'Tiếp tục' : 'Bắt đầu'),
+                    LessonStatus::LOCKED    => 'Khóa',
+                };
+
+                $mappedLessons[] = [
+                    'id'              => $lessonId,
+                    'order'           => $lesson->order,
+                    'title'           => $lesson->title,
+                    'durationSeconds' => ($lesson->duration_minutes ?? 0) * 60,
+                    'status'          => strtolower($lessonStatus->name),
+                    'progressPercent' => $lessonProgressPercent,
+                    'isLocked'        => $lessonStatus === LessonStatus::LOCKED,
+                    'canContinue'     => $lessonStatus !== LessonStatus::LOCKED,
+                    'actionText'      => $actionText,
+                ];
+            }
+
+            // 7. Tính % tiến độ tổng quan và trạng thái enrollment
+            $totalLessons        = $course->lessons->count();
+            $overallPercent      = $enrollment ? (float) $enrollment->progress_percent : 0.00;
+            $enrollmentStatusStr = match (true) {
+                $enrollment === null                                           => 'not_started',
+                $enrollment->status === CourseEnrollmentStatus::COMPLETED     => 'completed',
+                $enrollment->status === CourseEnrollmentStatus::IN_PROGRESS   => 'in_progress',
+                default                                                        => 'not_started',
+            };
+
+            // 8. Chuẩn hóa cấu trúc trả về theo format mới
             $result = [
-                'id' => (string) $course->id,
-                'title' => $course->title,
-                'thumbnail' => $course->thumbnail,
-                'description' => $course->description,
-                'progress_percent' => $enrollment ? (float) $enrollment->progress_percent : 0.00,
-                'status' => $enrollment ? $enrollment->status->serialize() : CourseEnrollmentStatus::NOT_STARTED->serialize(),
-                'status_label' => $enrollment 
-                    ? ($enrollment->status === CourseEnrollmentStatus::COMPLETED ? 'Hoàn thành' : 'Đang học') 
-                    : 'Chưa học',
-                'attachments' => $attachments,
+                'course' => [
+                    'id'           => (string) $course->id,
+                    'title'        => $course->title,
+                    'label'        => 'QUY TRÌNH HỌC TỰ CNTR',
+                    'description'  => $course->description,
+                    'thumbnailUrl' => $course->thumbnail,
+                    'isMandatory'  => (bool) $course->is_required,
+                    'learningRule' => [
+                        'type'                  => 'sequential',
+                        'canSkipLesson'         => false,
+                        'requireWatchFullVideo'  => true,
+                        'autoTrackProgress'     => true,
+                    ],
+                    'progress' => [
+                        'status'           => $enrollmentStatusStr,
+                        'percent'          => (int) $overallPercent,
+                        'completedLessons' => $completedCount,
+                        'totalLessons'     => $totalLessons,
+                        'currentLessonId'  => $currentLessonId,
+                    ],
+                    'notice' => [
+                        'type'    => 'warning',
+                        'message' => 'Bạn cần xem hết thời lượng video trước khi chuyển sang bài tiếp theo. Hệ thống sẽ tự động ghi nhận tiến độ.',
+                    ],
+                    'lessons' => $mappedLessons,
+                ],
             ];
 
             return $this->success(
@@ -213,7 +293,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'video_url' => $lesson->video_url,
                     'duration_minutes' => $lesson->duration_minutes,
                     'order' => $lesson->order,
-                    'status' => $lessonStatus->serialize(),
+                    'status' => strtolower($lessonStatus->name),
                     'status_label' => $lessonStatus->label(),
                 ];
             }
@@ -225,7 +305,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'thumbnail' => $course->thumbnail,
                 'description' => $course->description,
                 'progress_percent' => (float) $enrollment->progress_percent,
-                'status' => $enrollment->status->serialize(),
+                'status' => strtolower($enrollment->status->name),
                 'lessons' => $mappedLessons,
             ];
 
@@ -334,7 +414,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'video_url' => $lesson->video_url,
                 'duration_minutes' => $lesson->duration_minutes,
                 'order' => $lesson->order,
-                'status' => $targetStatus->serialize(),
+                'status' => strtolower($targetStatus->name),
                 'status_label' => $targetStatus->label(),
                 'attachments' => $attachments,
                 'current_watch_seconds' => $currentWatchSeconds,
@@ -475,7 +555,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'current_watch_seconds' => $progressRecord->current_watch_seconds,
                 'is_completed' => $isCompleted,
                 'course_progress_percent' => (float) $enrollment->progress_percent,
-                'course_status' => $enrollment->status->serialize(),
+                'course_status' => strtolower($enrollment->status->name),
                 'next_lesson_id' => $nextLessonId,
                 'unlock_condition' => $unlockCondition,
             ];
