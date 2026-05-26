@@ -17,7 +17,7 @@
 | `phone` | string | nullable | unique |
 | `email_verified_at` | timestamp | nullable | |
 | `password` | string | | |
-| `role` | tinyInteger | `4` | 1: Super Admin, 2: Admin, 3: Manager, 4: Employee |
+| `role` | tinyInteger | `4` | 1: Employee, 2: Manager, 3: Director, 4: CEO, 5: Super Admin, 6: Buyer |
 | `avatar` | string | nullable | |
 | `address` | string(255) | nullable | |
 | `fcm_token` | string | nullable | FCM push notification token |
