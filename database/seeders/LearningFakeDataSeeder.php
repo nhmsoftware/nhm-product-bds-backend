@@ -72,19 +72,16 @@ class LearningFakeDataSeeder extends Seeder
             ]);
 
             // 5. Tạo 10 Tiến độ bài học (LessonProgress)
-            // (Mặc định status có thể là Enum hoặc Integer tùy theo setup của dự án, 
-            // ở đây mình truyền int 2 đại diện cho trạng thái Đang học)
             $progress = LessonProgress::create([
                 'enrollment_id' => $enrollment->id,
                 'lesson_id' => $lesson->id,
-                'status' => 2, 
-                'watched_seconds' => 300,
-                'is_unlocked' => true,
+                'is_completed' => false,
+                'current_watch_seconds' => 120,
             ]);
 
             // 6. Tạo 10 Lượt làm bài Quiz (QuizAttempt)
             QuizAttempt::create([
-                'enrollment_id' => $enrollment->id,
+                'user_id' => $user->id,
                 'quiz_id' => $quiz->id,
                 'selected_option' => rand(0, 3),
                 'is_correct' => rand(0, 1) == 1,
