@@ -6791,12 +6791,12 @@
                 "tags": [
                     "Learning"
                 ],
-                "summary": "Xem danh sách khóa học bắt buộc của nhân viên (UC-053)",
-                "description": "Lấy danh sách các khóa học bắt buộc được phân bổ theo phòng ban hoặc vị trí công việc của nhân viên đang đăng nhập.",
+                "summary": "Xem khóa học bắt buộc hiện tại của nhân viên (UC-053)",
+                "description": "Lấy thông tin khóa học bắt buộc được phân bổ theo phòng ban hoặc vị trí công việc của nhân viên đang đăng nhập kèm theo quy tắc học tập và tiến độ.",
                 "operationId": "f8d1d82d10f87cd72b972447987716d0",
                 "responses": {
                     "200": {
-                        "description": "Tải danh sách khóa học bắt buộc thành công",
+                        "description": "Tải khóa học bắt buộc thành công",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -6807,61 +6807,177 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "Tải danh sách khóa học bắt buộc thành công."
+                                            "example": "Tải khóa học bắt buộc thành công."
                                         },
                                         "data": {
                                             "properties": {
-                                                "id": {
-                                                    "type": "string",
-                                                    "format": "uuid",
-                                                    "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
-                                                },
-                                                "title": {
-                                                    "type": "string",
-                                                    "example": "Khóa đào tạo văn hóa doanh nghiệp"
-                                                },
-                                                "thumbnail": {
-                                                    "type": "string",
-                                                    "example": "https://bds-app.s3.amazonaws.com/thumbnails/culture.jpg",
-                                                    "nullable": true
-                                                },
-                                                "description": {
-                                                    "type": "string",
-                                                    "example": "Giới thiệu về giá trị cốt lõi và sứ mệnh của công ty.",
-                                                    "nullable": true
-                                                },
-                                                "progress_percent": {
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 0
-                                                },
-                                                "status": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "status_label": {
-                                                    "type": "string",
-                                                    "example": "Chưa học"
-                                                },
-                                                "attachments": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "properties": {
-                                                            "type": {
-                                                                "type": "string",
-                                                                "example": "pdf"
-                                                            },
-                                                            "url": {
-                                                                "type": "string",
-                                                                "example": "https://example.com/file.pdf"
-                                                            },
-                                                            "name": {
-                                                                "type": "string",
-                                                                "example": "report.pdf"
-                                                            }
+                                                "course": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "description": "ID của khóa học",
+                                                            "type": "string",
+                                                            "format": "uuid",
+                                                            "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
                                                         },
-                                                        "type": "object"
-                                                    }
+                                                        "title": {
+                                                            "description": "Tiêu đề khóa học",
+                                                            "type": "string",
+                                                            "example": "Nền tảng Kinh doanh Bất động sản"
+                                                        },
+                                                        "label": {
+                                                            "description": "Nhãn khóa học",
+                                                            "type": "string",
+                                                            "example": "QUY TRÌNH HỌC TỰ CNTR"
+                                                        },
+                                                        "description": {
+                                                            "description": "Mô tả khóa học",
+                                                            "type": "string",
+                                                            "example": "Hoàn thành tuần tự các bài giảng dưới đây để nắm vững quy trình bán hàng chuẩn. Bạn không thể bỏ qua bài học.",
+                                                            "nullable": true
+                                                        },
+                                                        "thumbnailUrl": {
+                                                            "description": "Đường dẫn ảnh thu nhỏ khóa học",
+                                                            "type": "string",
+                                                            "example": "https://cdn.example.com/courses/bds-foundation.jpg",
+                                                            "nullable": true
+                                                        },
+                                                        "isMandatory": {
+                                                            "description": "Khóa học có bắt buộc hay không",
+                                                            "type": "boolean",
+                                                            "example": true
+                                                        },
+                                                        "learningRule": {
+                                                            "description": "Quy tắc học tập",
+                                                            "properties": {
+                                                                "type": {
+                                                                    "description": "Loại quy tắc học (sequential: tuần tự)",
+                                                                    "type": "string",
+                                                                    "example": "sequential"
+                                                                },
+                                                                "canSkipLesson": {
+                                                                    "description": "Có thể bỏ qua bài học không",
+                                                                    "type": "boolean",
+                                                                    "example": false
+                                                                },
+                                                                "requireWatchFullVideo": {
+                                                                    "description": "Yêu cầu xem hết video không",
+                                                                    "type": "boolean",
+                                                                    "example": true
+                                                                },
+                                                                "autoTrackProgress": {
+                                                                    "description": "Tự động ghi nhận tiến trình học tập",
+                                                                    "type": "boolean",
+                                                                    "example": true
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "progress": {
+                                                            "description": "Tiến độ học tập của nhân viên",
+                                                            "properties": {
+                                                                "status": {
+                                                                    "description": "Trạng thái tiến độ (not_started, in_progress, completed)",
+                                                                    "type": "string",
+                                                                    "example": "in_progress"
+                                                                },
+                                                                "percent": {
+                                                                    "description": "Phần trăm hoàn thành khóa học",
+                                                                    "type": "integer",
+                                                                    "example": 15
+                                                                },
+                                                                "completedLessons": {
+                                                                    "description": "Số bài học đã hoàn thành",
+                                                                    "type": "integer",
+                                                                    "example": 0
+                                                                },
+                                                                "totalLessons": {
+                                                                    "description": "Tổng số bài học trong khóa học",
+                                                                    "type": "integer",
+                                                                    "example": 3
+                                                                },
+                                                                "currentLessonId": {
+                                                                    "description": "ID bài học hiện tại đang học",
+                                                                    "type": "string",
+                                                                    "format": "uuid",
+                                                                    "example": "f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0",
+                                                                    "nullable": true
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "notice": {
+                                                            "description": "Thông báo/Lưu ý học tập",
+                                                            "properties": {
+                                                                "type": {
+                                                                    "description": "Loại thông báo",
+                                                                    "type": "string",
+                                                                    "example": "warning"
+                                                                },
+                                                                "message": {
+                                                                    "description": "Nội dung thông báo",
+                                                                    "type": "string",
+                                                                    "example": "Bạn cần xem hết thời lượng video trước khi chuyển sang bài tiếp theo. Hệ thống sẽ tự động ghi nhận tiến độ."
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "lessons": {
+                                                            "description": "Danh sách bài học trong khóa học",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "description": "ID bài học",
+                                                                        "type": "string",
+                                                                        "format": "uuid",
+                                                                        "example": "f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0"
+                                                                    },
+                                                                    "order": {
+                                                                        "description": "Thứ tự bài học",
+                                                                        "type": "integer",
+                                                                        "example": 1
+                                                                    },
+                                                                    "title": {
+                                                                        "description": "Tiêu đề bài học",
+                                                                        "type": "string",
+                                                                        "example": "Bài 1: Tổng quan về quy trình bán hàng"
+                                                                    },
+                                                                    "durationSeconds": {
+                                                                        "description": "Thời lượng video bài học tính bằng giây",
+                                                                        "type": "integer",
+                                                                        "example": 600
+                                                                    },
+                                                                    "status": {
+                                                                        "description": "Trạng thái bài học (completed, learning, locked)",
+                                                                        "type": "string",
+                                                                        "example": "learning"
+                                                                    },
+                                                                    "progressPercent": {
+                                                                        "description": "Tiến độ xem video của bài học (%)",
+                                                                        "type": "integer",
+                                                                        "example": 15
+                                                                    },
+                                                                    "isLocked": {
+                                                                        "description": "Bài học có bị khóa không",
+                                                                        "type": "boolean",
+                                                                        "example": false
+                                                                    },
+                                                                    "canContinue": {
+                                                                        "description": "Có thể tiếp tục học bài học này không",
+                                                                        "type": "boolean",
+                                                                        "example": true
+                                                                    },
+                                                                    "actionText": {
+                                                                        "description": "Nhãn hành động hiển thị trên giao diện",
+                                                                        "type": "string",
+                                                                        "example": "Tiếp tục"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 }
                                             },
                                             "type": "object"
@@ -6879,7 +6995,7 @@
                         "description": "Tài khoản của nhân viên đã bị khóa hoặc ngừng hoạt động"
                     },
                     "500": {
-                        "description": "Không thể tải danh sách khóa học bắt buộc do lỗi hệ thống"
+                        "description": "Không thể tải khóa học bắt buộc do lỗi hệ thống"
                     }
                 },
                 "security": [
