@@ -31,8 +31,8 @@ final class DashboardService extends BaseService implements DashboardServiceInte
     {
         return $this->execute(function () use ($dto) {
             $user = $this->authRepository->findById($dto->userId);
-            $this->validate($user, 'Người dùng không tồn tại.', 404);
-            $this->validate($user->is_active, 'Tài khoản của bạn đã bị khóa.', 403);
+            $this->validate($user !== null, 'Người dùng không tồn tại.', 404);
+            $this->validate((bool) $user->is_active, 'Tài khoản của bạn đã bị khóa.', 403);
 
             // Truy vấn thông tin chấm công thực tế của ngày hôm nay
             $today = Carbon::today()->toDateString();
