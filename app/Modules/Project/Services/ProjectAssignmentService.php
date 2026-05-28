@@ -7,24 +7,24 @@ namespace App\Modules\Project\Services;
 use App\Core\DTOs\ServiceReturn;
 use App\Core\Services\BaseService;
 use App\Modules\Auth\Models\Enums\UserRole;
-use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Project\DTO\AssignPermissionDTO;
 use App\Modules\Project\Interfaces\ProjectAssignmentRepositoryInterface;
 use App\Modules\Project\Interfaces\ProjectAssignmentServiceInterface;
 use App\Modules\Project\Interfaces\ProjectRepositoryInterface;
-use Illuminate\Support\Facades\DB;
 
 class ProjectAssignmentService extends BaseService implements ProjectAssignmentServiceInterface
 {
     public function __construct(
         private readonly ProjectAssignmentRepositoryInterface $assignmentRepository,
-        private readonly ProjectRepositoryInterface $projectRepository
+        private readonly ProjectRepositoryInterface $projectRepository,
+        private readonly AuthRepositoryInterface $authRepository
     ) {}
 
     public function assignPermission(string $userId, string $projectId, AssignPermissionDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($userId, $projectId, $dto) {
-            $user = User::find($userId);
+            $user = $this->authRepository->findById($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
 
             $project = $this->projectRepository->findById($projectId);
@@ -37,10 +37,10 @@ class ProjectAssignmentService extends BaseService implements ProjectAssignmentS
 
             // Kiểm tra assignableId có tồn tại không
             if ($dto->assignableType === 'user') {
-                $assignee = DB::table('users')->where('id', $dto->assignableId)->whereNull('deleted_at')->exists();
+                $assignee = $this->authRepository->findById($dto->assignableId) !== null;
                 $this->validate($assignee, 'Người dùng không tồn tại.', 404);
             } else {
-                $assignee = DB::table('departments')->where('id', $dto->assignableId)->whereNull('deleted_at')->exists();
+                $assignee = $this->assignmentRepository->checkActiveDepartmentExists($dto->assignableId);
                 $this->validate($assignee, 'Phòng ban không tồn tại.', 404);
             }
 

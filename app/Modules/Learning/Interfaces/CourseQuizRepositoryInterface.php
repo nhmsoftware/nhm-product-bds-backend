@@ -6,4 +6,5 @@ use App\Core\Interfaces\BaseRepositoryInterface;
 
 interface CourseQuizRepositoryInterface extends BaseRepositoryInterface
 {
+    public function getByLessonId(string $lessonId): \Illuminate\Database\Eloquent\Collection;
 }

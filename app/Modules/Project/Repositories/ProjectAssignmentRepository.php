@@ -22,4 +22,18 @@ class ProjectAssignmentRepository extends BaseRepository implements ProjectAssig
             ->where('assignable_type', $assignableType)
             ->first();
     }
+
+    /**
+     * Kiểm tra phòng ban có tồn tại hay không.
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function checkActiveDepartmentExists(string $id): bool
+    {
+        return \Illuminate\Support\Facades\DB::table('departments')
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->exists();
+    }
 }

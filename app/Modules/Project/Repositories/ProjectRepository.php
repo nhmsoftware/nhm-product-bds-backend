@@ -22,6 +22,17 @@ final class ProjectRepository extends BaseRepository implements ProjectRepositor
     }
 
     /**
+     * Lấy dự án theo tên.
+     *
+     * @param string $name
+     * @return Project|null
+     */
+    public function findByName(string $name): ?Project
+    {
+        return $this->model->where('name', $name)->first();
+    }
+
+    /**
      * Lấy danh sách dự án công khai.
      * 
      * @param ProjectListDTO $dto

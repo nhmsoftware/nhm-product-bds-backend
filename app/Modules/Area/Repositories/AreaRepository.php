@@ -32,6 +32,18 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
         return $this->model->newQuery()->count();
     }
 
+    public function findByIdAndProjectId(string $areaId, string $projectId): ?Area
+    {
+        return $this->model->where('id', $areaId)->where('project_id', $projectId)->first();
+    }
+
+    public function getAreasToDelete(string $projectId, array $keepAreaIds): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->model->where('project_id', $projectId)
+            ->whereNotIn('id', $keepAreaIds)
+            ->get();
+    }
+
     /**
      * Lấy danh sách khu đất được phân quyền cho người dùng có phân trang và lọc.
      *

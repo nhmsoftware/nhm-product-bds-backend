@@ -25,6 +25,21 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     }
 
     /**
+     * Lấy danh sách nhân viên đang hoạt động trong phòng ban.
+     *
+     * @param string $departmentName
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getActiveEmployeesByDepartment(string $departmentName): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->model->where('is_active', true)
+            ->where('role', \App\Modules\Auth\Models\Enums\UserRole::EMPLOYEE->value)
+            ->where('department', $departmentName)
+            ->with('employeeProfile')
+            ->get();
+    }
+
+    /**
      * Tìm người dùng theo số điện thoại.
      * 
      * @param string $phone

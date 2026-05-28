@@ -269,10 +269,7 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra logic nếu dự án đã tồn tại (dựa vào name)
-            // Lấy instance model để query
-            $existingProject = $this->projectRepository->getModelInstance()
-                ->where('name', $dto->project->name)
-                ->first();
+            $existingProject = $this->projectRepository->findByName($dto->project->name);
                 
             $this->validate($existingProject === null, 'Dự án đã tồn tại.', 400);
 

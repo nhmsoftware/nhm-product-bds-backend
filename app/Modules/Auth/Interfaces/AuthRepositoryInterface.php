@@ -15,6 +15,14 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
     public function findByEmail(string $email);
 
     /**
+     * Lấy danh sách nhân viên đang hoạt động trong phòng ban.
+     *
+     * @param string $departmentName
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getActiveEmployeesByDepartment(string $departmentName): \Illuminate\Database\Eloquent\Collection;
+
+    /**
      * Tìm người dùng theo số điện thoại.
      * 
      * @param string $phone

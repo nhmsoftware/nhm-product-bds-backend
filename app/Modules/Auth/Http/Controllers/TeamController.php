@@ -553,12 +553,10 @@ class TeamController extends BaseController
                         new OA\Property(property: 'message', type: 'string', example: 'Tải chi tiết KPI phòng ban thành công.'),
                         new OA\Property(
                             property: 'data',
-                            type: 'object',
                             properties: [
                                 new OA\Property(property: 'department', type: 'string', example: 'Phòng Kinh Doanh 1'),
                                 new OA\Property(
                                     property: 'kpi_summary',
-                                    type: 'object',
                                     properties: [
                                         new OA\Property(property: 'total_kpi_points', type: 'number', example: 350.5),
                                         new OA\Property(property: 'total_transactions', type: 'integer', example: 12),
@@ -566,13 +564,13 @@ class TeamController extends BaseController
                                         new OA\Property(property: 'total_meetings', type: 'integer', example: 20),
                                         new OA\Property(property: 'total_referrals', type: 'integer', example: 8),
                                         new OA\Property(property: 'kpi_stars', type: 'integer', example: 15),
-                                    ]
+                                    ],
+                                    type: 'object'
                                 ),
                                 new OA\Property(
                                     property: 'employee_ranking',
                                     type: 'array',
                                     items: new OA\Items(
-                                        type: 'object',
                                         properties: [
                                             new OA\Property(property: 'rank', type: 'integer', example: 1),
                                             new OA\Property(property: 'id', type: 'string', format: 'uuid'),
@@ -583,10 +581,12 @@ class TeamController extends BaseController
                                             new OA\Property(property: 'total_kpi_points', type: 'number', example: 45.5),
                                             new OA\Property(property: 'successful_transactions', type: 'integer', example: 3),
                                             new OA\Property(property: 'kpi_stars', type: 'integer', example: 2),
-                                        ]
+                                        ],
+                                        type: 'object'
                                     )
                                 )
-                            ]
+                            ],
+                            type: 'object'
                         )
                     ]
                 )

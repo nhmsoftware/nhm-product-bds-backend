@@ -12,4 +12,9 @@ final class CourseLessonRepository extends BaseRepository implements CourseLesso
     {
         return CourseLesson::class;
     }
+
+    public function getByCourseId(string $courseId): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->model->where('course_id', $courseId)->get();
+    }
 }

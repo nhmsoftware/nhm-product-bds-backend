@@ -18,6 +18,12 @@ interface LotRepositoryInterface extends BaseRepositoryInterface
      */
     public function getLotsByAreaId(string $areaId): Collection;
 
+    public function findByIdAndAreaId(string $lotId, string $areaId): ?Lot;
+
+    public function getLotsToDelete(string $areaId, array $keepLotIds): \Illuminate\Database\Eloquent\Collection;
+
+    public function hasLockedLots(string $areaId): bool;
+
     /**
      * Lấy thông tin lô đất kèm tên khu đất.
      *

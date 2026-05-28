@@ -572,8 +572,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             $areaId = $areaData['id'] ?? null;
             if ($areaId) {
                 // Kiểm tra xem area có tồn tại và thuộc projectId không
-                $area = clone $this->areaRepository->getModelInstance();
-                $area = $area->where('id', $areaId)->where('project_id', $projectId)->first();
+                $area = $this->areaRepository->findByIdAndProjectId($areaId, $projectId);
                 $this->validate($area !== null, "Khu đất không hợp lệ: $areaId", 400);
 
                 $this->areaRepository->updateById($areaId, $areaData);
@@ -590,8 +589,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             foreach ($lotsData as $lotData) {
                 $lotId = $lotData['id'] ?? null;
                 if ($lotId) {
-                    $lot = clone $this->lotRepository->getModelInstance();
-                    $lot = $lot->where('id', $lotId)->where('area_id', $areaId)->first();
+                    $lot = $this->lotRepository->findByIdAndAreaId($lotId, $areaId);
                     $this->validate($lot !== null, "Lô đất không hợp lệ: $lotId", 400);
 
                     $this->lotRepository->updateById($lotId, $lotData);
@@ -604,10 +602,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             }
 
             // Xóa các Lot không còn trong danh sách
-            $lotsToDelete = clone $this->lotRepository->getModelInstance();
-            $lotsToDelete = $lotsToDelete->where('area_id', $areaId)
-                ->whereNotIn('id', $keepLotIds)
-                ->get();
+            $lotsToDelete = $this->lotRepository->getLotsToDelete($areaId, $keepLotIds);
 
             foreach ($lotsToDelete as $lotToDelete) {
                 if (in_array($lotToDelete->status, [LotStatus::SOLD, LotStatus::RESERVED], true)) {
@@ -618,17 +613,11 @@ final class AreaService extends BaseService implements AreaServiceInterface
         }
 
         // Xóa các Area không còn trong danh sách
-        $areasToDelete = clone $this->areaRepository->getModelInstance();
-        $areasToDelete = $areasToDelete->where('project_id', $projectId)
-            ->whereNotIn('id', $keepAreaIds)
-            ->get();
+        $areasToDelete = $this->areaRepository->getAreasToDelete($projectId, $keepAreaIds);
 
         foreach ($areasToDelete as $areaToDelete) {
             // Kiểm tra xem area này có lot nào SOLD hoặc RESERVED không
-            $hasLockedLots = clone $this->lotRepository->getModelInstance();
-            $hasLockedLots = $hasLockedLots->where('area_id', $areaToDelete->id)
-                ->whereIn('status', [LotStatus::SOLD, LotStatus::RESERVED])
-                ->exists();
+            $hasLockedLots = $this->lotRepository->hasLockedLots($areaToDelete->id);
 
             if ($hasLockedLots) {
                 $this->throw("Không thể xóa phân khu '{$areaToDelete->name}' vì có chứa lô đất đã giao dịch/giữ chỗ.", 400);

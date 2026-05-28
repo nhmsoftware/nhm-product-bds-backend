@@ -733,17 +733,10 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $ep = $user->employeeProfile;
 
             // Lấy điểm thưởng trong tháng
-            $currentMonthPoints = $this->rewardPointHistoryRepository->query()
-                ->where('user_id', $userId)
-                ->whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year)
-                ->sum('points_changed');
+            $currentMonthPoints = $this->rewardPointHistoryRepository->calculateCurrentMonthPoints($userId);
 
             // Tính tiến độ mục tiêu quý (Ví dụ mặc định: 100 điểm = 100%)
-            $quarterPoints = $this->rewardPointHistoryRepository->query()
-                ->where('user_id', $userId)
-                ->whereBetween('created_at', [now()->firstOfQuarter(), now()->lastOfQuarter()])
-                ->sum('points_changed');
+            $quarterPoints = $this->rewardPointHistoryRepository->calculateQuarterPoints($userId);
 
             $targetPoints = 100; // Có thể thay đổi theo config
             $quarterProgress = $quarterPoints > 0 ? round(($quarterPoints / $targetPoints) * 100, 2) : 0;
@@ -1725,12 +1718,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
             }
 
             // Lấy tất cả active employees trong phòng ban này
-            $members = $this->authRepository->query()
-                ->where('is_active', true)
-                ->where('role', UserRole::EMPLOYEE->value)
-                ->where('department', $departmentName)
-                ->with('employeeProfile')
-                ->get();
+            $members = $this->authRepository->getActiveEmployeesByDepartment($departmentName);
 
             if ($members->isEmpty()) {
                 return $this->success(null, 'Không tìm thấy dữ liệu phù hợp.');

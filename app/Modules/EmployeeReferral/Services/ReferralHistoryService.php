@@ -8,6 +8,7 @@ use App\Core\DTOs\FilterDTO;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
 use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\EmployeeReferral\DTO\ScanReferralDTO;
 use App\Modules\EmployeeReferral\Interfaces\ReferralHistoryRepositoryInterface;
@@ -17,7 +18,8 @@ use App\Modules\EmployeeReferral\Models\Enums\ReferralStatus;
 final class ReferralHistoryService extends BaseService implements ReferralHistoryServiceInterface
 {
     public function __construct(
-        private readonly ReferralHistoryRepositoryInterface $referralHistoryRepository
+        private readonly ReferralHistoryRepositoryInterface $referralHistoryRepository,
+        private readonly AuthRepositoryInterface $authRepository
     ) {
     }
 
@@ -26,12 +28,13 @@ final class ReferralHistoryService extends BaseService implements ReferralHistor
      *
      * @param ScanReferralDTO $dto
      * @return ServiceReturn
+     * @throws \Throwable
      */
     public function recordScan(ScanReferralDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
             // 1. Tìm nhân viên theo referral_code (staff_code)
-            $employee = User::where('staff_code', $dto->referral_code)->first();
+            $employee = $this->authRepository->findByStaffCode($dto->referral_code);
             $this->validate($employee !== null, 'Mã giới thiệu không hợp lệ hoặc không tồn tại.', 404);
             $this->validate($employee->is_active === true, 'Tài khoản nhân viên giới thiệu đã bị khóa.', 403);
 

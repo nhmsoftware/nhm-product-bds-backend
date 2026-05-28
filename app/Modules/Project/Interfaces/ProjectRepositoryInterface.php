@@ -16,6 +16,14 @@ use Illuminate\Pagination\LengthAwarePaginator;
 interface ProjectRepositoryInterface extends BaseRepositoryInterface
 {
     /**
+     * Lấy dự án theo tên.
+     *
+     * @param string $name
+     * @return Project|null
+     */
+    public function findByName(string $name): ?Project;
+
+    /**
      * Lấy danh sách dự án công khai.
      * 
      * @param ProjectListDTO $dto

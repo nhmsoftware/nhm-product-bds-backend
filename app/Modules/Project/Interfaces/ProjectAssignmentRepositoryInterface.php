@@ -17,4 +17,12 @@ interface ProjectAssignmentRepositoryInterface extends BaseRepositoryInterface
      * @return \App\Modules\Project\Models\ProjectAssignment|null
      */
     public function findAssignment(string $projectId, string $assignableId, string $assignableType): ?\App\Modules\Project\Models\ProjectAssignment;
+
+    /**
+     * Kiểm tra phòng ban có tồn tại hay không.
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function checkActiveDepartmentExists(string $id): bool;
 }

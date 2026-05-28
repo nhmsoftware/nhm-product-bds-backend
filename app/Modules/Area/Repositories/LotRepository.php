@@ -21,6 +21,25 @@ final class LotRepository extends BaseRepository implements LotRepositoryInterfa
         return Lot::class;
     }
 
+    public function findByIdAndAreaId(string $lotId, string $areaId): ?Lot
+    {
+        return $this->model->where('id', $lotId)->where('area_id', $areaId)->first();
+    }
+
+    public function getLotsToDelete(string $areaId, array $keepLotIds): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->model->where('area_id', $areaId)
+            ->whereNotIn('id', $keepLotIds)
+            ->get();
+    }
+
+    public function hasLockedLots(string $areaId): bool
+    {
+        return $this->model->where('area_id', $areaId)
+            ->whereIn('status', [\App\Modules\Area\Models\Enums\LotStatus::SOLD, \App\Modules\Area\Models\Enums\LotStatus::RESERVED])
+            ->exists();
+    }
+
     /**
      * Lấy danh sách lô đất thuộc khu đất.
      *
