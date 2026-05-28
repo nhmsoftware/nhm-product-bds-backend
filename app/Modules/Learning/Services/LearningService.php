@@ -491,7 +491,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             }
 
             // A5 – Lưu tiến độ xem hiện tại của Employee
-            $progressRecord->current_watch_seconds = max($progressRecord->current_watch_seconds, $watchTimeSeconds);
+            $progressRecord->current_watch_seconds = $watchTimeSeconds;
 
             $alreadyCompleted = $progressRecord->is_completed;
             $newlyCompleted = false;
