@@ -21,7 +21,7 @@ class AdminCreateLessonRequest extends FormRequest
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
             'video_url' => 'nullable|string|max:500',
-            'duration_minutes' => 'required|integer|min:0',
+            'duration_seconds' => 'required|integer|min:0',
             'order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
             'attachments' => 'nullable|array',

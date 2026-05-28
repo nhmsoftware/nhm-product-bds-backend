@@ -3200,6 +3200,1080 @@
                 ]
             }
         },
+        "/api/v1/auth/reward-points/overview": {
+            "get": {
+                "tags": [
+                    "Reward Points"
+                ],
+                "summary": "Lấy thông tin tổng quan điểm thưởng của nhân viên (UC-105)",
+                "operationId": "443f57cd70c636bbff7e1aa522dfe451",
+                "responses": {
+                    "200": {
+                        "description": "Tải dữ liệu tổng quan thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải dữ liệu tổng quan thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "total_points": {
+                                                    "type": "integer",
+                                                    "example": 120
+                                                },
+                                                "kpi_stars": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "current_month_points": {
+                                                    "type": "integer",
+                                                    "example": 20
+                                                },
+                                                "quarter_progress_percent": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 80.5
+                                                },
+                                                "quarter_points": {
+                                                    "type": "integer",
+                                                    "example": 80
+                                                },
+                                                "quarter_target": {
+                                                    "type": "integer",
+                                                    "example": 100
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/reward-points/history": {
+            "get": {
+                "tags": [
+                    "Reward Points"
+                ],
+                "summary": "Lấy lịch sử điểm thưởng của nhân viên (UC-105)",
+                "operationId": "b60ea04ca290308168cc5874e161e57f",
+                "parameters": [
+                    {
+                        "name": "from_date",
+                        "in": "query",
+                        "description": "Ngày bắt đầu (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to_date",
+                        "in": "query",
+                        "description": "Ngày kết thúc (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số lượng trên trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải dữ liệu lịch sử điểm thưởng thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải dữ liệu lịch sử điểm thưởng thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "uuid"
+                                                            },
+                                                            "user_id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "uuid"
+                                                            },
+                                                            "points_changed": {
+                                                                "type": "integer",
+                                                                "example": 10
+                                                            },
+                                                            "stars_changed": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "reason": {
+                                                                "type": "string",
+                                                                "example": "1 giao dịch công chứng thành công"
+                                                            },
+                                                            "created_at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "example": "2026-05-25T10:00:00Z"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/team/overview": {
+            "get": {
+                "tags": [
+                    "Team"
+                ],
+                "summary": "Lấy thông tin tổng quan phòng ban/khu vực (UC-106)",
+                "operationId": "7efd77b2dafa95d61b5e2dd30d99541b",
+                "responses": {
+                    "200": {
+                        "description": "Tải thông tin tổng quan thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải thông tin tổng quan thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "team_name": {
+                                                    "type": "string",
+                                                    "example": "Phòng Kinh Doanh 1"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Phòng ban/Khu vực Phòng Kinh Doanh 1"
+                                                },
+                                                "member_count": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "manager_name": {
+                                                    "type": "string",
+                                                    "example": "Nguyen Van A"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/team/members": {
+            "get": {
+                "tags": [
+                    "Team"
+                ],
+                "summary": "Lấy danh sách nhân viên trong phòng ban/khu vực (UC-106)",
+                "operationId": "9e7364db44d73bbd12527c03b55fc982",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Tìm kiếm theo tên hoặc mã nhân viên",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "job_position",
+                        "in": "query",
+                        "description": "Lọc theo vị trí công việc",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số lượng trên trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải danh sách nhân viên thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải danh sách nhân viên thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "uuid"
+                                                            },
+                                                            "staff_code": {
+                                                                "type": "string",
+                                                                "example": "ST-ABCXYZ"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Nguyen Van B"
+                                                            },
+                                                            "job_position": {
+                                                                "type": "string",
+                                                                "example": "Nhân viên kinh doanh"
+                                                            },
+                                                            "phone": {
+                                                                "type": "string",
+                                                                "example": "0901234567"
+                                                            },
+                                                            "avatar": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/team/kpi/overview": {
+            "get": {
+                "tags": [
+                    "Team KPI"
+                ],
+                "summary": "Lấy thông tin tổng quan KPI phòng ban/khu vực (UC-107)",
+                "operationId": "fbfff4c7fef0cca0f7480b45e8a20820",
+                "parameters": [
+                    {
+                        "name": "from_date",
+                        "in": "query",
+                        "description": "Ngày bắt đầu (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to_date",
+                        "in": "query",
+                        "description": "Ngày kết thúc (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải thông tin tổng quan KPI thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải thông tin tổng quan KPI thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "total_kpi_points": {
+                                                    "type": "number",
+                                                    "example": 150.5
+                                                },
+                                                "total_transactions": {
+                                                    "type": "integer",
+                                                    "example": 12
+                                                },
+                                                "total_tours": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "total_meetings": {
+                                                    "type": "integer",
+                                                    "example": 20
+                                                },
+                                                "total_referrals": {
+                                                    "type": "integer",
+                                                    "example": 8
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/team/kpi/leaderboard": {
+            "get": {
+                "tags": [
+                    "Team KPI"
+                ],
+                "summary": "Lấy bảng xếp hạng KPI đội nhóm/phòng ban (UC-107)",
+                "operationId": "654c404deb2a6ac68515d31d1d2678f3",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Tìm kiếm theo họ tên hoặc mã nhân viên",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "job_position",
+                        "in": "query",
+                        "description": "Lọc theo vị trí công việc",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from_date",
+                        "in": "query",
+                        "description": "Ngày bắt đầu (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to_date",
+                        "in": "query",
+                        "description": "Ngày kết thúc (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số lượng kết quả trên mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải bảng xếp hạng KPI thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải bảng xếp hạng KPI thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "rank": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "uuid"
+                                                            },
+                                                            "staff_code": {
+                                                                "type": "string",
+                                                                "example": "ST-ABCXYZ"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Nguyen Van B"
+                                                            },
+                                                            "job_position": {
+                                                                "type": "string",
+                                                                "example": "Nhân viên kinh doanh"
+                                                            },
+                                                            "avatar": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "total_kpi_points": {
+                                                                "type": "number",
+                                                                "example": 45.5
+                                                            },
+                                                            "successful_transactions": {
+                                                                "type": "integer",
+                                                                "example": 3
+                                                            },
+                                                            "kpi_stars": {
+                                                                "type": "integer",
+                                                                "example": 2
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/team/kpi/members/{id}": {
+            "get": {
+                "tags": [
+                    "Team KPI"
+                ],
+                "summary": "Xem chi tiết KPI và lịch sử điểm thưởng của một nhân viên (UC-107)",
+                "operationId": "5a72537eb9b031323e7c82533602ec9b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của nhân viên",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "from_date",
+                        "in": "query",
+                        "description": "Ngày bắt đầu (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to_date",
+                        "in": "query",
+                        "description": "Ngày kết thúc (Y-m-d)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số lượng lịch sử điểm thưởng trên mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải chi tiết KPI nhân viên thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải chi tiết KPI nhân viên thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "employee": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid"
+                                                        },
+                                                        "staff_code": {
+                                                            "type": "string",
+                                                            "example": "ST-ABCXYZ"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Nguyen Van B"
+                                                        },
+                                                        "job_position": {
+                                                            "type": "string",
+                                                            "example": "Nhân viên kinh doanh"
+                                                        },
+                                                        "avatar": {
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
+                                                        "department": {
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
+                                                        "area": {
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "kpi_summary": {
+                                                    "properties": {
+                                                        "total_kpi_points": {
+                                                            "type": "number",
+                                                            "example": 45.5
+                                                        },
+                                                        "kpi_stars": {
+                                                            "type": "integer",
+                                                            "example": 2
+                                                        },
+                                                        "transactions_count": {
+                                                            "type": "integer",
+                                                            "example": 3
+                                                        },
+                                                        "tours_count": {
+                                                            "type": "integer",
+                                                            "example": 5
+                                                        },
+                                                        "meetings_count": {
+                                                            "type": "integer",
+                                                            "example": 4
+                                                        },
+                                                        "referrals_count": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "work_days": {
+                                                            "type": "integer",
+                                                            "example": 22
+                                                        },
+                                                        "absences": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "reward_history": {
+                                                    "properties": {
+                                                        "current_page": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "data": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/components/schemas/RewardPointHistory"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy thông tin nhân viên."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/team/ranking/departments": {
+            "get": {
+                "tags": [
+                    "Team KPI"
+                ],
+                "summary": "Lấy bảng xếp hạng phòng ban dựa trên điểm KPI (UC-108)",
+                "operationId": "c715a92a360c03b875b20871e8e59422",
+                "parameters": [
+                    {
+                        "name": "month",
+                        "in": "query",
+                        "description": "Lọc theo tháng (1-12)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "quarter",
+                        "in": "query",
+                        "description": "Lọc theo quý (1-4)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "description": "Lọc theo năm",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "area",
+                        "in": "query",
+                        "description": "Lọc theo khu vực",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số lượng phòng ban trên mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải bảng xếp hạng phòng ban thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải bảng xếp hạng phòng ban thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "rank": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "department": {
+                                                                "type": "string",
+                                                                "example": "Phòng Kinh Doanh 1"
+                                                            },
+                                                            "total_kpi_points": {
+                                                                "type": "number",
+                                                                "example": 350.5
+                                                            },
+                                                            "successful_transactions": {
+                                                                "type": "integer",
+                                                                "example": 12
+                                                            },
+                                                            "kpi_stars": {
+                                                                "type": "integer",
+                                                                "example": 15
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/team/ranking/departments/{department}": {
+            "get": {
+                "tags": [
+                    "Team KPI"
+                ],
+                "summary": "Xem chi tiết KPI của phòng ban (UC-108)",
+                "operationId": "b323029fe45f0e1fb8790abf5245b01a",
+                "parameters": [
+                    {
+                        "name": "department",
+                        "in": "path",
+                        "description": "Tên phòng ban (URL-encoded)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "month",
+                        "in": "query",
+                        "description": "Lọc theo tháng (1-12)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "quarter",
+                        "in": "query",
+                        "description": "Lọc theo quý (1-4)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "description": "Lọc theo năm",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải chi tiết KPI phòng ban thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải chi tiết KPI phòng ban thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "department": {
+                                                    "type": "string",
+                                                    "example": "Phòng Kinh Doanh 1"
+                                                },
+                                                "kpi_summary": {
+                                                    "properties": {
+                                                        "total_kpi_points": {
+                                                            "type": "number",
+                                                            "example": 350.5
+                                                        },
+                                                        "total_transactions": {
+                                                            "type": "integer",
+                                                            "example": 12
+                                                        },
+                                                        "total_tours": {
+                                                            "type": "integer",
+                                                            "example": 15
+                                                        },
+                                                        "total_meetings": {
+                                                            "type": "integer",
+                                                            "example": 20
+                                                        },
+                                                        "total_referrals": {
+                                                            "type": "integer",
+                                                            "example": 8
+                                                        },
+                                                        "kpi_stars": {
+                                                            "type": "integer",
+                                                            "example": 15
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "employee_ranking": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "rank": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid"
+                                                            },
+                                                            "staff_code": {
+                                                                "type": "string",
+                                                                "example": "ST-ABCXYZ"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Nguyen Van B"
+                                                            },
+                                                            "job_position": {
+                                                                "type": "string",
+                                                                "example": "Nhân viên kinh doanh"
+                                                            },
+                                                            "avatar": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "total_kpi_points": {
+                                                                "type": "number",
+                                                                "example": 45.5
+                                                            },
+                                                            "successful_transactions": {
+                                                                "type": "integer",
+                                                                "example": 3
+                                                            },
+                                                            "kpi_stars": {
+                                                                "type": "integer",
+                                                                "example": 2
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Bạn không có quyền truy cập chức năng này."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy dữ liệu phù hợp."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/public/consultation/setting": {
             "get": {
                 "tags": [
@@ -5671,7 +6745,7 @@
                                         "items": {
                                             "required": [
                                                 "title",
-                                                "duration_minutes"
+                                                "duration_seconds"
                                             ],
                                             "properties": {
                                                 "title": {
@@ -5688,7 +6762,7 @@
                                                     "example": "https://example.com/figma1.mp4",
                                                     "nullable": true
                                                 },
-                                                "duration_minutes": {
+                                                "duration_seconds": {
                                                     "type": "integer",
                                                     "example": 30
                                                 },
@@ -5887,7 +6961,7 @@
                                         "items": {
                                             "required": [
                                                 "title",
-                                                "duration_minutes"
+                                                "duration_seconds"
                                             ],
                                             "properties": {
                                                 "id": {
@@ -5910,7 +6984,7 @@
                                                     "example": "https://example.com/figma1_new.mp4",
                                                     "nullable": true
                                                 },
-                                                "duration_minutes": {
+                                                "duration_seconds": {
                                                     "type": "integer",
                                                     "example": 35
                                                 },
@@ -6361,7 +7435,7 @@
                                         "type": "string",
                                         "nullable": true
                                     },
-                                    "duration_minutes": {
+                                    "duration_seconds": {
                                         "type": "integer"
                                     },
                                     "order": {
@@ -6435,7 +7509,7 @@
                                         "type": "string",
                                         "nullable": true
                                     },
-                                    "duration_minutes": {
+                                    "duration_seconds": {
                                         "type": "integer",
                                         "nullable": true
                                     },
@@ -7093,7 +8167,7 @@
                                                                 "example": "https://bds-app.s3.amazonaws.com/videos/lesson1.mp4",
                                                                 "nullable": true
                                                             },
-                                                            "duration_minutes": {
+                                                            "duration_seconds": {
                                                                 "type": "integer",
                                                                 "example": 15
                                                             },
@@ -7204,7 +8278,7 @@
                                                     "example": "https://bds-app.s3.amazonaws.com/videos/lesson1.mp4",
                                                     "nullable": true
                                                 },
-                                                "duration_minutes": {
+                                                "duration_seconds": {
                                                     "type": "integer",
                                                     "example": 15
                                                 },
@@ -13045,7 +14119,7 @@
                         "example": "https://bds-app.s3.amazonaws.com/videos/lesson1.mp4",
                         "nullable": true
                     },
-                    "duration_minutes": {
+                    "duration_seconds": {
                         "description": "Thời lượng video (phút)",
                         "type": "integer",
                         "example": 15
@@ -13801,6 +14875,18 @@
         {
             "name": "Site Tour",
             "description": "Dẫn khách tham quan thực tế: nhân viên check-in hoạt động dẫn khách tại dự án bằng GPS và ảnh minh chứng; xem lịch sử và các lượt dẫn khách gần đây."
+        },
+        {
+            "name": "Reward Points",
+            "description": "Reward Points"
+        },
+        {
+            "name": "Team",
+            "description": "Team"
+        },
+        {
+            "name": "Team KPI",
+            "description": "Team KPI"
         },
         {
             "name": "Employee Referral",

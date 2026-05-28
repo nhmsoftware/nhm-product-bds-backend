@@ -47,7 +47,7 @@ class LearningFakeDataSeeder extends Seeder
                 'title' => 'Bài 1: Giới thiệu khóa học ' . $i,
                 'content' => '<p>Nội dung text của bài học số ' . $i . '</p>',
                 'video_url' => 'http://localhost:8000/videos/demo.mp4',
-                'duration_minutes' => 15,
+                'duration_seconds' => 15,
                 'order' => 1,
                 'is_active' => true,
                 'attachments' => [

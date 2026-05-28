@@ -20,7 +20,7 @@ use OpenApi\Attributes as OA;
  * @property string $title
  * @property string $content
  * @property string $video_url
- * @property int $duration_minutes
+ * @property int $duration_seconds
  * @property int $order
  * @property bool $is_active
  * @property array|null $attachments
@@ -41,7 +41,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'title', type: 'string', example: 'Bài 1: Tổng quan về doanh nghiệp', description: 'Tên bài học'),
         new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung chi tiết bài học...', description: 'Nội dung text/HTML'),
         new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/videos/lesson1.mp4', description: 'URL video bài học'),
-        new OA\Property(property: 'duration_minutes', type: 'integer', example: 15, description: 'Thời lượng video (phút)'),
+        new OA\Property(property: 'duration_seconds', type: 'integer', example: 15, description: 'Thời lượng video (phút)'),
         new OA\Property(property: 'order', type: 'integer', example: 1, description: 'Thứ tự trong khóa học'),
         new OA\Property(property: 'is_active', type: 'boolean', example: true, description: 'Trạng thái bài học (Mở khóa / Khóa)'),
         new OA\Property(
@@ -73,7 +73,7 @@ class CourseLesson extends Model
         'title',
         'content',
         'video_url',
-        'duration_minutes',
+        'duration_seconds',
         'order',
         'is_active',
         'attachments',
@@ -82,7 +82,7 @@ class CourseLesson extends Model
     protected $casts = [
         'id' => 'string',
         'course_id' => 'string',
-        'duration_minutes' => 'integer',
+        'duration_seconds' => 'integer',
         'order' => 'integer',
         'is_active' => 'boolean',
         'attachments' => 'array',

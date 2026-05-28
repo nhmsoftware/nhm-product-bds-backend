@@ -119,12 +119,12 @@ final class LearningAdminController extends BaseController
                         type: 'array',
                         items: new OA\Items(
                             type: 'object',
-                            required: ['title', 'duration_minutes'],
+                            required: ['title', 'duration_seconds'],
                             properties: [
                                 new OA\Property(property: 'title', type: 'string', example: 'Bài học Figma 1'),
                                 new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung Figma'),
                                 new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://example.com/figma1.mp4'),
-                                new OA\Property(property: 'duration_minutes', type: 'integer', example: 30),
+                                new OA\Property(property: 'duration_seconds', type: 'integer', example: 30),
                                 new OA\Property(property: 'order', type: 'integer', example: 1),
                                 new OA\Property(property: 'is_active', type: 'boolean', example: true),
                                 new OA\Property(
@@ -205,13 +205,13 @@ final class LearningAdminController extends BaseController
                         property: 'lessons',
                         type: 'array',
                         items: new OA\Items(
-                            required: ['title', 'duration_minutes'],
+                            required: ['title', 'duration_seconds'],
                             properties: [
                                 new OA\Property(property: 'id', type: 'string', format: 'uuid', nullable: true, example: 'b0f80a44-df42-493e-9081-305128362678'),
                                 new OA\Property(property: 'title', type: 'string', example: 'Bài học Figma 1 updated'),
                                 new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung Figma nâng cao'),
                                 new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://example.com/figma1_new.mp4'),
-                                new OA\Property(property: 'duration_minutes', type: 'integer', example: 35),
+                                new OA\Property(property: 'duration_seconds', type: 'integer', example: 35),
                                 new OA\Property(property: 'order', type: 'integer', example: 1),
                                 new OA\Property(property: 'is_active', type: 'boolean', example: true),
                                 new OA\Property(
@@ -485,7 +485,7 @@ final class LearningAdminController extends BaseController
                     new OA\Property(property: 'title', type: 'string'),
                     new OA\Property(property: 'content', type: 'string', nullable: true),
                     new OA\Property(property: 'video_url', type: 'string', nullable: true),
-                    new OA\Property(property: 'duration_minutes', type: 'integer'),
+                    new OA\Property(property: 'duration_seconds', type: 'integer'),
                     new OA\Property(property: 'order', type: 'integer', default: 0),
                     new OA\Property(property: 'is_active', type: 'boolean', default: true),
                     new OA\Property(property: 'attachments', type: 'array', items: new OA\Items(type: 'object'))
@@ -520,7 +520,7 @@ final class LearningAdminController extends BaseController
                     new OA\Property(property: 'title', type: 'string', nullable: true),
                     new OA\Property(property: 'content', type: 'string', nullable: true),
                     new OA\Property(property: 'video_url', type: 'string', nullable: true),
-                    new OA\Property(property: 'duration_minutes', type: 'integer', nullable: true),
+                    new OA\Property(property: 'duration_seconds', type: 'integer', nullable: true),
                     new OA\Property(property: 'order', type: 'integer', nullable: true),
                     new OA\Property(property: 'is_active', type: 'boolean', nullable: true),
                     new OA\Property(property: 'attachments', type: 'array', items: new OA\Items(type: 'object'), nullable: true)

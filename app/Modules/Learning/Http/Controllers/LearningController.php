@@ -187,7 +187,7 @@ final class LearningController extends BaseController
                                             new OA\Property(property: 'title', type: 'string', example: 'Bài 1: Tổng quan về doanh nghiệp'),
                                             new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung chi tiết bài học...'),
                                             new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/videos/lesson1.mp4'),
-                                            new OA\Property(property: 'duration_minutes', type: 'integer', example: 15),
+                                            new OA\Property(property: 'duration_seconds', type: 'integer', example: 15),
                                             new OA\Property(property: 'order', type: 'integer', example: 1),
                                             new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\LessonStatus::LEARNING->value, description: 'Trạng thái bài học: 1 (completed), 2 (learning), 3 (locked)'),
                                             new OA\Property(property: 'status_label', type: 'string', example: 'Đang học')
@@ -231,10 +231,10 @@ final class LearningController extends BaseController
 
     #[OA\Get(
         path: '/api/v1/learning/lessons/{id}',
-        summary: 'Xem chi tiết thông tin bài học (UC-054)',
         description: 'Tải thông tin chi tiết của bài học bao gồm video đào tạo, mô tả bài học, trạng thái bài học và danh sách tài liệu đính kèm.',
-        tags: ['Learning'],
+        summary: 'Xem chi tiết thông tin bài học (UC-054)',
         security: [['sanctum' => []]],
+        tags: ['Learning'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -254,14 +254,13 @@ final class LearningController extends BaseController
                         new OA\Property(property: 'message', type: 'string', example: 'Tải thông tin bài học thành công.'),
                         new OA\Property(
                             property: 'data',
-                            type: 'object',
                             properties: [
                                 new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0'),
                                 new OA\Property(property: 'course_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
                                 new OA\Property(property: 'title', type: 'string', example: 'Bài 1: Tổng quan về doanh nghiệp'),
                                 new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung chi tiết bài học...'),
                                 new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/videos/lesson1.mp4'),
-                                new OA\Property(property: 'duration_minutes', type: 'integer', example: 15),
+                                new OA\Property(property: 'duration_seconds', type: 'integer', example: 15),
                                 new OA\Property(property: 'order', type: 'integer', example: 1),
                                 new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\LessonStatus::LEARNING->value, description: 'Trạng thái bài học: 1 (completed), 2 (learning), 3 (locked)'),
                                 new OA\Property(property: 'status_label', type: 'string', example: 'Đang học'),
@@ -278,7 +277,8 @@ final class LearningController extends BaseController
                                     )
                                 ),
                                 new OA\Property(property: 'unlock_condition', type: 'string', example: 'Hoàn thành bài học này để mở khóa bài tiếp theo: Bài học số 2')
-                            ]
+                            ],
+                            type: 'object'
                         )
                     ]
                 )
@@ -326,19 +326,9 @@ final class LearningController extends BaseController
 
     #[OA\Post(
         path: '/api/v1/learning/lessons/{id}/progress',
-        summary: 'Cập nhật tiến độ xem video bài học và mở khóa (UC-055)',
         description: 'Cập nhật thời lượng xem video của bài học hiện tại. Nếu nhân viên xem đủ thời lượng yêu cầu, trạng thái bài học được cập nhật thành "Hoàn thành" và mở khóa bài tiếp theo.',
-        tags: ['Learning'],
+        summary: 'Cập nhật tiến độ xem video bài học và mở khóa (UC-055)',
         security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(
-                name: 'id',
-                in: 'path',
-                required: true,
-                description: 'ID của bài học (UUID)',
-                schema: new OA\Schema(type: 'string', format: 'uuid')
-            )
-        ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -348,6 +338,16 @@ final class LearningController extends BaseController
                 ]
             )
         ),
+        tags: ['Learning'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID của bài học (UUID)',
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            )
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -358,7 +358,6 @@ final class LearningController extends BaseController
                         new OA\Property(property: 'message', type: 'string', example: 'Cập nhật tiến độ xem video thành công.'),
                         new OA\Property(
                             property: 'data',
-                            type: 'object',
                             properties: [
                                 new OA\Property(property: 'lesson_id', type: 'string', format: 'uuid', example: 'f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0'),
                                 new OA\Property(property: 'current_watch_seconds', type: 'integer', example: 600),
@@ -367,7 +366,8 @@ final class LearningController extends BaseController
                                 new OA\Property(property: 'course_status', type: 'string', example: 'in_progress'),
                                 new OA\Property(property: 'next_lesson_id', type: 'string', format: 'uuid', nullable: true, example: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d'),
                                 new OA\Property(property: 'unlock_condition', type: 'string', example: 'Hoàn thành bài học này để mở khóa bài tiếp theo: Bài học số 2')
-                            ]
+                            ],
+                            type: 'object'
                         )
                     ]
                 )
@@ -415,14 +415,14 @@ final class LearningController extends BaseController
                         new OA\Property(property: 'message', type: 'string', example: 'Dữ liệu không hợp lệ.'),
                         new OA\Property(
                             property: 'errors',
-                            type: 'object',
                             properties: [
                                 new OA\Property(
                                     property: 'watch_time_seconds',
                                     type: 'array',
                                     items: new OA\Items(type: 'string', example: 'Vui lòng cung cấp thời lượng đã xem video.')
                                 )
-                            ]
+                            ],
+                            type: 'object'
                         )
                     ]
                 )
@@ -450,10 +450,10 @@ final class LearningController extends BaseController
 
     #[OA\Get(
         path: '/api/v1/learning/lessons/{id}/quiz',
-        summary: 'Lấy danh sách câu hỏi kiểm tra bài học (UC-056)',
         description: 'Tải danh sách các câu hỏi trắc nghiệm của bài học để nhân viên bắt đầu làm bài. Danh sách câu hỏi không chứa kết quả đúng.',
-        tags: ['Learning'],
+        summary: 'Lấy danh sách câu hỏi kiểm tra bài học (UC-056)',
         security: [['sanctum' => []]],
+        tags: ['Learning'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -473,7 +473,6 @@ final class LearningController extends BaseController
                         new OA\Property(property: 'message', type: 'string', example: 'Tải danh sách câu hỏi kiểm tra thành công.'),
                         new OA\Property(
                             property: 'data',
-                            type: 'object',
                             properties: [
                                 new OA\Property(property: 'lesson_id', type: 'string', format: 'uuid', example: 'f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0'),
                                 new OA\Property(property: 'lesson_title', type: 'string', example: 'Bài 1: Tổng quan về doanh nghiệp'),
@@ -495,7 +494,8 @@ final class LearningController extends BaseController
                                     )
                                 ),
                                 new OA\Property(property: 'time_limit_minutes', type: 'integer', example: 15)
-                            ]
+                            ],
+                            type: 'object'
                         )
                     ]
                 )
@@ -543,19 +543,9 @@ final class LearningController extends BaseController
 
     #[OA\Post(
         path: '/api/v1/learning/lessons/{id}/quiz/submit',
-        summary: 'Nộp bài kiểm tra trắc nghiệm của bài học (UC-056)',
         description: 'Chấm điểm bài thi và lưu lịch sử làm bài kiểm tra của nhân viên.',
-        tags: ['Learning'],
+        summary: 'Nộp bài kiểm tra trắc nghiệm của bài học (UC-056)',
         security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(
-                name: 'id',
-                in: 'path',
-                required: true,
-                description: 'ID của bài học (UUID)',
-                schema: new OA\Schema(type: 'string', format: 'uuid')
-            )
-        ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -576,6 +566,16 @@ final class LearningController extends BaseController
                 ]
             )
         ),
+        tags: ['Learning'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID của bài học (UUID)',
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            )
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -586,7 +586,6 @@ final class LearningController extends BaseController
                         new OA\Property(property: 'message', type: 'string', example: 'Chúc mừng! Bạn đã hoàn thành bài quiz đạt yêu cầu.'),
                         new OA\Property(
                             property: 'data',
-                            type: 'object',
                             properties: [
                                 new OA\Property(property: 'score', type: 'number', format: 'float', example: 100.00),
                                 new OA\Property(property: 'correct_count', type: 'integer', example: 1),
@@ -613,7 +612,8 @@ final class LearningController extends BaseController
                                         type: 'object'
                                     )
                                 )
-                            ]
+                            ],
+                            type: 'object'
                         )
                     ]
                 )
@@ -666,16 +666,16 @@ final class LearningController extends BaseController
 
     #[OA\Post(
         path: '/api/v1/learning/courses/{id}/complete',
-        summary: 'Ghi nhận hoàn thành khóa học (UC-057)',
         description: 'Kiểm tra tiến độ học tập và điểm số bài quiz cuối khóa để ghi nhận nhân viên đã hoàn thành khóa học.',
-        tags: ['Learning'],
+        summary: 'Ghi nhận hoàn thành khóa học (UC-057)',
         security: [['sanctum' => []]],
+        tags: ['Learning'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
+                description: 'ID của khóa học (UUID)',
                 in: 'path',
                 required: true,
-                description: 'ID của khóa học (UUID)',
                 schema: new OA\Schema(type: 'string', format: 'uuid')
             )
         ],
@@ -737,16 +737,16 @@ final class LearningController extends BaseController
 
     #[OA\Get(
         path: '/api/v1/learning/courses/{id}/certificate',
-        summary: 'Xem dữ liệu chứng nhận hoàn thành khóa học (UC-058)',
         description: 'Tải thông tin chứng nhận hoàn thành khóa học của nhân viên bao gồm: Tên khóa học, Họ tên nhân viên, Ngày hoàn thành, Điểm số, Mã chứng nhận.',
-        tags: ['Learning'],
+        summary: 'Xem dữ liệu chứng nhận hoàn thành khóa học (UC-058)',
         security: [['sanctum' => []]],
+        tags: ['Learning'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
+                description: 'ID của khóa học (UUID)',
                 in: 'path',
                 required: true,
-                description: 'ID của khóa học (UUID)',
                 schema: new OA\Schema(type: 'string', format: 'uuid')
             )
         ],
@@ -811,10 +811,10 @@ final class LearningController extends BaseController
 
     #[OA\Get(
         path: '/api/v1/learning/courses/{id}/certificate/download',
-        summary: 'Tải file chứng nhận hoàn thành khóa học (UC-058)',
         description: 'Tải file chứng nhận định dạng văn bản (.txt) về thiết bị.',
-        tags: ['Learning'],
+        summary: 'Tải file chứng nhận hoàn thành khóa học (UC-058)',
         security: [['sanctum' => []]],
+        tags: ['Learning'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -882,19 +882,9 @@ final class LearningController extends BaseController
 
     #[OA\Post(
         path: '/api/v1/learning/lessons/{id}/quiz/draft',
-        summary: 'Lưu tạm bài làm quiz (lưu bản nháp) (UC-059)',
         description: 'Cho phép nhân viên lưu nháp tiến trình làm bài kiểm tra để tiếp tục hoàn thiện sau.',
-        tags: ['Learning'],
+        summary: 'Lưu tạm bài làm quiz (lưu bản nháp) (UC-059)',
         security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(
-                name: 'id',
-                in: 'path',
-                required: true,
-                description: 'ID của bài học (UUID) có bài quiz cần lưu nháp',
-                schema: new OA\Schema(type: 'string', format: 'uuid')
-            )
-        ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -913,6 +903,16 @@ final class LearningController extends BaseController
                 ]
             )
         ),
+        tags: ['Learning'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID của bài học (UUID) có bài quiz cần lưu nháp',
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            )
+        ],
         responses: [
             new OA\Response(
                 response: 200,

@@ -52,7 +52,7 @@ class BdsCourseSeeder extends Seeder
             'title'            => 'Tổng quan thị trường BĐS Cao cấp',
             'content'          => '<p>Nội dung bài học 1: Tổng quan thị trường bất động sản cao cấp tại Việt Nam.</p>',
             'video_url'        => 'https://cdn.example.com/videos/lesson-001.mp4',
-            'duration_minutes' => 45, // 2700 giây
+            'duration_seconds' => 45, // 2700 giây
             'order'            => 1,
             'is_active'        => true,
             'attachments'      => [],
@@ -63,7 +63,7 @@ class BdsCourseSeeder extends Seeder
             'title'            => 'Quy trình Tư vấn & Chốt Sales',
             'content'          => '<p>Nội dung bài học 2: Quy trình tư vấn và chốt sales hiệu quả.</p>',
             'video_url'        => 'https://cdn.example.com/videos/lesson-002.mp4',
-            'duration_minutes' => 60, // 3600 giây
+            'duration_seconds' => 60, // 3600 giây
             'order'            => 2,
             'is_active'        => true,
             'attachments'      => [],
@@ -74,7 +74,7 @@ class BdsCourseSeeder extends Seeder
             'title'            => 'Xử lý Từ chối & Chăm sóc Khách hàng',
             'content'          => '<p>Nội dung bài học 3: Kỹ năng xử lý từ chối và chăm sóc khách hàng sau bán.</p>',
             'video_url'        => 'https://cdn.example.com/videos/lesson-003.mp4',
-            'duration_minutes' => 55, // 3300 giây
+            'duration_seconds' => 55, // 3300 giây
             'order'            => 3,
             'is_active'        => true,
             'attachments'      => [],

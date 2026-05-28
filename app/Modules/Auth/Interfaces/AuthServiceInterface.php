@@ -3,16 +3,26 @@
 namespace App\Modules\Auth\Interfaces;
 
 use App\Core\Services\ServiceReturn;
+use App\Modules\Auth\DTO\ChangePasswordDTO;
 use App\Modules\Auth\DTO\ForgotPasswordDTO;
+use App\Modules\Auth\DTO\GetRewardPointHistoryDTO;
+use App\Modules\Auth\DTO\GetTeamMembersDTO;
 use App\Modules\Auth\DTO\RegisterDTO;
 use App\Modules\Auth\DTO\ResetPasswordDTO;
+use App\Modules\Auth\DTO\UpdateEmployeeProfileDTO;
+use App\Modules\Auth\DTO\UpdateProfileDTO;
+use App\Modules\Auth\DTO\UploadEmployeeDocumentDTO;
 use App\Modules\Auth\DTO\VerifyOtpDTO;
+
+use App\Modules\Auth\DTO\GetTeamKpiDTO;
+use App\Modules\Auth\DTO\GetEmployeeKpiDTO;
+use App\Modules\Auth\DTO\GetDepartmentRankingDTO;
 
 interface AuthServiceInterface
 {
     /**
      * Đăng ký tài khoản mới.
-     * 
+     *
      * @param RegisterDTO $dto
      * @return ServiceReturn
      */
@@ -20,7 +30,7 @@ interface AuthServiceInterface
 
     /**
      * Đăng nhập hệ thống.
-     * 
+     *
      * @param \App\Modules\Auth\DTO\LoginDTO $dto
      * @return ServiceReturn
      */
@@ -28,7 +38,7 @@ interface AuthServiceInterface
 
     /**
      * Yêu cầu quên mật khẩu (Gửi OTP).
-     * 
+     *
      * @param ForgotPasswordDTO $dto
      * @return ServiceReturn
      */
@@ -36,7 +46,7 @@ interface AuthServiceInterface
 
     /**
      * Xác thực mã OTP.
-     * 
+     *
      * @param VerifyOtpDTO $dto
      * @return ServiceReturn
      */
@@ -44,7 +54,7 @@ interface AuthServiceInterface
 
     /**
      * Đặt lại mật khẩu mới.
-     * 
+     *
      * @param ResetPasswordDTO $dto
      * @return ServiceReturn
      */
@@ -52,14 +62,14 @@ interface AuthServiceInterface
 
     /**
      * Đăng xuất hệ thống.
-     * 
+     *
      * @return ServiceReturn
      */
     public function logout(): ServiceReturn;
 
     /**
      * Lấy thông tin hồ sơ cá nhân của người dùng (UC-030).
-     * 
+     *
      * @param string $userId
      * @return ServiceReturn
      * @throws \Throwable
@@ -68,25 +78,25 @@ interface AuthServiceInterface
 
     /**
      * Cập nhật thông tin hồ sơ cá nhân của người dùng (UC-031).
-     * 
-     * @param \App\Modules\Auth\DTO\UpdateProfileDTO $dto
+     *
+     * @param UpdateProfileDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
      */
-    public function updateProfile(\App\Modules\Auth\DTO\UpdateProfileDTO $dto): ServiceReturn;
+    public function updateProfile(UpdateProfileDTO $dto): ServiceReturn;
 
     /**
      * Thay đổi mật khẩu tài khoản của người dùng (UC-032).
-     * 
-     * @param \App\Modules\Auth\DTO\ChangePasswordDTO $dto
+     *
+     * @param ChangePasswordDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
      */
-    public function changePassword(\App\Modules\Auth\DTO\ChangePasswordDTO $dto): ServiceReturn;
+    public function changePassword(ChangePasswordDTO $dto): ServiceReturn;
 
     /**
      * Lấy thông tin hồ sơ nhân sự cá nhân (UC-033).
-     * 
+     *
      * @param string $userId
      * @return ServiceReturn
      * @throws \Throwable
@@ -95,20 +105,93 @@ interface AuthServiceInterface
 
     /**
      * Cập nhật thông tin hồ sơ nhân sự cá nhân (UC-034).
-     * 
-     * @param \App\Modules\Auth\DTO\UpdateEmployeeProfileDTO $dto
+     *
+     * @param UpdateEmployeeProfileDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
      */
-    public function updateEmployeeProfile(\App\Modules\Auth\DTO\UpdateEmployeeProfileDTO $dto): ServiceReturn;
+    public function updateEmployeeProfile(UpdateEmployeeProfileDTO $dto): ServiceReturn;
+
+    /**
+     * Lấy thông tin tổng quan điểm thưởng của nhân viên.
+     *
+     * @param string $userId
+     * @return ServiceReturn
+     */
+    public function getRewardPointOverview(string $userId): ServiceReturn;
+
+    /**
+     * Lấy lịch sử điểm thưởng của nhân viên.
+     *
+     * @param GetRewardPointHistoryDTO $dto
+     * @return ServiceReturn
+     */
+    public function getRewardPointHistory(GetRewardPointHistoryDTO $dto): ServiceReturn;
+
+    /**
+     * Lấy thông tin tổng quan phòng ban/khu vực (UC-106).
+     *
+     * @param string $userId
+     * @return ServiceReturn
+     */
+    public function getTeamOverview(string $userId): ServiceReturn;
+
+    /**
+     * Lấy danh sách nhân viên trong phòng ban/khu vực (UC-106).
+     *
+     * @param GetTeamMembersDTO $dto
+     * @return ServiceReturn
+     */
+    public function getTeamMembers(GetTeamMembersDTO $dto): ServiceReturn;
+
+    /**
+     * Lấy thông tin tổng quan KPI của phòng ban/khu vực (UC-107).
+     *
+     * @param GetTeamKpiDTO $dto
+     * @return ServiceReturn
+     */
+    public function getTeamKpiOverview(GetTeamKpiDTO $dto): ServiceReturn;
+
+    /**
+     * Lấy bảng xếp hạng KPI của phòng ban/khu vực (UC-107).
+     *
+     * @param GetTeamKpiDTO $dto
+     * @return ServiceReturn
+     */
+    public function getTeamKpiLeaderboard(GetTeamKpiDTO $dto): ServiceReturn;
+
+    /**
+     * Lấy chi tiết KPI và lịch sử điểm thưởng của một nhân viên (UC-107).
+     *
+     * @param GetEmployeeKpiDTO $dto
+     * @return ServiceReturn
+     */
+    public function getEmployeeKpiDetails(GetEmployeeKpiDTO $dto): ServiceReturn;
+
+    /**
+     * Lấy bảng xếp hạng phòng ban (UC-108).
+     *
+     * @param GetDepartmentRankingDTO $dto
+     * @return ServiceReturn
+     */
+    public function getDepartmentRanking(GetDepartmentRankingDTO $dto): ServiceReturn;
+
+    /**
+     * Lấy chi tiết KPI của phòng ban (UC-108).
+     *
+     * @param string $departmentName
+     * @param GetDepartmentRankingDTO $dto
+     * @return ServiceReturn
+     */
+    public function getDepartmentKpiDetails(string $departmentName, GetDepartmentRankingDTO $dto): ServiceReturn;
 
     /**
      * Tải lên tài liệu hồ sơ nhân sự (UC-035).
-     * 
-     * @param \App\Modules\Auth\DTO\UploadEmployeeDocumentDTO $dto
+     *
+     * @param UploadEmployeeDocumentDTO $dto
      * @return ServiceReturn
      * @throws \Throwable
      */
-    public function uploadEmployeeDocument(\App\Modules\Auth\DTO\UploadEmployeeDocumentDTO $dto): ServiceReturn;
+    public function uploadEmployeeDocument(UploadEmployeeDocumentDTO $dto): ServiceReturn;
 }
 

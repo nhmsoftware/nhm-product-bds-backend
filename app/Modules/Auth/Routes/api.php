@@ -1,5 +1,7 @@
 <?php
 
+use App\Modules\Auth\Http\Controllers\RewardPointController;
+use App\Modules\Auth\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
 use App\Modules\Auth\Http\Controllers\AuthController;
 
@@ -28,6 +30,23 @@ Route::prefix('v1/auth')->group(function () {
         Route::put('employee-profile', [AuthController::class, 'updateEmployeeProfile'])->name('auth.updateEmployeeProfile');
         // UC-035: Tải lên tài liệu hồ sơ nhân sự
         Route::post('employee-profile/documents', [AuthController::class, 'uploadEmployeeDocument'])->name('auth.uploadEmployeeDocument');
+
+        // UC-105: Điểm thưởng cá nhân
+        Route::get('reward-points/overview', [RewardPointController::class, 'overview'])->name('auth.rewardPoints.overview');
+        Route::get('reward-points/history', [RewardPointController::class, 'history'])->name('auth.rewardPoints.history');
+
+        // UC-106: Danh sách nhân viên (Team Members)
+        Route::get('team/overview', [TeamController::class, 'overview'])->name('auth.team.overview');
+        Route::get('team/members', [TeamController::class, 'members'])->name('auth.team.members');
+
+        // UC-107: Xem KPI đội nhóm
+        Route::get('team/kpi/overview', [TeamController::class, 'kpiOverview'])->name('auth.team.kpi.overview');
+        Route::get('team/kpi/leaderboard', [TeamController::class, 'kpiLeaderboard'])->name('auth.team.kpi.leaderboard');
+        Route::get('team/kpi/members/{id}', [TeamController::class, 'employeeKpiDetails'])->name('auth.team.kpi.employeeDetails');
+
+        // UC-108: Xếp hạng phòng ban
+        Route::get('team/ranking/departments', [TeamController::class, 'departmentRanking'])->name('auth.team.ranking.departments');
+        Route::get('team/ranking/departments/{department}', [TeamController::class, 'departmentKpiDetails'])->name('auth.team.ranking.departments.details');
     });
 });
 

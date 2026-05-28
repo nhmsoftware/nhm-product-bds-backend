@@ -5,14 +5,21 @@ namespace App\Modules\Auth\Services;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
 use App\Modules\Auth\DTO\ForgotPasswordDTO;
+use App\Modules\Auth\DTO\GetRewardPointHistoryDTO;
+use App\Modules\Auth\DTO\GetTeamMembersDTO;
 use App\Modules\Auth\DTO\LoginDTO;
 use App\Modules\Auth\DTO\RegisterDTO;
 use App\Modules\Auth\DTO\ResetPasswordDTO;
 use App\Modules\Auth\DTO\UpdateProfileDTO;
 use App\Modules\Auth\DTO\VerifyOtpDTO;
+use App\Modules\Auth\DTO\GetTeamKpiDTO;
+use App\Modules\Auth\DTO\GetEmployeeKpiDTO;
+use App\Modules\Auth\DTO\GetDepartmentRankingDTO;
+
 use App\Modules\Auth\Events\UserRegistered;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Interfaces\AuthServiceInterface;
+use App\Modules\Auth\Interfaces\RewardPointHistoryRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Auth\Models\User;
 use App\Modules\EmployeeReferral\Models\Enums\ReferralStatus;
@@ -25,7 +32,13 @@ use Illuminate\Support\Str;
 final class AuthService extends BaseService implements AuthServiceInterface
 {
     public function __construct(
-        private readonly AuthRepositoryInterface $authRepository
+        private readonly AuthRepositoryInterface $authRepository,
+        private readonly RewardPointHistoryRepositoryInterface $rewardPointHistoryRepository,
+        private readonly \App\Modules\Area\Interfaces\LotDepositRequestRepositoryInterface $lotDepositRequestRepository,
+        private readonly \App\Modules\SiteTour\Interfaces\SiteTourRepositoryInterface $siteTourRepository,
+        private readonly \App\Modules\CustomerMeeting\Interfaces\CustomerMeetingRepositoryInterface $customerMeetingRepository,
+        private readonly \App\Modules\EmployeeReferral\Interfaces\ReferralHistoryRepositoryInterface $referralHistoryRepository,
+        private readonly \App\Modules\Attendance\Interfaces\AttendanceRepositoryInterface $attendanceRepository
     ) {
     }
 
@@ -688,6 +701,251 @@ final class AuthService extends BaseService implements AuthServiceInterface
     }
 
     /**
+     * Lấy thông tin tổng quan điểm thưởng của nhân viên (UC-105).
+     *
+     * @param string $userId
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function getRewardPointOverview(string $userId): ServiceReturn
+    {
+        return $this->execute(function () use ($userId) {
+            $user = $this->authRepository->findById($userId, ['*'], ['employeeProfile']);
+
+            $this->validate(
+                $user !== null,
+                'Không tìm thấy thông tin người dùng.',
+                404
+            );
+
+            // A4 - Người dùng không có quyền truy cập
+            $allowedRoles = [
+                UserRole::EMPLOYEE->value,
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+            ];
+            $this->validate(
+                in_array($user->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập chức năng này.',
+                403
+            );
+
+            $ep = $user->employeeProfile;
+
+            // Lấy điểm thưởng trong tháng
+            $currentMonthPoints = $this->rewardPointHistoryRepository->query()
+                ->where('user_id', $userId)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('points_changed');
+
+            // Tính tiến độ mục tiêu quý (Ví dụ mặc định: 100 điểm = 100%)
+            $quarterPoints = $this->rewardPointHistoryRepository->query()
+                ->where('user_id', $userId)
+                ->whereBetween('created_at', [now()->firstOfQuarter(), now()->lastOfQuarter()])
+                ->sum('points_changed');
+
+            $targetPoints = 100; // Có thể thay đổi theo config
+            $quarterProgress = $quarterPoints > 0 ? round(($quarterPoints / $targetPoints) * 100, 2) : 0;
+            if ($quarterProgress > 100) $quarterProgress = 100;
+
+            $overview = [
+                'total_points' => $ep?->reward_points ?? 0,
+                'kpi_stars' => $ep?->kpi_stars ?? 0,
+                'current_month_points' => $currentMonthPoints,
+                'quarter_progress_percent' => $quarterProgress,
+                'quarter_points' => $quarterPoints,
+                'quarter_target' => $targetPoints,
+            ];
+
+            return $this->success($overview, 'Tải dữ liệu tổng quan thành công.');
+        });
+    }
+
+    /**
+     * Lấy lịch sử điểm thưởng của nhân viên (UC-105).
+     *
+     * @param GetRewardPointHistoryDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function getRewardPointHistory(GetRewardPointHistoryDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            $user = $this->authRepository->findById($dto->userId);
+
+            $this->validate(
+                $user !== null,
+                'Không tìm thấy thông tin người dùng.',
+                404
+            );
+
+            $allowedRoles = [
+                UserRole::EMPLOYEE->value,
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+            ];
+            $this->validate(
+                in_array($user->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập chức năng này.',
+                403
+            );
+
+            $query = $this->rewardPointHistoryRepository->query()->where('user_id', $dto->userId);
+
+            if ($dto->fromDate) {
+                $query->whereDate('created_at', '>=', $dto->fromDate);
+            }
+            if ($dto->toDate) {
+                $query->whereDate('created_at', '<=', $dto->toDate);
+            }
+
+            $histories = $query->orderBy('created_at', 'desc')->paginate($dto->perPage);
+
+            // A1 - Chưa có dữ liệu
+            if ($histories->isEmpty() && !$dto->fromDate && !$dto->toDate) {
+                return $this->success($histories, 'Chưa có dữ liệu điểm thưởng.');
+            }
+
+            // A2 - Không tìm thấy dữ liệu phù hợp
+            if ($histories->isEmpty()) {
+                return $this->success($histories, 'Không tìm thấy dữ liệu phù hợp.');
+            }
+
+            return $this->success($histories, 'Tải dữ liệu lịch sử điểm thưởng thành công.');
+        });
+    }
+
+    /**
+     * Lấy thông tin tổng quan phòng ban/khu vực (UC-106).
+     *
+     * @param string $userId
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function getTeamOverview(string $userId): ServiceReturn
+    {
+        return $this->execute(function () use ($userId) {
+            $user = $this->authRepository->findById($userId);
+
+            $this->validate(
+                $user !== null,
+                'Không tìm thấy thông tin người dùng.',
+                404
+            );
+
+            // A3 - Người dùng không có quyền xem danh sách nhân viên
+            $allowedRoles = [
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+            ];
+            $this->validate(
+                in_array($user->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập chức năng này.',
+                403
+            );
+
+            $query = $this->authRepository->query()->where('is_active', true);
+            $teamName = '';
+
+            if ($user->role === UserRole::MANAGER) {
+                $query->where('department', $user->department);
+                $teamName = $user->department;
+            } elseif ($user->role === UserRole::DIRECTOR) {
+                $query->where('area', $user->area);
+                $teamName = $user->area;
+            }
+
+            $memberCount = $query->count();
+
+            $overview = [
+                'team_name' => $teamName ?: 'Chưa cập nhật',
+                'description' => 'Phòng ban/Khu vực ' . ($teamName ?: 'Chưa cập nhật'),
+                'member_count' => $memberCount,
+                'manager_name' => $user->name,
+            ];
+
+            return $this->success($overview, 'Tải thông tin tổng quan thành công.');
+        });
+    }
+
+    /**
+     * Lấy danh sách nhân viên trong phòng ban/khu vực (UC-106).
+     *
+     * @param GetTeamMembersDTO $dto
+     * @return ServiceReturn
+     * @throws \Throwable
+     */
+    public function getTeamMembers(GetTeamMembersDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            $user = $this->authRepository->findById($dto->userId);
+
+            $this->validate(
+                $user !== null,
+                'Không tìm thấy thông tin người dùng.',
+                404
+            );
+
+            // A3 - Người dùng không có quyền xem danh sách nhân viên
+            $allowedRoles = [
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+            ];
+            $this->validate(
+                in_array($user->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập chức năng này.',
+                403
+            );
+
+            $query = $this->authRepository->query()->where('is_active', true);
+
+            if ($user->role === UserRole::MANAGER) {
+                $query->where('department', $user->department);
+            } elseif ($user->role === UserRole::DIRECTOR) {
+                $query->where('area', $user->area);
+            }
+
+            if ($dto->search) {
+                $query->where(function ($q) use ($dto) {
+                    $q->where('name', 'ilike', '%' . $dto->search . '%')
+                      ->orWhere('staff_code', 'ilike', '%' . $dto->search . '%');
+                });
+            }
+
+            if ($dto->jobPosition) {
+                $query->where('job_position', $dto->jobPosition);
+            }
+
+            $members = $query->orderBy('name', 'asc')->paginate($dto->perPage);
+
+            // A1 - Không có nhân viên trong phòng ban
+            if ($members->isEmpty() && !$dto->search && !$dto->jobPosition) {
+                return $this->success($members, 'Chưa có nhân viên trong phòng ban.');
+            }
+
+            // A2 - Không tìm thấy nhân viên phù hợp
+            if ($members->isEmpty()) {
+                return $this->success($members, 'Không tìm thấy nhân viên phù hợp.');
+            }
+
+            // Transform data for UI
+            $members->getCollection()->transform(function ($member) {
+                return [
+                    'id' => (string) $member->id,
+                    'staff_code' => $member->staff_code,
+                    'name' => $member->name,
+                    'job_position' => $member->job_position,
+                    'phone' => $member->phone,
+                    'avatar' => $member->avatar,
+                ];
+            });
+
+            return $this->success($members, 'Tải danh sách nhân viên thành công.');
+        });
+    }
+
+    /**
      * Helper tìm user qua email hoặc phone.
      *
      * @param string $username
@@ -709,5 +967,921 @@ final class AuthService extends BaseService implements AuthServiceInterface
     private function generateStaffCode(): string
     {
         return 'ST-' . strtoupper(Str::random(6));
+    }
+
+    /**
+     * Lấy thông tin tổng quan KPI của phòng ban/khu vực (UC-107).
+     *
+     * @param GetTeamKpiDTO $dto
+     * @return ServiceReturn
+     */
+    public function getTeamKpiOverview(GetTeamKpiDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            $user = $this->authRepository->findById($dto->userId);
+
+            $this->validate(
+                $user !== null,
+                'Không tìm thấy thông tin người dùng.',
+                404
+            );
+
+            // A3 - Người dùng không có quyền xem KPI đội nhóm
+            $allowedRoles = [
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+            ];
+            $this->validate(
+                in_array($user->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập chức năng này.',
+                403
+            );
+
+            // Lấy danh sách nhân viên của phòng ban/khu vực (chỉ lấy role EMPLOYEE)
+            $query = $this->authRepository->query()
+                ->where('is_active', true)
+                ->where('role', UserRole::EMPLOYEE->value);
+            if ($user->role === UserRole::MANAGER) {
+                $query->where('department', $user->department);
+            } elseif ($user->role === UserRole::DIRECTOR) {
+                $query->where('area', $user->area);
+            }
+
+            $members = $query->get();
+
+            // A1 - Không có dữ liệu KPI
+            if ($members->isEmpty()) {
+                return $this->success([
+                    'total_kpi_points' => 0,
+                    'total_transactions' => 0,
+                    'total_tours' => 0,
+                    'total_meetings' => 0,
+                    'total_referrals' => 0,
+                ], 'Chưa có dữ liệu KPI đội nhóm.');
+            }
+
+            $userIds = $members->pluck('id')->toArray();
+
+            // Tính toán tổng các chỉ số
+            $totalTransactions = $this->lotDepositRequestRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->where('status', 4) // COMPLETED
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->count();
+
+            $totalTours = $this->siteTourRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->count();
+
+            $totalMeetings = $this->customerMeetingRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->count();
+
+            $totalReferrals = $this->referralHistoryRepository->query()
+                ->whereIn('referrer_id', $userIds)
+                ->where('referral_type', 1) // RECRUITMENT
+                ->where('status', 2) // REGISTERED
+                ->when($dto->fromDate, fn($q) => $q->whereDate('registered_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('registered_at', '<=', $dto->toDate))
+                ->count();
+
+            // Lấy ngày công và vắng để tính tổng KPI điểm
+            $workDaysQuery = $this->attendanceRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->whereIn('status', [1, 2, 4]) // PRESENT, LATE, HALF_DAY
+                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $absencesQuery = $this->attendanceRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->where('status', 3) // ABSENT
+                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $transactionsByEmployee = $this->lotDepositRequestRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->where('status', 4)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $toursByEmployee = $this->siteTourRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $meetingsByEmployee = $this->customerMeetingRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $referralsByEmployee = $this->referralHistoryRepository->query()
+                ->whereIn('referrer_id', $userIds)
+                ->where('referral_type', 1)
+                ->where('status', 2)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('registered_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('registered_at', '<=', $dto->toDate))
+                ->selectRaw('referrer_id as user_id, count(*) as count')
+                ->groupBy('referrer_id')
+                ->pluck('count', 'user_id');
+
+            $totalKpiPoints = 0;
+            foreach ($userIds as $mId) {
+                $mTransactions = $transactionsByEmployee->get($mId, 0);
+                $mTours = $toursByEmployee->get($mId, 0);
+                $mMeetings = $meetingsByEmployee->get($mId, 0);
+                $mReferrals = $referralsByEmployee->get($mId, 0);
+                $mWorkDays = $workDaysQuery->get($mId, 0);
+                $mAbsences = $absencesQuery->get($mId, 0);
+
+                $kpi = ($mTransactions * 10)
+                    + ($mTours * 1)
+                    + ($mMeetings * 0.5)
+                    + ($mReferrals * 1)
+                    + floor($mWorkDays / 5)
+                    - ($mAbsences * 0.5);
+
+                $totalKpiPoints += $kpi;
+            }
+
+            return $this->success([
+                'total_kpi_points' => $totalKpiPoints,
+                'total_transactions' => $totalTransactions,
+                'total_tours' => $totalTours,
+                'total_meetings' => $totalMeetings,
+                'total_referrals' => $totalReferrals,
+            ], 'Tải dữ liệu tổng quan KPI thành công.');
+        });
+    }
+
+    /**
+     * Lấy bảng xếp hạng KPI của phòng ban/khu vực (UC-107).
+     *
+     * @param GetTeamKpiDTO $dto
+     * @return ServiceReturn
+     */
+    public function getTeamKpiLeaderboard(GetTeamKpiDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            $user = $this->authRepository->findById($dto->userId);
+
+            $this->validate(
+                $user !== null,
+                'Không tìm thấy thông tin người dùng.',
+                404
+            );
+
+            // A3 - Người dùng không có quyền xem KPI đội nhóm
+            $allowedRoles = [
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+            ];
+            $this->validate(
+                in_array($user->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập chức năng này.',
+                403
+            );
+
+            $query = $this->authRepository->query()
+                ->where('is_active', true)
+                ->where('role', UserRole::EMPLOYEE->value);
+            if ($user->role === UserRole::MANAGER) {
+                $query->where('department', $user->department);
+            } elseif ($user->role === UserRole::DIRECTOR) {
+                $query->where('area', $user->area);
+            }
+
+            // Áp dụng tìm kiếm và vị trí công việc
+            if ($dto->search) {
+                $query->where(function ($q) use ($dto) {
+                    $q->where('name', 'ilike', '%' . $dto->search . '%')
+                      ->orWhere('staff_code', 'ilike', '%' . $dto->search . '%');
+                });
+            }
+
+            if ($dto->jobPosition) {
+                $query->where('job_position', $dto->jobPosition);
+            }
+
+            $members = $query->with('employeeProfile')->get();
+
+            // A2 - Không tìm thấy dữ liệu phù hợp
+            if ($members->isEmpty()) {
+                $paginated = new \Illuminate\Pagination\LengthAwarePaginator([], 0, $dto->perPage);
+                return $this->success(
+                    $paginated,
+                    'Không tìm thấy dữ liệu phù hợp.'
+                );
+            }
+
+            $userIds = $members->pluck('id')->toArray();
+
+            // Lấy các chỉ số hoạt động hàng loạt
+            $transactions = $this->lotDepositRequestRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->where('status', 4)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $tours = $this->siteTourRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $meetings = $this->customerMeetingRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $referrals = $this->referralHistoryRepository->query()
+                ->whereIn('referrer_id', $userIds)
+                ->where('referral_type', 1)
+                ->where('status', 2)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('registered_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('registered_at', '<=', $dto->toDate))
+                ->selectRaw('referrer_id as user_id, count(*) as count')
+                ->groupBy('referrer_id')
+                ->pluck('count', 'user_id');
+
+            $workDays = $this->attendanceRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->whereIn('status', [1, 2, 4])
+                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $absences = $this->attendanceRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->where('status', 3)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $stars = $this->rewardPointHistoryRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->selectRaw('user_id, sum(stars_changed) as total_stars')
+                ->groupBy('user_id')
+                ->pluck('total_stars', 'user_id');
+
+            // Tính toán và định dạng dữ liệu cho từng nhân viên
+            $rankedList = $members->map(function ($member) use ($transactions, $tours, $meetings, $referrals, $workDays, $absences, $stars, $dto) {
+                $mId = (string) $member->id;
+                $userTransactions = $transactions->get($mId, 0);
+                $userTours = $tours->get($mId, 0);
+                $userMeetings = $meetings->get($mId, 0);
+                $userReferrals = $referrals->get($mId, 0);
+                $userWorkDays = $workDays->get($mId, 0);
+                $userAbsences = $absences->get($mId, 0);
+
+                $kpiPoints = ($userTransactions * 10)
+                    + ($userTours * 1)
+                    + ($userMeetings * 0.5)
+                    + ($userReferrals * 1)
+                    + floor($userWorkDays / 5)
+                    - ($userAbsences * 0.5);
+
+                if ($dto->fromDate || $dto->toDate) {
+                    $kpiStars = (int) $stars->get($mId, 0);
+                } else {
+                    $kpiStars = (int) ($member->employeeProfile->kpi_stars ?? 0);
+                }
+
+                return [
+                    'id' => $mId,
+                    'staff_code' => $member->staff_code,
+                    'name' => $member->name,
+                    'job_position' => $member->job_position,
+                    'avatar' => $member->avatar,
+                    'total_kpi_points' => $kpiPoints,
+                    'successful_transactions' => $userTransactions,
+                    'kpi_stars' => $kpiStars,
+                ];
+            });
+
+            // Sắp xếp giảm dần theo KPI điểm, nếu bằng nhau thì theo số giao dịch, sau đó theo tên
+            $sorted = $rankedList->sort(function ($a, $b) {
+                if ($b['total_kpi_points'] <=> $a['total_kpi_points']) {
+                    return $b['total_kpi_points'] <=> $a['total_kpi_points'];
+                }
+                if ($b['successful_transactions'] <=> $a['successful_transactions']) {
+                    return $b['successful_transactions'] <=> $a['successful_transactions'];
+                }
+                return strcmp($a['name'], $b['name']);
+            })->values();
+
+            // Gán Rank toàn cục
+            $ranked = $sorted->map(function ($item, $index) {
+                $item['rank'] = $index + 1;
+                return $item;
+            });
+
+            // Phân trang
+            $currentPage = \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage();
+            $slice = $ranked->slice(($currentPage - 1) * $dto->perPage, $dto->perPage)->values();
+            $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+                $slice,
+                $ranked->count(),
+                $dto->perPage,
+                $currentPage,
+                ['path' => \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPath()]
+            );
+
+            return $this->success($paginated, 'Tải bảng xếp hạng KPI thành công.');
+        });
+    }
+
+    /**
+     * Lấy chi tiết KPI và lịch sử điểm thưởng của một nhân viên (UC-107).
+     *
+     * @param GetEmployeeKpiDTO $dto
+     * @return ServiceReturn
+     */
+    public function getEmployeeKpiDetails(GetEmployeeKpiDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            $manager = $this->authRepository->findById($dto->managerId);
+            $this->validate($manager !== null, 'Không tìm thấy thông tin người quản lý.', 404);
+
+            // A3 - Người dùng không có quyền xem KPI đội nhóm
+            $allowedRoles = [
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+            ];
+            $this->validate(
+                in_array($manager->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập chức năng này.',
+                403
+            );
+
+            $employee = $this->authRepository->findById($dto->employeeId);
+            $this->validate($employee !== null, 'Không tìm thấy thông tin nhân viên.', 404);
+
+            // Kiểm tra nhân viên có cùng phòng ban/khu vực không
+            if ($manager->role === UserRole::MANAGER) {
+                $this->validate(
+                    $employee->department === $manager->department,
+                    'Bạn không có quyền truy cập chức năng này.',
+                    403
+                );
+            } elseif ($manager->role === UserRole::DIRECTOR) {
+                $this->validate(
+                    $employee->area === $manager->area,
+                    'Bạn không có quyền truy cập chức năng này.',
+                    403
+                );
+            }
+
+            // Tính toán chi tiết các chỉ số
+            $userTransactions = $this->lotDepositRequestRepository->query()
+                ->where('user_id', $dto->employeeId)
+                ->where('status', 4)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->count();
+
+            $userTours = $this->siteTourRepository->query()
+                ->where('user_id', $dto->employeeId)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->count();
+
+            $userMeetings = $this->customerMeetingRepository->query()
+                ->where('user_id', $dto->employeeId)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                ->count();
+
+            $userReferrals = $this->referralHistoryRepository->query()
+                ->where('referrer_id', $dto->employeeId)
+                ->where('referral_type', 1)
+                ->where('status', 2)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('registered_at', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('registered_at', '<=', $dto->toDate))
+                ->count();
+
+            $userWorkDays = $this->attendanceRepository->query()
+                ->where('user_id', $dto->employeeId)
+                ->whereIn('status', [1, 2, 4])
+                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
+                ->count();
+
+            $userAbsences = $this->attendanceRepository->query()
+                ->where('user_id', $dto->employeeId)
+                ->where('status', 3)
+                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
+                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
+                ->count();
+
+            $kpiPoints = ($userTransactions * 10)
+                + ($userTours * 1)
+                + ($userMeetings * 0.5)
+                + ($userReferrals * 1)
+                + floor($userWorkDays / 5)
+                - ($userAbsences * 0.5);
+
+            if ($dto->fromDate || $dto->toDate) {
+                $totalStars = (int) $this->rewardPointHistoryRepository->query()
+                    ->where('user_id', $dto->employeeId)
+                    ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
+                    ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
+                    ->sum('stars_changed');
+            } else {
+                $totalStars = (int) ($employee->employeeProfile->kpi_stars ?? 0);
+            }
+
+            // Lấy lịch sử điểm thưởng của nhân viên
+            $historyQuery = $this->rewardPointHistoryRepository->query()->where('user_id', $dto->employeeId);
+            if ($dto->fromDate) {
+                $historyQuery->whereDate('created_at', '>=', $dto->fromDate);
+            }
+            if ($dto->toDate) {
+                $historyQuery->whereDate('created_at', '<=', $dto->toDate);
+            }
+            $history = $historyQuery->orderBy('created_at', 'desc')->paginate($dto->perPage);
+
+            $result = [
+                'employee' => [
+                    'id' => (string) $employee->id,
+                    'staff_code' => $employee->staff_code,
+                    'name' => $employee->name,
+                    'job_position' => $employee->job_position,
+                    'avatar' => $employee->avatar,
+                    'department' => $employee->department,
+                    'area' => $employee->area,
+                ],
+                'kpi_summary' => [
+                    'total_kpi_points' => $kpiPoints,
+                    'kpi_stars' => $totalStars,
+                    'transactions_count' => $userTransactions,
+                    'tours_count' => $userTours,
+                    'meetings_count' => $userMeetings,
+                    'referrals_count' => $userReferrals,
+                    'work_days' => $userWorkDays,
+                    'absences' => $userAbsences,
+                ],
+                'reward_history' => $history,
+            ];
+
+            return $this->success($result, 'Tải chi tiết KPI nhân viên thành công.');
+        });
+    }
+
+    /**
+     * Lấy bảng xếp hạng phòng ban (UC-108).
+     *
+     * @param GetDepartmentRankingDTO $dto
+     * @return ServiceReturn
+     */
+    public function getDepartmentRanking(GetDepartmentRankingDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            $user = $this->authRepository->findById($dto->userId);
+            $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
+
+            // A3 - Người dùng không có quyền xem ranking
+            $allowedRoles = [
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+                UserRole::CEO->value,
+            ];
+            $this->validate(
+                in_array($user->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập chức năng này.',
+                403
+            );
+
+            // Lấy tất cả active employees có department
+            $userQuery = $this->authRepository->query()
+                ->where('is_active', true)
+                ->where('role', UserRole::EMPLOYEE->value)
+                ->whereNotNull('department')
+                ->where('department', '<>', '');
+
+            // Nếu không có bất kỳ phòng ban nào trong hệ thống trước khi lọc:
+            $hasAnyDept = (clone $userQuery)->exists();
+            if (!$hasAnyDept) {
+                $paginated = new \Illuminate\Pagination\LengthAwarePaginator([], 0, $dto->perPage);
+                return $this->success($paginated, 'Chưa có dữ liệu xếp hạng phòng ban.');
+            }
+
+            // Áp dụng lọc theo Area
+            if ($dto->area) {
+                $userQuery->where('area', $dto->area);
+            }
+
+            $users = $userQuery->get();
+
+            // Nếu sau khi lọc không tìm thấy dữ liệu phù hợp:
+            if ($users->isEmpty()) {
+                $paginated = new \Illuminate\Pagination\LengthAwarePaginator([], 0, $dto->perPage);
+                return $this->success($paginated, 'Không tìm thấy dữ liệu phù hợp.');
+            }
+
+            // Lọc ngày công
+            $year = $dto->year ?? (int) now()->year;
+            $fromDate = null;
+            $toDate = null;
+            if ($dto->month) {
+                $fromDate = \Carbon\Carbon::create($year, $dto->month, 1)->startOfMonth()->toDateString();
+                $toDate = \Carbon\Carbon::create($year, $dto->month, 1)->endOfMonth()->toDateString();
+            } elseif ($dto->quarter) {
+                $startMonth = ($dto->quarter - 1) * 3 + 1;
+                $fromDate = \Carbon\Carbon::create($year, $startMonth, 1)->startOfMonth()->toDateString();
+                $toDate = \Carbon\Carbon::create($year, $startMonth + 2, 1)->endOfMonth()->toDateString();
+            }
+
+            $usersByDept = $users->groupBy('department');
+            $deptData = [];
+
+            foreach ($usersByDept as $deptName => $deptUsers) {
+                $userIds = $deptUsers->pluck('id')->toArray();
+
+                // 1. Giao dịch công chứng thành công
+                $deptTransactions = $this->lotDepositRequestRepository->query()
+                    ->whereIn('user_id', $userIds)
+                    ->where('status', 4) // COMPLETED
+                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                    ->count();
+
+                // 2. Lượt dẫn khách
+                $deptTours = $this->siteTourRepository->query()
+                    ->whereIn('user_id', $userIds)
+                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                    ->count();
+
+                // 3. Lượt gặp khách
+                $deptMeetings = $this->customerMeetingRepository->query()
+                    ->whereIn('user_id', $userIds)
+                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                    ->count();
+
+                // 4. Referral nhân sự giới thiệu thành công
+                $deptReferrals = $this->referralHistoryRepository->query()
+                    ->whereIn('referrer_id', $userIds)
+                    ->where('referral_type', 1)
+                    ->where('status', 2)
+                    ->when($fromDate, fn($q) => $q->whereDate('registered_at', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('registered_at', '<=', $toDate))
+                    ->count();
+
+                // 5. Điểm danh / Ngày công
+                $workDaysMap = $this->attendanceRepository->query()
+                    ->whereIn('user_id', $userIds)
+                    ->whereIn('status', [1, 2, 4])
+                    ->when($fromDate, fn($q) => $q->whereDate('work_date', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('work_date', '<=', $toDate))
+                    ->selectRaw('user_id, count(*) as count')
+                    ->groupBy('user_id')
+                    ->pluck('count', 'user_id');
+
+                $absencesMap = $this->attendanceRepository->query()
+                    ->whereIn('user_id', $userIds)
+                    ->where('status', 3)
+                    ->when($fromDate, fn($q) => $q->whereDate('work_date', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('work_date', '<=', $toDate))
+                    ->selectRaw('user_id, count(*) as count')
+                    ->groupBy('user_id')
+                    ->pluck('count', 'user_id');
+
+                // 6. Số lượng sao
+                $starsMap = $this->rewardPointHistoryRepository->query()
+                    ->whereIn('user_id', $userIds)
+                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                    ->selectRaw('user_id, sum(stars_changed) as total_stars')
+                    ->groupBy('user_id')
+                    ->pluck('total_stars', 'user_id');
+
+                // Tính toán KPI và sao của từng nhân viên rồi cộng lại
+                $totalKpiPoints = 0;
+                $totalStars = 0;
+
+                foreach ($userIds as $uId) {
+                    $uTransactions = $this->lotDepositRequestRepository->query()
+                        ->where('user_id', $uId)
+                        ->where('status', 4)
+                        ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                        ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                        ->count();
+
+                    $uTours = $this->siteTourRepository->query()
+                        ->where('user_id', $uId)
+                        ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                        ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                        ->count();
+
+                    $uMeetings = $this->customerMeetingRepository->query()
+                        ->where('user_id', $uId)
+                        ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                        ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                        ->count();
+
+                    $uReferrals = $this->referralHistoryRepository->query()
+                        ->where('referrer_id', $uId)
+                        ->where('referral_type', 1)
+                        ->where('status', 2)
+                        ->when($fromDate, fn($q) => $q->whereDate('registered_at', '>=', $fromDate))
+                        ->when($toDate, fn($q) => $q->whereDate('registered_at', '<=', $toDate))
+                        ->count();
+
+                    $uWorkDays = $workDaysMap->get($uId, 0);
+                    $uAbsences = $absencesMap->get($uId, 0);
+
+                    $kpi = ($uTransactions * 10)
+                        + ($uTours * 1)
+                        + ($uMeetings * 0.5)
+                        + ($uReferrals * 1)
+                        + floor($uWorkDays / 5)
+                        - ($uAbsences * 0.5);
+
+                    $totalKpiPoints += $kpi;
+
+                    if ($fromDate || $toDate) {
+                        $totalStars += (int) $starsMap->get($uId, 0);
+                    } else {
+                        // All-time: lấy từ profile
+                        $userObj = $deptUsers->firstWhere('id', $uId);
+                        $totalStars += (int) ($userObj->employeeProfile->kpi_stars ?? 0);
+                    }
+                }
+
+                $deptData[] = [
+                    'department' => $deptName,
+                    'total_kpi_points' => $totalKpiPoints,
+                    'successful_transactions' => $deptTransactions,
+                    'kpi_stars' => $totalStars,
+                    'total_tours' => $deptTours,
+                    'total_meetings' => $deptMeetings,
+                    'total_referrals' => $deptReferrals,
+                ];
+            }
+
+            // Sắp xếp các phòng ban
+            $sortedDepts = collect($deptData)->sort(function ($a, $b) {
+                if ($b['total_kpi_points'] <=> $a['total_kpi_points']) {
+                    return $b['total_kpi_points'] <=> $a['total_kpi_points'];
+                }
+                if ($b['successful_transactions'] <=> $a['successful_transactions']) {
+                    return $b['successful_transactions'] <=> $a['successful_transactions'];
+                }
+                return strcmp($a['department'], $b['department']);
+            })->values();
+
+            // Gán Rank
+            $rankedDepts = $sortedDepts->map(function ($item, $index) {
+                $item['rank'] = $index + 1;
+                return $item;
+            });
+
+            // Phân trang
+            $currentPage = \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage();
+            $slice = $rankedDepts->slice(($currentPage - 1) * $dto->perPage, $dto->perPage)->values();
+            $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+                $slice,
+                $rankedDepts->count(),
+                $dto->perPage,
+                $currentPage,
+                ['path' => \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPath()]
+            );
+
+            return $this->success($paginated, 'Tải bảng xếp hạng phòng ban thành công.');
+        });
+    }
+
+    /**
+     * Lấy chi tiết KPI của phòng ban (UC-108).
+     *
+     * @param string $departmentName
+     * @param GetDepartmentRankingDTO $dto
+     * @return ServiceReturn
+     */
+    public function getDepartmentKpiDetails(string $departmentName, GetDepartmentRankingDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($departmentName, $dto) {
+            $user = $this->authRepository->findById($dto->userId);
+            $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
+
+            // A3 - Người dùng không có quyền xem ranking
+            $allowedRoles = [
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+                UserRole::CEO->value,
+            ];
+            $this->validate(
+                in_array($user->role->value, $allowedRoles),
+                'Bạn không có quyền truy cập chức năng này.',
+                403
+            );
+
+            // Lọc ngày công
+            $year = $dto->year ?? (int) now()->year;
+            $fromDate = null;
+            $toDate = null;
+            if ($dto->month) {
+                $fromDate = \Carbon\Carbon::create($year, $dto->month, 1)->startOfMonth()->toDateString();
+                $toDate = \Carbon\Carbon::create($year, $dto->month, 1)->endOfMonth()->toDateString();
+            } elseif ($dto->quarter) {
+                $startMonth = ($dto->quarter - 1) * 3 + 1;
+                $fromDate = \Carbon\Carbon::create($year, $startMonth, 1)->startOfMonth()->toDateString();
+                $toDate = \Carbon\Carbon::create($year, $startMonth + 2, 1)->endOfMonth()->toDateString();
+            }
+
+            // Lấy tất cả active employees trong phòng ban này
+            $members = $this->authRepository->query()
+                ->where('is_active', true)
+                ->where('role', UserRole::EMPLOYEE->value)
+                ->where('department', $departmentName)
+                ->with('employeeProfile')
+                ->get();
+
+            if ($members->isEmpty()) {
+                return $this->success(null, 'Không tìm thấy dữ liệu phù hợp.');
+            }
+
+            $userIds = $members->pluck('id')->toArray();
+
+            // Tính tổng quát các chỉ số
+            $totalTransactions = $this->lotDepositRequestRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->where('status', 4)
+                ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                ->count();
+
+            $totalTours = $this->siteTourRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                ->count();
+
+            $totalMeetings = $this->customerMeetingRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                ->count();
+
+            $totalReferrals = $this->referralHistoryRepository->query()
+                ->whereIn('referrer_id', $userIds)
+                ->where('referral_type', 1)
+                ->where('status', 2)
+                ->when($fromDate, fn($q) => $q->whereDate('registered_at', '>=', $fromDate))
+                ->when($toDate, fn($q) => $q->whereDate('registered_at', '<=', $toDate))
+                ->count();
+
+            $workDaysMap = $this->attendanceRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->whereIn('status', [1, 2, 4])
+                ->when($fromDate, fn($q) => $q->whereDate('work_date', '>=', $fromDate))
+                ->when($toDate, fn($q) => $q->whereDate('work_date', '<=', $toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $absencesMap = $this->attendanceRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->where('status', 3)
+                ->when($fromDate, fn($q) => $q->whereDate('work_date', '>=', $fromDate))
+                ->when($toDate, fn($q) => $q->whereDate('work_date', '<=', $toDate))
+                ->selectRaw('user_id, count(*) as count')
+                ->groupBy('user_id')
+                ->pluck('count', 'user_id');
+
+            $starsMap = $this->rewardPointHistoryRepository->query()
+                ->whereIn('user_id', $userIds)
+                ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                ->selectRaw('user_id, sum(stars_changed) as total_stars')
+                ->groupBy('user_id')
+                ->pluck('total_stars', 'user_id');
+
+            $rankedList = $members->map(function ($member) use ($workDaysMap, $absencesMap, $starsMap, $fromDate, $toDate) {
+                $mId = (string) $member->id;
+
+                $uTransactions = $this->lotDepositRequestRepository->query()
+                    ->where('user_id', $mId)
+                    ->where('status', 4)
+                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                    ->count();
+
+                $uTours = $this->siteTourRepository->query()
+                    ->where('user_id', $mId)
+                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                    ->count();
+
+                $uMeetings = $this->customerMeetingRepository->query()
+                    ->where('user_id', $mId)
+                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
+                    ->count();
+
+                $uReferrals = $this->referralHistoryRepository->query()
+                    ->where('referrer_id', $mId)
+                    ->where('referral_type', 1)
+                    ->where('status', 2)
+                    ->when($fromDate, fn($q) => $q->whereDate('registered_at', '>=', $fromDate))
+                    ->when($toDate, fn($q) => $q->whereDate('registered_at', '<=', $toDate))
+                    ->count();
+
+                $uWorkDays = $workDaysMap->get($mId, 0);
+                $uAbsences = $absencesMap->get($mId, 0);
+
+                $kpiPoints = ($uTransactions * 10)
+                    + ($uTours * 1)
+                    + ($uMeetings * 0.5)
+                    + ($uReferrals * 1)
+                    + floor($uWorkDays / 5)
+                    - ($uAbsences * 0.5);
+
+                if ($fromDate || $toDate) {
+                    $kpiStars = (int) $starsMap->get($mId, 0);
+                } else {
+                    $kpiStars = (int) ($member->employeeProfile->kpi_stars ?? 0);
+                }
+
+                return [
+                    'id' => $mId,
+                    'staff_code' => $member->staff_code,
+                    'name' => $member->name,
+                    'job_position' => $member->job_position,
+                    'avatar' => $member->avatar,
+                    'total_kpi_points' => $kpiPoints,
+                    'successful_transactions' => $uTransactions,
+                    'kpi_stars' => $kpiStars,
+                ];
+            });
+
+            // Sắp xếp các nhân viên
+            $sorted = $rankedList->sort(function ($a, $b) {
+                if ($b['total_kpi_points'] <=> $a['total_kpi_points']) {
+                    return $b['total_kpi_points'] <=> $a['total_kpi_points'];
+                }
+                if ($b['successful_transactions'] <=> $a['successful_transactions']) {
+                    return $b['successful_transactions'] <=> $a['successful_transactions'];
+                }
+                return strcmp($a['name'], $b['name']);
+            })->values();
+
+            // Gán Rank
+            $ranked = $sorted->map(function ($item, $index) {
+                $item['rank'] = $index + 1;
+                return $item;
+            });
+
+            $totalKpiPoints = $ranked->sum('total_kpi_points');
+            $totalStars = $ranked->sum('kpi_stars');
+
+            return $this->success([
+                'department' => $departmentName,
+                'kpi_summary' => [
+                    'total_kpi_points' => $totalKpiPoints,
+                    'total_transactions' => $totalTransactions,
+                    'total_tours' => $totalTours,
+                    'total_meetings' => $totalMeetings,
+                    'total_referrals' => $totalReferrals,
+                    'kpi_stars' => $totalStars,
+                ],
+                'employee_ranking' => $ranked,
+            ], 'Tải chi tiết KPI phòng ban thành công.');
+        });
     }
 }

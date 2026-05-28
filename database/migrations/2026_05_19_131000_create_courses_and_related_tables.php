@@ -38,14 +38,14 @@ return new class extends Migration {
             $table->string('title', 255);
             $table->text('content')->nullable();
             $table->string('video_url', 255)->nullable();
-            $table->integer('duration_minutes')->nullable();
+            $table->integer('duration_seconds')->nullable();
             $table->integer('order')->default(0);
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('course_id', 'fk_course_lessons_course_id')
                   ->references('id')->on('courses')->onDelete('cascade');
-            
+
             $table->index('course_id', 'idx_course_lessons_course_id');
             $table->index('order', 'idx_course_lessons_order');
         });

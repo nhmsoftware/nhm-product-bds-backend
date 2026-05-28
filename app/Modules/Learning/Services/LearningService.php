@@ -144,7 +144,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     }
 
                     // Tính % tiến độ xem video của bài đang học
-                    $durationSeconds       = ($lesson->duration_minutes ?? 0) * 60;
+                    $durationSeconds       = $lesson->duration_seconds ?? 0;
                     $watchedSeconds        = $progressRecord ? (int) $progressRecord->current_watch_seconds : 0;
                     $lessonProgressPercent = $durationSeconds > 0
                         ? (int) round(($watchedSeconds / $durationSeconds) * 100)
@@ -165,7 +165,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'id'              => $lessonId,
                     'order'           => $lesson->order,
                     'title'           => $lesson->title,
-                    'durationSeconds' => ($lesson->duration_minutes ?? 0) * 60,
+                    'durationSeconds' => $lesson->duration_seconds ?? 0,
                     'status'          => strtolower($lessonStatus->name),
                     'progressPercent' => $lessonProgressPercent,
                     'isLocked'        => $lessonStatus === LessonStatus::LOCKED,
@@ -291,7 +291,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'title' => $lesson->title,
                     'content' => $lesson->content,
                     'video_url' => $lesson->video_url,
-                    'duration_minutes' => $lesson->duration_minutes,
+                    'duration_seconds' => $lesson->duration_seconds,
                     'order' => $lesson->order,
                     'status' => strtolower($lessonStatus->name),
                     'status_label' => $lessonStatus->label(),
@@ -412,7 +412,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'title' => $lesson->title,
                 'content' => $lesson->content,
                 'video_url' => $lesson->video_url,
-                'duration_minutes' => $lesson->duration_minutes,
+                'duration_seconds' => $lesson->duration_seconds,
                 'order' => $lesson->order,
                 'status' => strtolower($targetStatus->name),
                 'status_label' => $targetStatus->label(),
@@ -486,9 +486,9 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $progressRecord->current_watch_seconds = max($progressRecord->current_watch_seconds, $watchTimeSeconds);
 
             // 8. Đánh giá hoàn thành bài học
-            // Thời lượng yêu cầu tính bằng giây (duration_minutes * 60)
-            $requiredSeconds = ($lesson->duration_minutes ?? 0) * 60;
-            
+            // Thời lượng yêu cầu tính bằng giây (duration_seconds)
+            $requiredSeconds = $lesson->duration_seconds ?? 0;
+
             $alreadyCompleted = $progressRecord->is_completed;
             $newlyCompleted = false;
 
@@ -1098,8 +1098,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN,
                 \App\Modules\Auth\Models\Enums\UserRole::CEO,
                 \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR
-            ], true), 
-            'Bạn không có quyền thực hiện chức năng này.', 
+            ], true),
+            'Bạn không có quyền thực hiện chức năng này.',
             403
         );
     }
@@ -1112,7 +1112,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
         return $this->execute(function () use ($dto, $adminId) {
             $this->validateAdmin($adminId);
             $paginator = $this->courseRepository->searchAndFilter($dto->toArray(), $dto->perPage);
-            
+
             $items = collect($paginator->items())->map(function ($course) {
                 return [
                     'id' => (string) $course->id,
@@ -1170,7 +1170,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'title' => $lesson->title,
                     'content' => $lesson->content,
                     'video_url' => $lesson->video_url,
-                    'duration_minutes' => (int) $lesson->duration_minutes,
+                    'duration_seconds' => (int) $lesson->duration_seconds,
                     'order' => (int) $lesson->order,
                     'is_active' => (bool) $lesson->is_active,
                     'attachments' => $lesson->attachments,
@@ -1227,7 +1227,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'title' => $lessonData['title'],
                     'content' => $lessonData['content'] ?? null,
                     'video_url' => $lessonData['video_url'] ?? null,
-                    'duration_minutes' => (int) $lessonData['duration_minutes'],
+                    'duration_seconds' => (int) $lessonData['duration_seconds'],
                     'order' => (int) ($lessonData['order'] ?? $lessonIndex + 1),
                     'is_active' => (bool) ($lessonData['is_active'] ?? true),
                     'attachments' => $lessonData['attachments'] ?? null,
@@ -1303,7 +1303,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'title' => $lessonData['title'],
                     'content' => $lessonData['content'] ?? null,
                     'video_url' => $lessonData['video_url'] ?? null,
-                    'duration_minutes' => (int) $lessonData['duration_minutes'],
+                    'duration_seconds' => (int) $lessonData['duration_seconds'],
                     'order' => (int) ($lessonData['order'] ?? $lessonIndex + 1),
                     'is_active' => (bool) ($lessonData['is_active'] ?? true),
                     'attachments' => $lessonData['attachments'] ?? null,
@@ -1937,8 +1937,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'course_id' => $enrollment->course_id,
                     'course_title' => $enrollment->course->title ?? '',
                     'progress_percent' => (float) $enrollment->progress_percent,
-                    'status' => $enrollment->status instanceof \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus 
-                        ? $enrollment->status->serialize() 
+                    'status' => $enrollment->status instanceof \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus
+                        ? $enrollment->status->serialize()
                         : $enrollment->status,
                     'quiz_score' => $quizScore,
                 ];
@@ -1997,7 +1997,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'lesson_id' => $lesson->id,
                     'title' => $lesson->title,
                     'video_url' => $lesson->video_url,
-                    'duration_minutes' => $lesson->duration_minutes,
+                    'duration_seconds' => $lesson->duration_seconds,
                     'is_completed' => $progress ? (bool) $progress->is_completed : false,
                     'completed_at' => $progress && $progress->completed_at ? $progress->completed_at->toIso8601String() : null,
                     'current_watch_seconds' => $progress ? (int) $progress->current_watch_seconds : 0,
