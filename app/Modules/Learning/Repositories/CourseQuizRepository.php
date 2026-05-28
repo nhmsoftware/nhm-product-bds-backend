@@ -17,4 +17,19 @@ final class CourseQuizRepository extends BaseRepository implements CourseQuizRep
     {
         return $this->model->where('lesson_id', $lessonId)->get();
     }
+
+    public function getByLessonIds(iterable $lessonIds): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->model->whereIn('lesson_id', $lessonIds)->get();
+    }
+
+    public function countByLessonIds(iterable $lessonIds): int
+    {
+        return $this->model->whereIn('lesson_id', $lessonIds)->count();
+    }
+
+    public function deleteByIds(array $ids): int
+    {
+        return $this->model->whereIn('id', $ids)->delete();
+    }
 }

@@ -5,7 +5,7 @@ namespace App\Modules\Leave\Services;
 use App\Core\DTOs\FilterDTO;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
-use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Leave\DTO\CreateLeaveDTO;
 use App\Modules\Leave\Events\LeaveRequestApproved;
 use App\Modules\Leave\Events\LeaveRequestCreated;
@@ -26,7 +26,8 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
      * @param LeaveRequestRepositoryInterface $leaveRequestRepository
      */
     public function __construct(
-        private readonly LeaveRequestRepositoryInterface $leaveRequestRepository
+        private readonly LeaveRequestRepositoryInterface $leaveRequestRepository,
+        private readonly AuthRepositoryInterface $authRepository
     ) {
     }
 
@@ -40,7 +41,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = User::find($dto->userId);
+            $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động (không bị khóa)
@@ -85,7 +86,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
     {
         return $this->execute(function () use ($userId, $filter) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại và đang hoạt động
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
@@ -129,7 +130,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
     {
         return $this->execute(function () use ($userId, $leaveRequestId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại và đang hoạt động
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
@@ -183,7 +184,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
     {
         return $this->execute(function () use ($userId, $filter) {
             // 1. Kiểm tra Preconditions: Tài khoản Team Leader tồn tại
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản Team Leader đang hoạt động
@@ -257,7 +258,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
     {
         return $this->execute(function () use ($userId, $leaveRequestId) {
             // 1. Kiểm tra Preconditions: Tài khoản Team Leader tồn tại
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản Team Leader đang hoạt động
@@ -316,7 +317,7 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
     {
         return $this->execute(function () use ($userId, $leaveRequestId, $reason) {
             // 1. Kiểm tra Preconditions: Tài khoản Team Leader tồn tại
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản Team Leader đang hoạt động

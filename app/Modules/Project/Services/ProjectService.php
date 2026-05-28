@@ -9,8 +9,8 @@ use App\Modules\Project\DTO\CreateProjectDTO;
 use App\Modules\Project\DTO\UpdateProjectDTO;
 use App\Modules\Project\DTO\ListAdminProjectDTO;
 use App\Modules\Project\DTO\BulkCreateProjectDTO;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
-use App\Modules\Auth\Models\User;
 use App\Modules\Project\Interfaces\ProjectRepositoryInterface;
 use App\Modules\Project\Interfaces\ProjectServiceInterface;
 use App\Modules\Area\Interfaces\AreaServiceInterface;
@@ -28,7 +28,8 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
      */
     public function __construct(
         private readonly ProjectRepositoryInterface $projectRepository,
-        private readonly AreaServiceInterface $areaService
+        private readonly AreaServiceInterface $areaService,
+        private readonly AuthRepositoryInterface $authRepository
     ) {
     }
 
@@ -227,7 +228,7 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     public function lockUnlockProject(string $userId, string $id, bool $isLocked): ServiceReturn
     {
         return $this->execute(function () use ($userId, $id, $isLocked) {
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
 
             $project = $this->projectRepository->findById($id);

@@ -18,6 +18,7 @@ use App\Modules\News\Interfaces\NewsLikeRepositoryInterface;
 use App\Modules\News\Interfaces\NewsRepositoryInterface;
 use App\Modules\News\Interfaces\NewsCommentRepositoryInterface;
 use App\Modules\News\Interfaces\NewsServiceInterface;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Modules\Auth\Models\Enums\UserRole;
@@ -27,7 +28,8 @@ final class NewsService extends BaseService implements NewsServiceInterface
     public function __construct(
         private readonly NewsRepositoryInterface $newsRepository,
         private readonly NewsLikeRepositoryInterface $newsLikeRepository,
-        private readonly NewsCommentRepositoryInterface $newsCommentRepository
+        private readonly NewsCommentRepositoryInterface $newsCommentRepository,
+        private readonly AuthRepositoryInterface $authRepository
     ) {
     }
 
@@ -194,7 +196,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
     {
         return $this->execute(function () use ($userId, $params) {
             // 1. Kiểm tra Preconditions: Người dùng tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Người dùng đang hoạt động
@@ -263,7 +265,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
     {
         return $this->execute(function () use ($newsId, $userId) {
             // 1. Kiểm tra Preconditions: Người dùng tồn tại trong hệ thống và đang hoạt động
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
@@ -354,7 +356,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Người dùng tồn tại trong hệ thống và đang hoạt động
-            $user = \App\Modules\Auth\Models\User::find($dto->userId);
+            $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
@@ -416,7 +418,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Người dùng tồn tại và đang hoạt động
-            $user = \App\Modules\Auth\Models\User::find($dto->userId);
+            $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
@@ -525,7 +527,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Người dùng tồn tại và đang hoạt động
-            $user = \App\Modules\Auth\Models\User::find($dto->userId);
+            $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
@@ -591,7 +593,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
     {
         return $this->execute(function () use ($newsId, $userId) {
             // 1. Kiểm tra Preconditions: Người dùng tồn tại và đang hoạt động
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
@@ -658,7 +660,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Người dùng tồn tại và đang hoạt động
-            $user = \App\Modules\Auth\Models\User::find($dto->userId);
+            $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 

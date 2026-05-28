@@ -60,4 +60,44 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     {
         return $this->model->where('staff_code', $staffCode)->first();
     }
+
+    public function countActiveTeamMembers(User $user): int
+    {
+        return $this->applyTeamScope($this->model->where('is_active', true), $user)->count();
+    }
+
+    public function getActiveTeamMembers(
+        User $user,
+        ?string $search,
+        ?string $jobPosition,
+        int $perPage
+    ): \Illuminate\Contracts\Pagination\LengthAwarePaginator {
+        $query = $this->applyTeamScope($this->model->where('is_active', true), $user);
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', '%' . $search . '%')
+                    ->orWhere('staff_code', 'ilike', '%' . $search . '%');
+            });
+        }
+
+        if ($jobPosition) {
+            $query->where('job_position', $jobPosition);
+        }
+
+        return $query->orderBy('name', 'asc')->paginate($perPage);
+    }
+
+    private function applyTeamScope(\Illuminate\Database\Eloquent\Builder $query, User $user): \Illuminate\Database\Eloquent\Builder
+    {
+        if ($user->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER) {
+            return $query->where('department', $user->department);
+        }
+
+        if ($user->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR) {
+            return $query->where('area', $user->area);
+        }
+
+        return $query;
+    }
 }

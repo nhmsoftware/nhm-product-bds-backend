@@ -7,7 +7,7 @@ namespace App\Modules\EmployeeReferral\Services;
 use App\Core\DTOs\FilterDTO;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
-use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\EmployeeReferral\Interfaces\ReferralCommissionRepositoryInterface;
 use App\Modules\EmployeeReferral\Interfaces\ReferralCommissionServiceInterface;
@@ -15,7 +15,8 @@ use App\Modules\EmployeeReferral\Interfaces\ReferralCommissionServiceInterface;
 final class ReferralCommissionService extends BaseService implements ReferralCommissionServiceInterface
 {
     public function __construct(
-        private readonly ReferralCommissionRepositoryInterface $commissionRepository
+        private readonly ReferralCommissionRepositoryInterface $commissionRepository,
+        private readonly AuthRepositoryInterface $authRepository
     ) {
     }
 
@@ -29,7 +30,7 @@ final class ReferralCommissionService extends BaseService implements ReferralCom
     public function getCommissions(string $userId, FilterDTO $filter): ServiceReturn
     {
         return $this->execute(function () use ($userId, $filter) {
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // A5 - Nhân viên không có quyền truy cập
@@ -78,7 +79,7 @@ final class ReferralCommissionService extends BaseService implements ReferralCom
     public function getDetail(string $userId, string $commissionId): ServiceReturn
     {
         return $this->execute(function () use ($userId, $commissionId) {
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             $allowedRoles = [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN];

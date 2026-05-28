@@ -7,7 +7,7 @@ namespace App\Modules\Area\Services;
 use App\Core\DTOs\FilterDTO;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
-use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Area\Interfaces\AreaRepositoryInterface;
 use App\Modules\Area\Interfaces\AreaServiceInterface;
@@ -32,7 +32,8 @@ final class AreaService extends BaseService implements AreaServiceInterface
         private readonly AreaRepositoryInterface $areaRepository,
         private readonly LotRepositoryInterface $lotRepository,
         private readonly LotCommentRepositoryInterface $lotCommentRepository,
-        private readonly LotLockRequestRepositoryInterface $lotLockRequestRepository
+        private readonly LotLockRequestRepositoryInterface $lotLockRequestRepository,
+        private readonly AuthRepositoryInterface $authRepository
     ) {}
 
     /**
@@ -46,7 +47,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
     {
         return $this->execute(function () use ($userId, $filter) {
             // 1. Kiểm tra Preconditions: Tài khoản người dùng tồn tại
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản đang hoạt động
@@ -106,7 +107,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
     {
         return $this->execute(function () use ($userId, $areaId) {
             // 1. Kiểm tra Preconditions: Tài khoản người dùng tồn tại
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản đang hoạt động
@@ -166,7 +167,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
     {
         return $this->execute(function () use ($userId, $lotId) {
             // 1. Kiểm tra Preconditions: Tài khoản người dùng tồn tại
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản đang hoạt động
@@ -236,7 +237,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Tài khoản người dùng tồn tại
-            $user = User::find($dto->userId);
+            $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản đang hoạt động
@@ -317,7 +318,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Tài khoản người dùng tồn tại
-            $user = User::find($dto->userId);
+            $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản đang hoạt động
@@ -417,7 +418,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
     {
         return $this->execute(function () use ($userId, $dto) {
             // 1. Kiểm tra Preconditions: Tài khoản người dùng tồn tại
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản đang hoạt động
@@ -522,7 +523,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
     public function lockUnlockLot(string $userId, string $id, bool $isLocked): ServiceReturn
     {
         return $this->execute(function () use ($userId, $id, $isLocked) {
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
 
             $lot = $this->lotRepository->findById($id);
@@ -627,4 +628,3 @@ final class AreaService extends BaseService implements AreaServiceInterface
         }
     }
 }
-

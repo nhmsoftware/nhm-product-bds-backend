@@ -9,6 +9,7 @@ use App\Modules\DepartmentTransfer\DTO\StoreDepartmentTransferRequestDTO;
 use App\Modules\DepartmentTransfer\Events\DepartmentTransferRequestCreated;
 use App\Modules\DepartmentTransfer\Interfaces\DepartmentTransferRequestRepositoryInterface;
 use App\Modules\DepartmentTransfer\Interfaces\DepartmentTransferServiceInterface;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use App\Modules\DepartmentTransfer\Models\Enums\RequestStatus;
@@ -17,10 +18,15 @@ use App\Modules\Auth\Models\Enums\UserRole;
 class DepartmentTransferService extends BaseService implements DepartmentTransferServiceInterface
 {
     protected DepartmentTransferRequestRepositoryInterface $departmentTransferRequestRepository;
+    protected AuthRepositoryInterface $authRepository;
 
-    public function __construct(DepartmentTransferRequestRepositoryInterface $departmentTransferRequestRepository)
+    public function __construct(
+        DepartmentTransferRequestRepositoryInterface $departmentTransferRequestRepository,
+        AuthRepositoryInterface $authRepository
+    )
     {
         $this->departmentTransferRequestRepository = $departmentTransferRequestRepository;
+        $this->authRepository = $authRepository;
     }
 
     /**
@@ -33,7 +39,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($dto->userId);
+            $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động (không bị khóa)
@@ -89,7 +95,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
     {
         return $this->execute(function () use ($userId, $filter) {
             // 1. Kiểm tra Preconditions: Tài khoản Director/Admin tồn tại
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản Director/Admin đang hoạt động
@@ -159,7 +165,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
     {
         return $this->execute(function () use ($userId, $requestId) {
             // 1. Kiểm tra Preconditions: Tài khoản Director/Admin tồn tại
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản Director/Admin đang hoạt động
@@ -218,7 +224,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
     {
         return $this->execute(function () use ($userId, $requestId, $reason) {
             // 1. Kiểm tra Preconditions: Tài khoản Director/Admin tồn tại
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản Director/Admin đang hoạt động
@@ -269,5 +275,3 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
         });
     }
 }
-
-

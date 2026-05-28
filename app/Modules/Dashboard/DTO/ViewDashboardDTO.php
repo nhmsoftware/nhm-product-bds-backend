@@ -14,7 +14,7 @@ final class ViewDashboardDTO
     {
         return new self(
             userId: (string) $request->user()->id,
-            role: (string) $request->user()->role,
+            role: (string) $request->user()->role->value,
         );
     }
 }

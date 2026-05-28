@@ -7,7 +7,6 @@ namespace App\Modules\EmployeeReferral\Services;
 use App\Core\DTOs\FilterDTO;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
-use App\Modules\Auth\Models\User;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\EmployeeReferral\DTO\ScanReferralDTO;
@@ -77,7 +76,7 @@ final class ReferralHistoryService extends BaseService implements ReferralHistor
     {
         return $this->execute(function () use ($userId, $filter) {
             // 1. Kiểm tra tài khoản nhân viên
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // A5 - Nhân viên không có quyền truy cập
@@ -120,7 +119,7 @@ final class ReferralHistoryService extends BaseService implements ReferralHistor
     {
         return $this->execute(function () use ($userId, $referralId) {
             // 1. Kiểm tra tài khoản
-            $user = User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             $allowedRoles = [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN];

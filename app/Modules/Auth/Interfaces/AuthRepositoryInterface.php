@@ -37,4 +37,13 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
      * @return \App\Modules\Auth\Models\User|null
      */
     public function findByStaffCode(string $staffCode);
+
+    public function countActiveTeamMembers(\App\Modules\Auth\Models\User $user): int;
+
+    public function getActiveTeamMembers(
+        \App\Modules\Auth\Models\User $user,
+        ?string $search,
+        ?string $jobPosition,
+        int $perPage
+    ): \Illuminate\Contracts\Pagination\LengthAwarePaginator;
 }

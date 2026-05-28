@@ -15,11 +15,13 @@ use App\Modules\Learning\DTO\AdminCreateLessonDTO;
 use App\Modules\Learning\DTO\AdminUpdateLessonDTO;
 use App\Modules\Learning\DTO\AdminCreateQuizDTO;
 use App\Modules\Learning\DTO\AdminUpdateQuizDTO;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Learning\Interfaces\CourseEnrollmentRepositoryInterface;
 use App\Modules\Learning\Interfaces\CourseRepositoryInterface;
 use App\Modules\Learning\Interfaces\CourseLessonRepositoryInterface;
 use App\Modules\Learning\Interfaces\CourseQuizRepositoryInterface;
 use App\Modules\Learning\Interfaces\LearningServiceInterface;
+use App\Modules\Learning\Interfaces\QuizAttemptRepositoryInterface;
 use App\Modules\Learning\Models\Enums\CourseEnrollmentStatus;
 use App\Modules\Learning\Models\Enums\LessonStatus;
 
@@ -52,6 +54,10 @@ final class LearningService extends BaseService implements LearningServiceInterf
      */
     protected CourseQuizRepositoryInterface $quizRepository;
 
+    protected AuthRepositoryInterface $authRepository;
+
+    protected QuizAttemptRepositoryInterface $quizAttemptRepository;
+
     /**
      * Khởi tạo Service với các Repository tương ứng.
      *
@@ -64,12 +70,16 @@ final class LearningService extends BaseService implements LearningServiceInterf
         CourseRepositoryInterface $courseRepository,
         CourseEnrollmentRepositoryInterface $courseEnrollmentRepository,
         CourseLessonRepositoryInterface $lessonRepository,
-        CourseQuizRepositoryInterface $quizRepository
+        CourseQuizRepositoryInterface $quizRepository,
+        AuthRepositoryInterface $authRepository,
+        QuizAttemptRepositoryInterface $quizAttemptRepository
     ) {
         $this->courseRepository = $courseRepository;
         $this->courseEnrollmentRepository = $courseEnrollmentRepository;
         $this->lessonRepository = $lessonRepository;
         $this->quizRepository = $quizRepository;
+        $this->authRepository = $authRepository;
+        $this->quizAttemptRepository = $quizAttemptRepository;
     }
 
     /**
@@ -82,7 +92,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($dto->userId);
+            $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động (không bị khóa)
@@ -112,11 +122,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             if ($enrollment) {
                 $lessonProgressRecords = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id);
                 $lessonProgressMap     = $lessonProgressRecords->keyBy(fn ($lp) => (string) $lp->lesson_id);
-                $completedLessonIds    = $lessonProgressRecords
-                    ->where('is_completed', true)
-                    ->pluck('lesson_id')
-                    ->map(fn ($id) => (string) $id)
-                    ->toArray();
+                $completedLessonIds    = $this->courseEnrollmentRepository->getCompletedLessonIds($enrollment->id);
             }
 
             // 6. Tính toán trạng thái từng bài học và xác định bài đang học hiện tại
@@ -238,7 +244,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
     {
         return $this->execute(function () use ($courseId, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
@@ -260,10 +266,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             }
 
             // 5. Tải danh sách bài học đã hoàn thành
-            $completedLessons = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id)
-                ->where('is_completed', true)
-                ->pluck('lesson_id')
-                ->toArray();
+            $completedLessons = $this->courseEnrollmentRepository->getCompletedLessonIds($enrollment->id);
 
             // 6. Tính toán trạng thái cho từng bài học (Đang học, Hoàn thành, Khóa)
             $lessons = $course->lessons;
@@ -332,7 +335,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
     {
         return $this->execute(function () use ($lessonId, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
@@ -351,15 +354,10 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
 
             // 6. Tải danh sách bài học đã hoàn thành và tiến độ xem video bài học hiện tại
-            $progressRecord = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id)
-                ->where('lesson_id', $lesson->id)
-                ->first();
+            $progressRecord      = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);
             $currentWatchSeconds = $progressRecord ? $progressRecord->current_watch_seconds : 0;
 
-            $completedLessons = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id)
-                ->where('is_completed', true)
-                ->pluck('lesson_id')
-                ->toArray();
+            $completedLessons = $this->courseEnrollmentRepository->getCompletedLessonIds($enrollment->id);
 
             // 7. Tính toán trạng thái các bài học để xác định trạng thái của bài học hiện tại
             $lessons = $course->lessons;
@@ -446,7 +444,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
     {
         return $this->execute(function () use ($lessonId, $watchTimeSeconds, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
@@ -468,9 +466,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
 
             // 7. Tạo hoặc lấy bản ghi tiến độ học tập hiện tại
-            $progressRecord = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id)
-                ->where('lesson_id', $lesson->id)
-                ->first();
+            $progressRecord = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);
 
             if (!$progressRecord) {
                 $progressRecord = new \App\Modules\Learning\Models\LessonProgress([
@@ -512,9 +508,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 $totalLessonsCount = $lessons->count();
 
                 if ($totalLessonsCount > 0) {
-                    $completedLessonsCount = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id)
-                        ->where('is_completed', true)
-                        ->count();
+                    $completedLessonsCount = $this->courseEnrollmentRepository->countCompletedLessons($enrollment->id);
 
                     $progressPercent = round(($completedLessonsCount / $totalLessonsCount) * 100, 2);
                     $enrollment->progress_percent = $progressPercent;
@@ -588,7 +582,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
     {
         return $this->execute(function () use ($lessonId, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
@@ -607,9 +601,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
 
             // 6. A1 – Employee chưa hoàn thành bài học trước (hoặc chưa xem hoàn thành video bài này)
-            $progressRecord = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id)
-                ->where('lesson_id', $lesson->id)
-                ->first();
+            $progressRecord = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);
             $this->validate($progressRecord !== null && $progressRecord->is_completed === true, 'Bạn cần hoàn thành bài học trước khi làm quiz.', 403);
 
             // 7. Lấy danh sách câu hỏi kiểm tra (Quiz)
@@ -617,10 +609,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $this->validate($questions->isNotEmpty(), 'Bài quiz không khả dụng.', 404);
 
             $questionIds = $questions->pluck('id')->toArray();
-            $draftAttempts = \App\Modules\Learning\Models\QuizAttempt::where('user_id', $userId)
-                ->whereIn('quiz_id', $questionIds)
-                ->where('is_draft', true)
-                ->get()
+            $draftAttempts = $this->quizAttemptRepository
+                ->getDraftsByUserAndQuizIds($userId, $questionIds)
                 ->keyBy('quiz_id');
 
             // Trả về danh sách câu hỏi không kèm đáp án đúng, kèm câu trả lời nháp đã lưu nếu có
@@ -664,7 +654,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
     {
         return $this->execute(function () use ($lessonId, $answers, $isTimeout, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
@@ -683,9 +673,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
 
             // 6. A1 – Employee chưa hoàn thành bài học trước
-            $progressRecord = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id)
-                ->where('lesson_id', $lesson->id)
-                ->first();
+            $progressRecord = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);
             $this->validate($progressRecord !== null && $progressRecord->is_completed === true, 'Bạn cần hoàn thành bài học trước khi làm quiz.', 403);
 
             // 7. Lấy danh sách câu hỏi kiểm tra (Quiz) của bài học từ DB
@@ -713,9 +701,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             // Xóa lịch sử làm bài trước đó của nhân viên cho các câu hỏi này
             $questionIds = $questions->pluck('id')->toArray();
-            \App\Modules\Learning\Models\QuizAttempt::where('user_id', $userId)
-                ->whereIn('quiz_id', $questionIds)
-                ->delete();
+            $this->quizAttemptRepository->deleteByUserAndQuizIds($userId, $questionIds);
 
             // Chấm điểm và lưu kết quả
             $correctCount = 0;
@@ -731,7 +717,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 }
 
                 // Lưu kết quả bài làm vào DB
-                \App\Modules\Learning\Models\QuizAttempt::create([
+                $this->quizAttemptRepository->create([
                     'id' => (string) \Illuminate\Support\Str::uuid(),
                     'user_id' => $userId,
                     'quiz_id' => $q->id,
@@ -789,7 +775,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
     {
         return $this->execute(function () use ($courseId, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
@@ -815,10 +801,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $lessons = $this->lessonRepository->getByCourseId($courseId);
             $this->validate($lessons->isNotEmpty(), 'Khóa học này không có bài học nào.', 400);
 
-            $completedLessonIds = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id)
-                ->where('is_completed', true)
-                ->pluck('lesson_id')
-                ->toArray();
+            $completedLessonIds = $this->courseEnrollmentRepository->getCompletedLessonIds($enrollment->id);
 
             $totalLessonsCount = $lessons->count();
             $completedLessonsCount = count($completedLessonIds);
@@ -836,10 +819,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 $quizQuestions = $this->quizRepository->getByLessonId($lastLesson->id);
                 if ($quizQuestions->isNotEmpty()) {
                     $questionIds = $quizQuestions->pluck('id')->toArray();
-                    $correctAttemptsCount = \App\Modules\Learning\Models\QuizAttempt::where('user_id', $userId)
-                        ->whereIn('quiz_id', $questionIds)
-                        ->where('is_correct', true)
-                        ->count();
+                    $correctAttemptsCount = $this->quizAttemptRepository
+                        ->countCorrectByUserAndQuizIds($userId, $questionIds);
 
                     $totalQuestionsCount = $quizQuestions->count();
                     $score = ($correctAttemptsCount / $totalQuestionsCount) * 10; // Điểm quy về hệ 10
@@ -883,7 +864,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
     {
         return $this->execute(function () use ($courseId, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
@@ -919,10 +900,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     $quizQuestions = $this->quizRepository->getByLessonId($lastLesson->id);
                     if ($quizQuestions->isNotEmpty()) {
                         $questionIds = $quizQuestions->pluck('id')->toArray();
-                        $correctAttemptsCount = \App\Modules\Learning\Models\QuizAttempt::where('user_id', $userId)
-                            ->whereIn('quiz_id', $questionIds)
-                            ->where('is_correct', true)
-                            ->count();
+                        $correctAttemptsCount = $this->quizAttemptRepository
+                            ->countCorrectByUserAndQuizIds($userId, $questionIds);
 
                         $totalQuestionsCount = $quizQuestions->count();
                         $score = ($correctAttemptsCount / $totalQuestionsCount) * 10;
@@ -1007,7 +986,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
     {
         return $this->execute(function () use ($lessonId, $answers, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
@@ -1026,9 +1005,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
 
             // 6. Kiểm tra Preconditions: Nhân viên cần hoàn thành xem video bài học này trước khi làm quiz
-            $progressRecord = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id)
-                ->where('lesson_id', $lesson->id)
-                ->first();
+            $progressRecord = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);
             $this->validate($progressRecord !== null && $progressRecord->is_completed === true, 'Bạn cần hoàn thành bài học trước khi làm quiz.', 403);
 
             // 7. Lấy danh sách câu hỏi kiểm tra (Quiz) của bài học từ DB
@@ -1054,15 +1031,13 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             // Xóa lịch sử nháp/bài làm trước đó của nhân viên cho các câu hỏi này
             $questionIds = $questions->pluck('id')->toArray();
-            \App\Modules\Learning\Models\QuizAttempt::where('user_id', $userId)
-                ->whereIn('quiz_id', $questionIds)
-                ->delete();
+            $this->quizAttemptRepository->deleteByUserAndQuizIds($userId, $questionIds);
 
             // Lưu các câu trả lời nháp hiện tại
             foreach ($questions as $q) {
                 $selectedOption = $submittedMap[(string) $q->id] ?? null;
                 if ($selectedOption !== null) {
-                    \App\Modules\Learning\Models\QuizAttempt::create([
+                    $this->quizAttemptRepository->create([
                         'id' => (string) \Illuminate\Support\Str::uuid(),
                         'user_id' => $userId,
                         'quiz_id' => $q->id,
@@ -1094,7 +1069,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
      */
     private function validateAdmin(string $adminId): void
     {
-        $admin = \App\Modules\Auth\Models\User::find($adminId);
+        $admin = $this->authRepository->find($adminId);
         $this->validate($admin !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
         $this->validate($admin->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
         $this->validate(
@@ -1445,7 +1420,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $lessonIds = $lessons->pluck('id')->toArray();
 
             // 3. A2 – Khóa học đã có quiz
-            $existingQuizCount = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessonIds)->count();
+            $existingQuizCount = $this->quizRepository->countByLessonIds($lessonIds);
             $this->validate($existingQuizCount === 0, 'Khóa học đã có bài quiz.', 400);
 
             // 4. A5 – Điểm đạt yêu cầu không hợp lệ
@@ -1469,7 +1444,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     422
                 );
 
-                $quiz = \App\Modules\Learning\Models\CourseQuiz::create([
+                $quiz = $this->quizRepository->create([
                     'id' => (string) \Illuminate\Support\Str::uuid(),
                     'lesson_id' => $lastLesson->id,
                     'question' => $q['question'],
@@ -1517,7 +1492,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             // 3. A1 – Quiz không tồn tại
             // Check if there are any quizzes for this course
-            $existingQuizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessonIds)->get();
+            $existingQuizzes = $this->quizRepository->getByLessonIds($lessonIds);
             $this->validate($existingQuizzes->isNotEmpty(), 'Quiz không tồn tại.', 404);
 
             // 4. A4 – Điểm đạt yêu cầu không hợp lệ
@@ -1559,7 +1534,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     $processedQuizIds[] = $quizId;
                 } else {
                     // Create new
-                    $quiz = \App\Modules\Learning\Models\CourseQuiz::create([
+                    $quiz = $this->quizRepository->create([
                         'id' => (string) \Illuminate\Support\Str::uuid(),
                         'lesson_id' => $lastLesson->id,
                         'question' => $q['question'],
@@ -1573,7 +1548,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             // Delete existing quizzes that are no longer in the payload
             $toDeleteQuizIds = array_diff($existingQuizIds, $processedQuizIds);
             if (!empty($toDeleteQuizIds)) {
-                \App\Modules\Learning\Models\CourseQuiz::whereIn('id', $toDeleteQuizIds)->delete();
+                $this->quizRepository->deleteByIds($toDeleteQuizIds);
             }
 
             // Fetch the updated quizzes
@@ -1617,16 +1592,16 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             // 3. A1 – Quiz không tồn tại
             // Check if there are any quizzes for this course
-            $existingQuizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessonIds)->get();
+            $existingQuizzes = $this->quizRepository->getByLessonIds($lessonIds);
             $this->validate($existingQuizzes->isNotEmpty(), 'Quiz không tồn tại.', 404);
 
             // 4. A2 – Quiz đã có nhân viên làm bài
             $quizIds = $existingQuizzes->pluck('id')->toArray();
-            $attemptsCount = \App\Modules\Learning\Models\QuizAttempt::whereIn('quiz_id', $quizIds)->count();
+            $attemptsCount = $this->quizAttemptRepository->countByQuizIds($quizIds);
             $this->validate($attemptsCount === 0, 'Không thể xóa quiz đã có nhân viên làm bài.', 400);
 
             // 5. Xóa quiz (soft delete)
-            $deleted = \App\Modules\Learning\Models\CourseQuiz::whereIn('id', $quizIds)->delete();
+            $deleted = $this->quizRepository->deleteByIds($quizIds);
             $this->validate($deleted !== false, 'Không thể xóa quiz.', 500);
 
             return $this->success(
@@ -1771,7 +1746,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
         return $this->execute(function () use ($courseId, $userId, $adminId) {
             $this->validateAdmin($adminId);
 
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             $course = $this->courseRepository->find($courseId);
@@ -1792,10 +1767,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             $completedLessonIds = [];
             if ($enrollment) {
-                $completedLessonIds = \App\Modules\Learning\Models\LessonProgress::where('enrollment_id', $enrollment->id)
-                    ->where('is_completed', true)
-                    ->pluck('lesson_id')
-                    ->toArray();
+                $completedLessonIds = $this->courseEnrollmentRepository->getCompletedLessonIds($enrollment->id);
             }
 
             $totalLessonsCount = $lessons->count();
@@ -1825,12 +1797,10 @@ final class LearningService extends BaseService implements LearningServiceInterf
             }
 
             // Check quiz requirements (A5)
-            $quizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessons->pluck('id'))->get();
+            $quizzes = $this->quizRepository->getByLessonIds($lessons->pluck('id'));
             if ($quizzes->isNotEmpty()) {
-                $correctAttemptsCount = \App\Modules\Learning\Models\QuizAttempt::where('user_id', $userId)
-                    ->whereIn('quiz_id', $quizzes->pluck('id'))
-                    ->where('is_correct', true)
-                    ->count();
+                $correctAttemptsCount = $this->quizAttemptRepository
+                    ->countCorrectByUserAndQuizIds($userId, $quizzes->pluck('id')->toArray());
 
                 $totalQuestionsCount = $quizzes->count();
                 // Passing score is 80%
@@ -1922,14 +1892,12 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $data = [];
             foreach ($enrollments as $enrollment) {
                 $lessons = $this->lessonRepository->getByCourseId($enrollment->course_id);
-                $quizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessons->pluck('id'))->get();
+                $quizzes = $this->quizRepository->getByLessonIds($lessons->pluck('id'));
                 if ($quizzes->isEmpty()) {
                     $quizScore = null;
                 } else {
-                    $correctAttempts = \App\Modules\Learning\Models\QuizAttempt::where('user_id', $enrollment->user_id)
-                        ->whereIn('quiz_id', $quizzes->pluck('id'))
-                        ->where('is_correct', true)
-                        ->count();
+                    $correctAttempts = $this->quizAttemptRepository
+                        ->countCorrectByUserAndQuizIds((string) $enrollment->user_id, $quizzes->pluck('id')->toArray());
                     $quizScore = round(($correctAttempts / $quizzes->count()) * 10, 2);
                 }
 
@@ -1978,7 +1946,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
         return $this->execute(function () use ($courseId, $userId, $adminId) {
             $this->validateAdmin($adminId);
 
-            $user = \App\Modules\Auth\Models\User::find($userId);
+            $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             $course = $this->courseRepository->find($courseId);
@@ -1992,9 +1960,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             foreach ($lessons as $lesson) {
                 $progress = null;
                 if ($enrollment) {
-                    $progress = \App\Modules\Learning\Models\LessonProgress::where('enrollment_id', $enrollment->id)
-                        ->where('lesson_id', $lesson->id)
-                        ->first();
+                    $progress = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);
                 }
 
                 $lessonProgressDetails[] = [
@@ -2010,7 +1976,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             }
 
             // Quizzes
-            $quizzes = \App\Modules\Learning\Models\CourseQuiz::whereIn('lesson_id', $lessons->pluck('id'))->get();
+            $quizzes = $this->quizRepository->getByLessonIds($lessons->pluck('id'));
             $quizDetails = [];
             $correctAttempts = 0;
             $quizScore = null;
@@ -2019,9 +1985,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             if ($quizzes->isNotEmpty()) {
                 $totalQuestions = $quizzes->count();
                 foreach ($quizzes as $quiz) {
-                    $attempt = \App\Modules\Learning\Models\QuizAttempt::where('user_id', $userId)
-                        ->where('quiz_id', $quiz->id)
-                        ->first();
+                    $attempt = $this->quizAttemptRepository->findByUserAndQuiz($userId, $quiz->id);
 
                     $selectedOption = $attempt ? $attempt->selected_option : null;
                     $isCorrect = $attempt ? (bool) $attempt->is_correct : false;

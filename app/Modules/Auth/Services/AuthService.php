@@ -21,10 +21,8 @@ use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Interfaces\AuthServiceInterface;
 use App\Modules\Auth\Interfaces\RewardPointHistoryRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
-use App\Modules\Auth\Models\User;
 use App\Modules\EmployeeReferral\Models\Enums\ReferralStatus;
 use App\Modules\EmployeeReferral\Models\Enums\ReferralType;
-use App\Modules\EmployeeReferral\Models\ReferralHistory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -77,11 +75,9 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             // Xử lý Referral Code nếu có
             if (!empty($dto->referral_code)) {
-                $employee = User::where('staff_code', $dto->referral_code)->first();
+                $employee = $this->authRepository->findByStaffCode($dto->referral_code);
                 if ($employee) {
-                    $referralHistory = ReferralHistory::where('referrer_id', $employee->id)
-                        ->where('phone', $dto->phone)
-                        ->first();
+                    $referralHistory = $this->referralHistoryRepository->findByReferrerAndPhone($employee->id, $dto->phone);
 
                     if ($referralHistory) {
                         $referralHistory->update([
@@ -90,7 +86,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                             'registered_at' => now(),
                         ]);
                     } else {
-                        ReferralHistory::create([
+                        $this->referralHistoryRepository->create([
                             'referrer_id' => $employee->id,
                             'referee_id' => $user->id,
                             'name' => $user->name,
@@ -784,16 +780,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 403
             );
 
-            $query = $this->rewardPointHistoryRepository->query()->where('user_id', $dto->userId);
-
-            if ($dto->fromDate) {
-                $query->whereDate('created_at', '>=', $dto->fromDate);
-            }
-            if ($dto->toDate) {
-                $query->whereDate('created_at', '<=', $dto->toDate);
-            }
-
-            $histories = $query->orderBy('created_at', 'desc')->paginate($dto->perPage);
+            $histories = $this->rewardPointHistoryRepository->getHistoriesPaginated(
+                $dto->userId,
+                $dto->fromDate,
+                $dto->toDate,
+                $dto->perPage
+            );
 
             // A1 - Chưa có dữ liệu
             if ($histories->isEmpty() && !$dto->fromDate && !$dto->toDate) {
@@ -838,18 +830,15 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 403
             );
 
-            $query = $this->authRepository->query()->where('is_active', true);
             $teamName = '';
 
             if ($user->role === UserRole::MANAGER) {
-                $query->where('department', $user->department);
                 $teamName = $user->department;
             } elseif ($user->role === UserRole::DIRECTOR) {
-                $query->where('area', $user->area);
                 $teamName = $user->area;
             }
 
-            $memberCount = $query->count();
+            $memberCount = $this->authRepository->countActiveTeamMembers($user);
 
             $overview = [
                 'team_name' => $teamName ?: 'Chưa cập nhật',
@@ -891,26 +880,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 403
             );
 
-            $query = $this->authRepository->query()->where('is_active', true);
-
-            if ($user->role === UserRole::MANAGER) {
-                $query->where('department', $user->department);
-            } elseif ($user->role === UserRole::DIRECTOR) {
-                $query->where('area', $user->area);
-            }
-
-            if ($dto->search) {
-                $query->where(function ($q) use ($dto) {
-                    $q->where('name', 'ilike', '%' . $dto->search . '%')
-                      ->orWhere('staff_code', 'ilike', '%' . $dto->search . '%');
-                });
-            }
-
-            if ($dto->jobPosition) {
-                $query->where('job_position', $dto->jobPosition);
-            }
-
-            $members = $query->orderBy('name', 'asc')->paginate($dto->perPage);
+            $members = $this->authRepository->getActiveTeamMembers(
+                $user,
+                $dto->search,
+                $dto->jobPosition,
+                $dto->perPage
+            );
 
             // A1 - Không có nhân viên trong phòng ban
             if ($members->isEmpty() && !$dto->search && !$dto->jobPosition) {
@@ -1408,24 +1383,22 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 - ($userAbsences * 0.5);
 
             if ($dto->fromDate || $dto->toDate) {
-                $totalStars = (int) $this->rewardPointHistoryRepository->query()
-                    ->where('user_id', $dto->employeeId)
-                    ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                    ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                    ->sum('stars_changed');
+                $totalStars = $this->rewardPointHistoryRepository->sumStarsByUserAndDateRange(
+                    $dto->employeeId,
+                    $dto->fromDate,
+                    $dto->toDate
+                );
             } else {
                 $totalStars = (int) ($employee->employeeProfile->kpi_stars ?? 0);
             }
 
             // Lấy lịch sử điểm thưởng của nhân viên
-            $historyQuery = $this->rewardPointHistoryRepository->query()->where('user_id', $dto->employeeId);
-            if ($dto->fromDate) {
-                $historyQuery->whereDate('created_at', '>=', $dto->fromDate);
-            }
-            if ($dto->toDate) {
-                $historyQuery->whereDate('created_at', '<=', $dto->toDate);
-            }
-            $history = $historyQuery->orderBy('created_at', 'desc')->paginate($dto->perPage);
+            $history = $this->rewardPointHistoryRepository->getHistoriesPaginated(
+                $dto->employeeId,
+                $dto->fromDate,
+                $dto->toDate,
+                $dto->perPage
+            );
 
             $result = [
                 'employee' => [

@@ -6,7 +6,7 @@ namespace App\Modules\EmployeeReferral\Services;
 
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
-use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\EmployeeReferral\Interfaces\ReferralCommissionConfigRepositoryInterface;
 use App\Modules\EmployeeReferral\Interfaces\ReferralCommissionConfigServiceInterface;
@@ -14,7 +14,8 @@ use App\Modules\EmployeeReferral\Interfaces\ReferralCommissionConfigServiceInter
 final class ReferralCommissionConfigService extends BaseService implements ReferralCommissionConfigServiceInterface
 {
     public function __construct(
-        private readonly ReferralCommissionConfigRepositoryInterface $configRepository
+        private readonly ReferralCommissionConfigRepositoryInterface $configRepository,
+        private readonly AuthRepositoryInterface $authRepository
     ) {
     }
 
@@ -27,7 +28,7 @@ final class ReferralCommissionConfigService extends BaseService implements Refer
     public function getConfigs(string $actorId): ServiceReturn
     {
         return $this->execute(function () use ($actorId) {
-            $actor = User::find($actorId);
+            $actor = $this->authRepository->find($actorId);
             $this->validate($actor !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // Kiểm tra quyền (Chỉ General Director và Super Admin)
@@ -60,7 +61,7 @@ final class ReferralCommissionConfigService extends BaseService implements Refer
     public function updateConfigs(string $actorId, array $configs): ServiceReturn
     {
         return $this->execute(function () use ($actorId, $configs) {
-            $actor = User::find($actorId);
+            $actor = $this->authRepository->find($actorId);
             $this->validate($actor !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // Kiểm tra quyền (Chỉ General Director và Super Admin)

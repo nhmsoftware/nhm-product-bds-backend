@@ -13,4 +13,6 @@ interface RewardPointHistoryRepositoryInterface extends BaseRepositoryInterface
     public function calculateQuarterPoints(string $userId): int;
     
     public function getHistoriesPaginated(string $userId, ?string $fromDate, ?string $toDate, int $perPage): \Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
+    public function sumStarsByUserAndDateRange(string $userId, ?string $fromDate, ?string $toDate): int;
 }
