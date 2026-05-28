@@ -20,7 +20,7 @@ class AdminCreateLessonRequest extends FormRequest
             'course_id' => 'required|uuid|exists:courses,id',
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
-            'video_url' => 'nullable|string|max:500',
+            'video_url' => 'nullable|string',
             'duration_seconds' => 'required|integer|min:0',
             'order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
