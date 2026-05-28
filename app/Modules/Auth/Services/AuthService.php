@@ -197,7 +197,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
             // 5. Gửi OTP (Giả lập qua log hoặc gọi service gửi SMS/Email)
             // \Log::info("OTP for {$dto->username}: {$otp}");
 
-            return $this->success(null, 'Mã OTP đã được gửi.');
+            $responseData = null;
+            if (config('services.otp_expose') === true && !app()->isProduction()) {
+                $responseData = ['otp_code' => $otp];
+            }
+
+            return $this->success($responseData, 'Mã OTP đã được gửi.');
         });
     }
 
