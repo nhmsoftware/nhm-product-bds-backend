@@ -2,8 +2,10 @@
 
 namespace App\Modules\SiteTour\Interfaces;
 
+use App\Core\DTOs\FilterDTO;
 use App\Core\Interfaces\BaseRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Interface Repository quản lý hoạt động dẫn khách tham quan (Site Tour).

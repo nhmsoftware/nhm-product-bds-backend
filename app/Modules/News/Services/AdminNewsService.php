@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\News\Services;
 
-use App\Core\Interfaces\ServiceReturn;
+use App\Core\Services\ServiceReturn;
 use App\Core\Services\BaseService;
 use App\Modules\News\Interfaces\AdminNewsServiceInterface;
 use App\Modules\News\DTO\AdminListNewsDTO;

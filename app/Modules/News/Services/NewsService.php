@@ -490,7 +490,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
             if (empty($slug)) {
                 $slug = 'post';
             }
-            $slug = $slug . '-' . uniqid();
+            $slug = $slug . '-' . uniqid('', true);
 
             // 4. Xử lý tải hình ảnh thumbnail (nếu có)
             $thumbnail = null;

@@ -63,6 +63,15 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
         return $query->get();
     }
 
+
+    /**
+     * Đếm số lượng hoạt động dẫn khách của các nhân viên.
+     *
+     * @param array|string $userIds ID của các nhân viên (UUID)
+     * @param string|null $fromDate Ngày bắt đầu (format: 'Y-m-d')
+     * @param string|null $toDate Ngày kết thúc (format: 'Y-m-d')
+     * @return int Số lượng hoạt động dẫn khách
+     */
     public function countSiteTours(array|string $userIds, ?string $fromDate, ?string $toDate): int
     {
         $userIdsArray = is_array($userIds) ? $userIds : [$userIds];
@@ -78,6 +87,14 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
         return $query->count();
     }
 
+    /**
+     * Đếm số lượng hoạt động dẫn khách của mỗi nhân viên.
+     *
+     * @param array $userIds ID của các nhân viên (UUID)
+     * @param string|null $fromDate Ngày bắt đầu (format: 'Y-m-d')
+     * @param string|null $toDate Ngày kết thúc (format: 'Y-m-d')
+     * @return \Illuminate\Support\Collection Mảng chứa số lượng hoạt động dẫn khách của mỗi nhân viên
+     */
     public function countSiteToursByUsers(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection
     {
         $query = $this->model->whereIn('user_id', $userIds);
@@ -94,6 +111,13 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
             ->pluck('count', 'user_id');
     }
 
+    /**
+     * Tìm danh sách lịch sử các hoạt động dẫn khách của nhân viên.
+     *
+     * @param string $employeeId ID của nhân viên (UUID)
+     * @param FilterDTO $filter Bộ lọc tìm kiếm
+     * @return LengthAwarePaginator
+     */
     public function getHistory(string $employeeId, FilterDTO $filter): LengthAwarePaginator
     {
         $query = $this->model->where('user_id', $employeeId);
