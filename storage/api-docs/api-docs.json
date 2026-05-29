@@ -2357,6 +2357,11 @@
                                                     "type": "string",
                                                     "example": "Nguyen Van A"
                                                 },
+                                                "cccd": {
+                                                    "type": "string",
+                                                    "example": "037123456789",
+                                                    "nullable": true
+                                                },
                                                 "email": {
                                                     "type": "string",
                                                     "format": "email",
@@ -2469,6 +2474,11 @@
                                         "type": "string",
                                         "example": "Nguyen Van A"
                                     },
+                                    "cccd": {
+                                        "type": "string",
+                                        "example": "037123456789",
+                                        "nullable": true
+                                    },
                                     "email": {
                                         "type": "string",
                                         "format": "email",
@@ -2517,6 +2527,11 @@
                                                 "name": {
                                                     "type": "string",
                                                     "example": "Nguyen Van A"
+                                                },
+                                                "cccd": {
+                                                    "type": "string",
+                                                    "example": "037123456789",
+                                                    "nullable": true
                                                 },
                                                 "email": {
                                                     "type": "string",
@@ -2712,6 +2727,11 @@
                                                             "type": "string",
                                                             "example": "Nguyễn Văn A"
                                                         },
+                                                        "cccd": {
+                                                            "type": "string",
+                                                            "example": "037123456789",
+                                                            "nullable": true
+                                                        },
                                                         "phone": {
                                                             "type": "string",
                                                             "example": "0901234567"
@@ -2869,6 +2889,11 @@
                                         "type": "string",
                                         "example": "Nguyễn Văn B"
                                     },
+                                    "cccd": {
+                                        "type": "string",
+                                        "example": "037123456789",
+                                        "nullable": true
+                                    },
                                     "phone": {
                                         "type": "string",
                                         "example": "0987654321"
@@ -2962,6 +2987,11 @@
                                                         "name": {
                                                             "type": "string",
                                                             "example": "Nguyễn Văn B"
+                                                        },
+                                                        "cccd": {
+                                                            "type": "string",
+                                                            "example": "037123456789",
+                                                            "nullable": true
                                                         },
                                                         "phone": {
                                                             "type": "string",
@@ -11217,8 +11247,8 @@
                 "tags": [
                     "Admin - News"
                 ],
-                "summary": "Tạo tin tức",
-                "description": "Tạo bài viết tin tức mới (UC-122).",
+                "summary": "Tạo tin tức (UC-123)",
+                "description": "Tạo bài viết tin tức mới (UC-123).",
                 "operationId": "d8cf9c5b36bf16d857a7e5495f040d7c",
                 "requestBody": {
                     "required": true,
@@ -11228,7 +11258,9 @@
                                 "required": [
                                     "title",
                                     "content",
-                                    "category"
+                                    "category",
+                                    "type",
+                                    "status"
                                 ],
                                 "properties": {
                                     "title": {
@@ -11248,17 +11280,34 @@
                                     "category": {
                                         "type": "string"
                                     },
+                                    "type": {
+                                        "description": "Loại bài viết: Công khai hoặc Nội bộ",
+                                        "type": "string",
+                                        "enum": [
+                                            "public",
+                                            "internal"
+                                        ]
+                                    },
+                                    "scope": {
+                                        "description": "Phạm vi hiển thị (chỉ dùng khi type=internal)",
+                                        "type": "string",
+                                        "enum": [
+                                            "company",
+                                            "department"
+                                        ]
+                                    },
                                     "department": {
+                                        "description": "Phòng ban (chỉ dùng khi scope=department)",
                                         "type": "string",
                                         "nullable": true
                                     },
-                                    "area": {
+                                    "status": {
+                                        "description": "Trạng thái bài viết",
                                         "type": "string",
-                                        "nullable": true
-                                    },
-                                    "is_published": {
-                                        "type": "boolean",
-                                        "default": false
+                                        "enum": [
+                                            "published",
+                                            "hidden"
+                                        ]
                                     },
                                     "is_featured": {
                                         "type": "boolean",
@@ -11319,8 +11368,8 @@
                 "tags": [
                     "Admin - News"
                 ],
-                "summary": "Cập nhật tin tức",
-                "description": "Cập nhật bài viết tin tức (UC-122).",
+                "summary": "Cập nhật tin tức (UC-124)",
+                "description": "Cập nhật bài viết tin tức (UC-124).",
                 "operationId": "406de613275b2b75863a106c2701c9f0",
                 "parameters": [
                     {
@@ -11356,16 +11405,34 @@
                                     "category": {
                                         "type": "string"
                                     },
+                                    "type": {
+                                        "description": "Loại bài viết",
+                                        "type": "string",
+                                        "enum": [
+                                            "public",
+                                            "internal"
+                                        ]
+                                    },
+                                    "scope": {
+                                        "description": "Phạm vi hiển thị (chỉ dùng khi type=internal)",
+                                        "type": "string",
+                                        "enum": [
+                                            "company",
+                                            "department"
+                                        ]
+                                    },
                                     "department": {
+                                        "description": "Phòng ban (chỉ dùng khi scope=department)",
                                         "type": "string",
                                         "nullable": true
                                     },
-                                    "area": {
+                                    "status": {
+                                        "description": "Trạng thái bài viết",
                                         "type": "string",
-                                        "nullable": true
-                                    },
-                                    "is_published": {
-                                        "type": "boolean"
+                                        "enum": [
+                                            "published",
+                                            "hidden"
+                                        ]
                                     },
                                     "is_featured": {
                                         "type": "boolean"
@@ -11394,8 +11461,8 @@
                 "tags": [
                     "Admin - News"
                 ],
-                "summary": "Xóa tin tức",
-                "description": "Xóa bài viết tin tức (UC-122).",
+                "summary": "Ẩn tin tức (UC-125)",
+                "description": "Ẩn bài viết tin tức (UC-125).",
                 "operationId": "e977db302e63ec9de2c9cb5db2ef9f61",
                 "parameters": [
                     {
@@ -11410,7 +11477,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Xóa tin tức thành công"
+                        "description": "Ẩn bài viết thành công"
                     },
                     "404": {
                         "description": "Bài viết không tồn tại"
@@ -11536,6 +11603,99 @@
                         "description": "Lỗi hệ thống"
                     }
                 }
+            }
+        },
+        "/api/v1/news/liked": {
+            "get": {
+                "tags": [
+                    "News"
+                ],
+                "summary": "Danh sách bài viết đã thích",
+                "description": "Lấy danh sách các bài viết đã thích của người dùng hiện tại.",
+                "operationId": "3df634ff07abf4526021b887bd79a20b",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số lượng mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải dữ liệu thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải danh sách bài viết đã thích thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "list": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/News"
+                                                    }
+                                                },
+                                                "pagination": {
+                                                    "properties": {
+                                                        "total": {
+                                                            "type": "integer"
+                                                        },
+                                                        "per_page": {
+                                                            "type": "integer"
+                                                        },
+                                                        "current_page": {
+                                                            "type": "integer"
+                                                        },
+                                                        "last_page": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập"
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/news/search": {
@@ -12469,6 +12629,336 @@
                 "security": [
                     {
                         "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/notifications": {
+            "get": {
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Xem danh sách thông báo cá nhân (UC-130)",
+                "description": "Cho phép người dùng đã đăng nhập xem danh sách thông báo cá nhân liên quan đến tài khoản, công việc, khóa học, KPI, bảng hàng, đơn nghỉ phép, tuyển dụng và các hoạt động nội bộ. Danh sách được sắp xếp theo thứ tự mới nhất, thông báo chưa đọc hiển thị trên cùng.",
+                "operationId": "a76e3cfe6d38f3208c6dc72077cff607",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại (bắt đầu từ 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số thông báo trên mỗi trang (tối đa 50)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 50,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "is_read",
+                        "in": "query",
+                        "description": "Lọc theo trạng thái đọc: true = đã đọc, false = chưa đọc. Bỏ trống để lấy tất cả.",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "nullable": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải danh sách thông báo thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải danh sách thông báo thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "unread_count": {
+                                                    "description": "Tổng số thông báo chưa đọc",
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
+                                                "notifications": {
+                                                    "properties": {
+                                                        "current_page": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "data": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/components/schemas/Notification"
+                                                            }
+                                                        },
+                                                        "total": {
+                                                            "type": "integer",
+                                                            "example": 15
+                                                        },
+                                                        "per_page": {
+                                                            "type": "integer",
+                                                            "example": 20
+                                                        },
+                                                        "last_page": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "from": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "to": {
+                                                            "type": "integer",
+                                                            "example": 15
+                                                        },
+                                                        "next_page_url": {
+                                                            "type": "string",
+                                                            "example": null,
+                                                            "nullable": true
+                                                        },
+                                                        "prev_page_url": {
+                                                            "type": "string",
+                                                            "example": null,
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Tài khoản đã bị khóa hoặc ngừng hoạt động"
+                    },
+                    "500": {
+                        "description": "Không thể tải thông báo do lỗi máy chủ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/notifications/{id}": {
+            "get": {
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Xem chi tiết thông báo và tự động đánh dấu đã đọc (UC-131 – A5)",
+                "description": "Lấy nội dung chi tiết của một thông báo và tự động đánh dấu trạng thái thông báo là Đã đọc (A5). Nếu thông báo đã được đọc trước đó, trạng thái được giữ nguyên (A1). Nếu thông báo không tồn tại, trả về lỗi 404 (A2).",
+                "operationId": "931c61a4008cf8c0312deb80e463e044",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "UUID của thông báo cần xem chi tiết",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải chi tiết thông báo thành công, đã tự động đánh dấu đã đọc",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải chi tiết thông báo thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "notification": {
+                                                    "$ref": "#/components/schemas/Notification"
+                                                },
+                                                "unread_count": {
+                                                    "description": "Tổng số thông báo chưa đọc hiện tại (sau khi đã cập nhật)",
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Không có quyền xem thông báo này"
+                    },
+                    "404": {
+                        "description": "Thông báo không tồn tại hoặc đã bị xóa (A2)"
+                    },
+                    "500": {
+                        "description": "Không thể cập nhật trạng thái thông báo do lỗi máy chủ (A3)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/notifications/{id}/read": {
+            "put": {
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Đánh dấu một thông báo là đã đọc (UC-131)",
+                "description": "Cập nhật trạng thái đã đọc cho một thông báo cụ thể (Normal Flow – UC-131). Nếu thông báo đã đọc trước đó (A1), trạng thái được giữ nguyên. Nếu thông báo không tồn tại (A2), trả về lỗi 404.",
+                "operationId": "f3a5d4e45248b3c59d8bb77376fdd3d0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "UUID của thông báo cần đánh dấu đã đọc",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đánh dấu đã đọc thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Đã đánh dấu thông báo là đã đọc."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Notification"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Không có quyền truy cập thông báo này"
+                    },
+                    "404": {
+                        "description": "Thông báo không tồn tại hoặc đã bị xóa"
+                    },
+                    "500": {
+                        "description": "Không thể cập nhật trạng thái thông báo do lỗi máy chủ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/notifications/read-all": {
+            "put": {
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Đánh dấu tất cả thông báo là đã đọc (UC-131 – A4)",
+                "description": "Cập nhật trạng thái đã đọc cho toàn bộ thông báo chưa đọc của người dùng đang đăng nhập (A4 – UC-131). Số lượng thông báo được cập nhật sẽ được trả về để Frontend cập nhật badge.",
+                "operationId": "fda44a1abb2112e269dd3003b918123e",
+                "responses": {
+                    "200": {
+                        "description": "Đánh dấu tất cả đã đọc thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Đã đánh dấu tất cả thông báo là đã đọc."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "updated_count": {
+                                                    "description": "Số thông báo được cập nhật",
+                                                    "type": "integer",
+                                                    "example": 5
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Tài khoản đã bị khóa hoặc ngừng hoạt động"
+                    },
+                    "500": {
+                        "description": "Không thể cập nhật trạng thái thông báo do lỗi máy chủ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
                     }
                 ]
             }
@@ -13572,6 +14062,306 @@
                 }
             }
         },
+        "/api/recruitment/posts": {
+            "get": {
+                "tags": [
+                    "Recruitment Management"
+                ],
+                "summary": "Lấy danh sách bài tuyển dụng (UC-126)",
+                "operationId": "6c2080549fa0839abe2237bf6c91e815",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Từ khóa tìm kiếm (tiêu đề, vị trí, phòng ban...)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Lọc theo trạng thái (1: Đang hiển thị, 2: Đã ẩn)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số lượng trên 1 trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy danh sách thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Recruitment Management"
+                ],
+                "summary": "Tạo bài tuyển dụng mới (UC-126)",
+                "operationId": "175039d120a87fd1381d49a3ed85140f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "branch_name",
+                                    "job_position",
+                                    "department",
+                                    "status"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Tuyển dụng Chuyên viên Kinh doanh"
+                                    },
+                                    "image": {
+                                        "type": "string",
+                                        "example": "https://example.com/image.jpg",
+                                        "nullable": true
+                                    },
+                                    "branch_name": {
+                                        "type": "string",
+                                        "example": "Chi nhánh Quận 1"
+                                    },
+                                    "job_position": {
+                                        "type": "string",
+                                        "example": "Chuyên viên Kinh doanh"
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "example": "Phòng Kinh doanh"
+                                    },
+                                    "short_description": {
+                                        "type": "string",
+                                        "example": "Mô tả ngắn gọn về công việc",
+                                        "nullable": true
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "example": "Chi tiết mô tả công việc...",
+                                        "nullable": true
+                                    },
+                                    "job_description": {
+                                        "type": "string",
+                                        "example": "Mô tả công việc cụ thể...",
+                                        "nullable": true
+                                    },
+                                    "candidate_requirements": {
+                                        "type": "string",
+                                        "example": "Yêu cầu ứng viên...",
+                                        "nullable": true
+                                    },
+                                    "benefits": {
+                                        "type": "string",
+                                        "example": "Quyền lợi được hưởng...",
+                                        "nullable": true
+                                    },
+                                    "status": {
+                                        "description": "1: Đang hiển thị, 2: Đã ẩn",
+                                        "type": "integer",
+                                        "example": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tạo bài tuyển dụng thành công."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/recruitment/posts/{id}": {
+            "get": {
+                "tags": [
+                    "Recruitment Management"
+                ],
+                "summary": "Xem chi tiết bài tuyển dụng (UC-126)",
+                "operationId": "9c172302f416f4686ecbfbc322f2d00e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID bài tuyển dụng (UUID)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy chi tiết thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy bài tuyển dụng phù hợp."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Recruitment Management"
+                ],
+                "summary": "Cập nhật bài tuyển dụng (UC-126)",
+                "operationId": "f0b5d51b89334aff61f7e98a15662716",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID bài tuyển dụng",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Tuyển dụng Chuyên viên Kinh doanh (Update)"
+                                    },
+                                    "image": {
+                                        "type": "string",
+                                        "example": "https://example.com/image_new.jpg",
+                                        "nullable": true
+                                    },
+                                    "branch_name": {
+                                        "type": "string",
+                                        "example": "Chi nhánh Quận 1"
+                                    },
+                                    "job_position": {
+                                        "type": "string",
+                                        "example": "Chuyên viên Kinh doanh"
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "example": "Phòng Kinh doanh"
+                                    },
+                                    "job_description": {
+                                        "type": "string",
+                                        "example": "Mô tả công việc cụ thể... (Update)",
+                                        "nullable": true
+                                    },
+                                    "candidate_requirements": {
+                                        "type": "string",
+                                        "example": "Yêu cầu ứng viên... (Update)",
+                                        "nullable": true
+                                    },
+                                    "benefits": {
+                                        "type": "string",
+                                        "example": "Quyền lợi được hưởng... (Update)",
+                                        "nullable": true
+                                    },
+                                    "status": {
+                                        "type": "integer",
+                                        "example": 2
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật thành công"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy bài tuyển dụng"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Recruitment Management"
+                ],
+                "summary": "Ẩn bài tuyển dụng (UC-129)",
+                "operationId": "bc9498ad7e8fc47d6c620a112af0d42a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID bài tuyển dụng",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ẩn bài tuyển dụng thành công"
+                    },
+                    "404": {
+                        "description": "Bài tuyển dụng không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/site-tours/check-in": {
             "post": {
                 "tags": [
@@ -14164,15 +14954,13 @@
                         "nullable": true
                     },
                     "check_in_lat": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 10.7769,
+                        "type": "string",
+                        "example": "10.7769",
                         "nullable": true
                     },
                     "check_in_lng": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 106.7009,
+                        "type": "string",
+                        "example": "106.7009",
                         "nullable": true
                     },
                     "check_in_method": {
@@ -14202,14 +14990,12 @@
                         "nullable": true
                     },
                     "check_out_lat": {
-                        "type": "number",
-                        "format": "float",
+                        "type": "string",
                         "example": null,
                         "nullable": true
                     },
                     "check_out_lng": {
-                        "type": "number",
-                        "format": "float",
+                        "type": "string",
                         "example": null,
                         "nullable": true
                     },
@@ -15381,6 +16167,10 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "is_liked": {
+                        "type": "boolean",
+                        "example": false
+                    },
                     "likes_count": {
                         "type": "integer"
                     },
@@ -15416,6 +16206,63 @@
                         "format": "date-time"
                     },
                     "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Notification": {
+                "title": "Notification Model",
+                "description": "Thông tin thông báo của người dùng",
+                "properties": {
+                    "id": {
+                        "description": "ID duy nhất của thông báo",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "description": "Loại thông báo (tên class)",
+                        "type": "string"
+                    },
+                    "data": {
+                        "description": "Nội dung chi tiết của thông báo",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "example": "Đơn nghỉ phép đã được phê duyệt"
+                            },
+                            "body": {
+                                "type": "string",
+                                "example": "Đơn xin nghỉ phép của bạn từ 20/05 đến 22/05 đã được duyệt."
+                            },
+                            "action_type": {
+                                "type": "string",
+                                "example": "leave_request",
+                                "nullable": true
+                            },
+                            "action_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "example": "uuid-string",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "is_read": {
+                        "description": "Trạng thái đã đọc",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "read_at": {
+                        "description": "Thời điểm đã đọc",
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Thời điểm gửi thông báo",
                         "type": "string",
                         "format": "date-time"
                     }
@@ -15818,6 +16665,14 @@
         {
             "name": "Site Tour",
             "description": "Dẫn khách tham quan thực tế: nhân viên check-in hoạt động dẫn khách tại dự án bằng GPS và ảnh minh chứng; xem lịch sử và các lượt dẫn khách gần đây."
+        },
+        {
+            "name": "Notification",
+            "description": "Quản lý thông báo cá nhân của người dùng (UC-130, UC-131)"
+        },
+        {
+            "name": "Recruitment Management",
+            "description": "API Quản lý bài tuyển dụng dành cho Super Admin (UC-126)"
         },
         {
             "name": "Reward Points",

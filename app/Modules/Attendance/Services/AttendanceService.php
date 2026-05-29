@@ -207,12 +207,13 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             }
 
             // 6. Ghi nhận dữ liệu check-out & Tính tổng thời gian làm việc
-            $now = Carbon::now();
-            $checkInAt = Carbon::parse($existingAttendance->check_in_at);
-            $durationInSeconds = abs($now->diffInSeconds($checkInAt));
+            $now = Carbon::now('UTC');
+            $checkInAt = Carbon::parse($existingAttendance->check_in_at)->utc();
+            // Tính chênh lệch giây tuyệt đối, đảm bảo không bao giờ âm
+            $durationInSeconds = max(0, (int) abs($now->diffInSeconds($checkInAt)));
             
-            $hours = floor($durationInSeconds / 3600);
-            $minutes = floor(($durationInSeconds % 3600) / 60);
+            $hours = intdiv($durationInSeconds, 3600);
+            $minutes = intdiv($durationInSeconds % 3600, 60);
             $durationText = "{$hours} giờ {$minutes} phút";
 
             $updateData = [
