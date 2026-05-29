@@ -34,8 +34,9 @@ class ReferralQrService extends BaseService
                 }
 
                 $frontendUrl = config('app.frontend_url', 'https://bdsapp.vn');
+                $recruitmentCode = 'REC-' . $staffCode;
                 // Link chia sẻ để quét mã (ví dụ link tải app hoặc register kèm ref_code)
-                $qrData = "{$frontendUrl}/register?ref={$staffCode}&type=recruitment";
+                $qrData = "{$frontendUrl}/register?ref={$recruitmentCode}&type=recruitment";
 
                 try {
                     $qrSvg = QrCode::size(300)->generate($qrData);
@@ -50,12 +51,13 @@ class ReferralQrService extends BaseService
             }
 
             $qrUrl = $disk->url($fileName);
-            
+            $recruitmentCode = 'REC-' . $staffCode;
+
             return [
                 'qr_url' => $qrUrl,
-                'referral_code' => $staffCode,
+                'referral_code' => $recruitmentCode,
                 'description' => 'Sử dụng mã này để giới thiệu nhân sự mới tham gia hệ thống.',
-                'share_text' => "Hãy tham gia mạng lưới của chúng tôi trên BDS App! Mã giới thiệu của tôi: {$staffCode}",
+                'share_text' => "Hãy tham gia mạng lưới của chúng tôi trên BDS App! Mã giới thiệu của tôi: {$recruitmentCode}",
             ];
         }, false, 'ReferralQrService::getRecruitmentQr');
     }
@@ -82,8 +84,9 @@ class ReferralQrService extends BaseService
                 }
 
                 $frontendUrl = config('app.frontend_url', 'https://bdsapp.vn');
+                $customerCode = 'CUS-' . $staffCode;
                 // Link chia sẻ để quét mã (ví dụ link tải app hoặc đăng ký khách hàng kèm ref_code)
-                $qrData = "{$frontendUrl}/register?ref={$staffCode}&type=customer";
+                $qrData = "{$frontendUrl}/register?ref={$customerCode}&type=customer";
 
                 try {
                     $qrSvg = QrCode::size(300)->generate($qrData);
@@ -98,12 +101,13 @@ class ReferralQrService extends BaseService
             }
 
             $qrUrl = $disk->url($fileName);
+            $customerCode = 'CUS-' . $staffCode;
 
             return [
                 'qr_url' => $qrUrl,
-                'referral_code' => $staffCode,
+                'referral_code' => $customerCode,
                 'description' => 'Sử dụng mã này để giới thiệu khách hàng tham gia hệ thống.',
-                'share_text' => "Tìm hiểu các dự án hấp dẫn tại BDS App! Mã giới thiệu khách hàng của tôi: {$staffCode}",
+                'share_text' => "Tìm hiểu các dự án hấp dẫn tại BDS App! Mã giới thiệu khách hàng của tôi: {$customerCode}",
             ];
         }, false, 'ReferralQrService::getCustomerQr');
     }
