@@ -11,10 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('recruitment_posts')) {
+            return;
+        }
+
         Schema::table('recruitment_posts', function (Blueprint $table) {
-            $table->text('job_description')->nullable()->after('department');
-            $table->text('candidate_requirements')->nullable()->after('job_description');
-            $table->text('benefits')->nullable()->after('candidate_requirements');
+            if (!Schema::hasColumn('recruitment_posts', 'job_description')) {
+                $table->text('job_description')->nullable();
+            }
+            if (!Schema::hasColumn('recruitment_posts', 'candidate_requirements')) {
+                $table->text('candidate_requirements')->nullable();
+            }
+            if (!Schema::hasColumn('recruitment_posts', 'benefits')) {
+                $table->text('benefits')->nullable();
+            }
         });
     }
 
@@ -23,8 +33,19 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('recruitment_posts')) {
+            return;
+        }
+
         Schema::table('recruitment_posts', function (Blueprint $table) {
-            $table->dropColumn(['job_description', 'candidate_requirements', 'benefits']);
+            $columns = array_filter(
+                ['job_description', 'candidate_requirements', 'benefits'],
+                fn (string $column): bool => Schema::hasColumn('recruitment_posts', $column)
+            );
+
+            if ($columns !== []) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

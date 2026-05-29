@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('branch_name');
             $table->string('job_position');
             $table->string('department');
+            $table->text('job_description')->nullable();
+            $table->text('candidate_requirements')->nullable();
+            $table->text('benefits')->nullable();
             $table->text('short_description')->nullable();
             $table->text('content')->nullable();
             $table->integer('status');
