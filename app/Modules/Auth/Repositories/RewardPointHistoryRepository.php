@@ -57,4 +57,20 @@ final class RewardPointHistoryRepository extends BaseRepository implements Rewar
 
         return (int) $query->sum('stars_changed');
     }
+
+    public function sumStarsByUsersAndDateRange(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection
+    {
+        $query = $this->model->whereIn('user_id', $userIds);
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        return $query->selectRaw('user_id, sum(stars_changed) as total_stars')
+            ->groupBy('user_id')
+            ->pluck('total_stars', 'user_id');
+    }
 }

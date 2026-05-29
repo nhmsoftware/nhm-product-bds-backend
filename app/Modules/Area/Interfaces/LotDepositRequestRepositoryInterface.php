@@ -62,4 +62,10 @@ interface LotDepositRequestRepositoryInterface extends BaseRepositoryInterface
         ?string $fromDate,
         ?string $toDate
     ): int;
+
+    public function countCompletedTransactionsByUsers(
+        array $userIds,
+        ?string $fromDate,
+        ?string $toDate
+    ): \Illuminate\Support\Collection;
 }

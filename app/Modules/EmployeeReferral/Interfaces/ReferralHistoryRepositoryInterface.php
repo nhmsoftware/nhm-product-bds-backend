@@ -47,4 +47,10 @@ interface ReferralHistoryRepositoryInterface extends BaseRepositoryInterface
         ?string $fromDate,
         ?string $toDate
     ): int;
+
+    public function countSuccessfulReferralsByUsers(
+        array $userIds,
+        ?string $fromDate,
+        ?string $toDate
+    ): \Illuminate\Support\Collection;
 }

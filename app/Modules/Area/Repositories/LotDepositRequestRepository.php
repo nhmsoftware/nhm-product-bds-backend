@@ -169,4 +169,24 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
 
         return $query->count();
     }
+
+    public function countCompletedTransactionsByUsers(
+        array $userIds,
+        ?string $fromDate,
+        ?string $toDate
+    ): \Illuminate\Support\Collection {
+        $query = $this->model->whereIn('user_id', $userIds)
+            ->where('status', 4);
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        return $query->selectRaw('user_id, count(*) as count')
+            ->groupBy('user_id')
+            ->pluck('count', 'user_id');
+    }
 }

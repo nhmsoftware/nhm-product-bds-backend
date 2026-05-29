@@ -35,4 +35,6 @@ interface CustomerMeetingRepositoryInterface extends BaseRepositoryInterface
      * Đếm số lượt gặp khách theo userIds và khoảng thời gian.
      */
     public function countCustomerMeetings(array|string $userIds, ?string $fromDate, ?string $toDate): int;
+
+    public function countCustomerMeetingsByUsers(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection;
 }

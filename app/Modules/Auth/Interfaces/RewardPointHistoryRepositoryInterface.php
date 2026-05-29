@@ -15,4 +15,6 @@ interface RewardPointHistoryRepositoryInterface extends BaseRepositoryInterface
     public function getHistoriesPaginated(string $userId, ?string $fromDate, ?string $toDate, int $perPage): \Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
     public function sumStarsByUserAndDateRange(string $userId, ?string $fromDate, ?string $toDate): int;
+
+    public function sumStarsByUsersAndDateRange(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection;
 }

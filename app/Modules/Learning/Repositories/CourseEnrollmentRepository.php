@@ -113,4 +113,24 @@ final class CourseEnrollmentRepository extends BaseRepository implements CourseE
             ->where('is_completed', true)
             ->count();
     }
+
+    public function getRequiredCourseOnboardingEnrollments(array $filters): Collection
+    {
+        $query = $this->model
+            ->join('users', 'course_enrollments.user_id', '=', 'users.id')
+            ->join('courses', 'course_enrollments.course_id', '=', 'courses.id')
+            ->where('courses.is_required', true)
+            ->select('course_enrollments.*')
+            ->with(['user', 'course']);
+
+        if (!empty($filters['department'])) {
+            $query->where('users.department', 'like', '%' . $filters['department'] . '%');
+        }
+
+        if (isset($filters['status'])) {
+            $query->where('course_enrollments.status', $filters['status']);
+        }
+
+        return $query->get();
+    }
 }

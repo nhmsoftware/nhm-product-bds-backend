@@ -41,6 +41,73 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
             ->get();
     }
 
+    public function getScopedActiveEmployees(User $user, bool $withEmployeeProfile = false): Collection
+    {
+        $query = $this->applyTeamScope(
+            $this->model->where('is_active', true)->where('role', UserRole::EMPLOYEE->value),
+            $user
+        );
+
+        if ($withEmployeeProfile) {
+            $query->with('employeeProfile');
+        }
+
+        return $query->get();
+    }
+
+    public function getFilteredScopedActiveEmployees(
+        User $user,
+        ?string $search,
+        ?string $jobPosition,
+        bool $withEmployeeProfile = false
+    ): Collection {
+        $query = $this->applyTeamScope(
+            $this->model->where('is_active', true)->where('role', UserRole::EMPLOYEE->value),
+            $user
+        );
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', '%' . $search . '%')
+                    ->orWhere('staff_code', 'ilike', '%' . $search . '%');
+            });
+        }
+
+        if ($jobPosition) {
+            $query->where('job_position', $jobPosition);
+        }
+
+        if ($withEmployeeProfile) {
+            $query->with('employeeProfile');
+        }
+
+        return $query->orderBy('name', 'asc')->get();
+    }
+
+    public function hasActiveEmployeesWithDepartment(): bool
+    {
+        return $this->model->where('is_active', true)
+            ->where('role', UserRole::EMPLOYEE->value)
+            ->whereNotNull('department')
+            ->where('department', '<>', '')
+            ->exists();
+    }
+
+    public function getActiveEmployeesWithDepartment(?string $area = null): Collection
+    {
+        $query = $this->model->where('is_active', true)
+            ->where('role', UserRole::EMPLOYEE->value)
+            ->whereNotNull('department')
+            ->where('department', '<>', '')
+            ->with('employeeProfile');
+
+        if ($area) {
+            $query->where('area', $area);
+        }
+
+        return $query->get();
+    }
+
     /**
      * Tìm người dùng theo số điện thoại.
      *

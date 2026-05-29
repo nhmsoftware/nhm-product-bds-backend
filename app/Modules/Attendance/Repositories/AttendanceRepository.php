@@ -42,6 +42,23 @@ final class AttendanceRepository extends BaseRepository implements AttendanceRep
         return $query->count();
     }
 
+    public function countWorkDaysByUsers(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection
+    {
+        $query = $this->model->whereIn('user_id', $userIds)
+            ->whereIn('status', [1, 2, 4]);
+
+        if ($fromDate) {
+            $query->whereDate('work_date', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('work_date', '<=', $toDate);
+        }
+
+        return $query->selectRaw('user_id, count(*) as count')
+            ->groupBy('user_id')
+            ->pluck('count', 'user_id');
+    }
+
     /**
      * Đếm số ngày nghỉ theo lịch của nhân viên trong khoảng thời gian.
      *
@@ -64,6 +81,23 @@ final class AttendanceRepository extends BaseRepository implements AttendanceRep
         }
 
         return $query->count();
+    }
+
+    public function countFixedScheduleAbsencesByUsers(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection
+    {
+        $query = $this->model->whereIn('user_id', $userIds)
+            ->where('status', 3);
+
+        if ($fromDate) {
+            $query->whereDate('work_date', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('work_date', '<=', $toDate);
+        }
+
+        return $query->selectRaw('user_id, count(*) as count')
+            ->groupBy('user_id')
+            ->pluck('count', 'user_id');
     }
 
     /**

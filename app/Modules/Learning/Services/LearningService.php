@@ -1860,33 +1860,14 @@ final class LearningService extends BaseService implements LearningServiceInterf
         return $this->execute(function () use ($filters, $adminId) {
             $this->validateAdmin($adminId);
 
-            // Fetch base onboarding enrollments
-            // We join users and courses to filter on departments, and select enrollments for required courses
-            $query = \App\Modules\Learning\Models\CourseEnrollment::join('users', 'course_enrollments.user_id', '=', 'users.id')
-                ->join('courses', 'course_enrollments.course_id', '=', 'courses.id')
-                ->where('courses.is_required', true)
-                ->select('course_enrollments.*');
+            $enrollments = $this->courseEnrollmentRepository->getRequiredCourseOnboardingEnrollments($filters);
 
-            $allOnboardingCount = $query->count();
-            if ($allOnboardingCount === 0) {
+            if ($enrollments->isEmpty()) {
                 return $this->success(
                     data: [],
                     message: 'Không có dữ liệu onboarding.'
                 );
             }
-
-            // Apply filters
-            // 1. Department filter
-            if (!empty($filters['department'])) {
-                $query->where('users.department', 'like', '%' . $filters['department'] . '%');
-            }
-
-            // 2. Status filter
-            if (isset($filters['status'])) {
-                $query->where('course_enrollments.status', $filters['status']);
-            }
-
-            $enrollments = $query->get();
 
             // Transform data & calculate quiz score
             $data = [];

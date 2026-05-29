@@ -67,4 +67,6 @@ interface CourseEnrollmentRepositoryInterface extends BaseRepositoryInterface
      * @return int Số lượng bài học đã hoàn thành
      */
     public function countCompletedLessons(string $enrollmentId): int;
+
+    public function getRequiredCourseOnboardingEnrollments(array $filters): Collection;
 }

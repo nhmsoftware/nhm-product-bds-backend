@@ -57,4 +57,20 @@ final class CustomerMeetingRepository extends BaseRepository implements Customer
 
         return $query->count();
     }
+
+    public function countCustomerMeetingsByUsers(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection
+    {
+        $query = $this->model->whereIn('user_id', $userIds);
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        return $query->selectRaw('user_id, count(*) as count')
+            ->groupBy('user_id')
+            ->pluck('count', 'user_id');
+    }
 }

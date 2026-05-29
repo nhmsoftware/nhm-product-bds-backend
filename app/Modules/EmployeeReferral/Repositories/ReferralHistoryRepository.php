@@ -108,4 +108,25 @@ final class ReferralHistoryRepository extends BaseRepository implements Referral
 
         return $query->count();
     }
+
+    public function countSuccessfulReferralsByUsers(
+        array $userIds,
+        ?string $fromDate,
+        ?string $toDate
+    ): \Illuminate\Support\Collection {
+        $query = $this->model->whereIn('referrer_id', $userIds)
+            ->where('referral_type', 1)
+            ->where('status', 2);
+
+        if ($fromDate) {
+            $query->whereDate('registered_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('registered_at', '<=', $toDate);
+        }
+
+        return $query->selectRaw('referrer_id as user_id, count(*) as count')
+            ->groupBy('referrer_id')
+            ->pluck('count', 'user_id');
+    }
 }

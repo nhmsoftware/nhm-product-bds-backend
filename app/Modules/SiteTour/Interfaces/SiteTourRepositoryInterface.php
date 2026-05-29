@@ -24,6 +24,8 @@ interface SiteTourRepositoryInterface extends BaseRepositoryInterface
      */
     public function countSiteTours(array|string $userIds, ?string $fromDate, ?string $toDate): int;
 
+    public function countSiteToursByUsers(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection;
+
     /**
      * Tìm danh sách các hoạt động dẫn khách gần đây nhất của nhân viên.
      *

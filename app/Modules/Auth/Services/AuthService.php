@@ -976,16 +976,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
             );
 
             // Lấy danh sách nhân viên của phòng ban/khu vực (chỉ lấy role EMPLOYEE)
-            $query = $this->authRepository->query()
-                ->where('is_active', true)
-                ->where('role', UserRole::EMPLOYEE->value);
-            if ($user->role === UserRole::MANAGER) {
-                $query->where('department', $user->department);
-            } elseif ($user->role === UserRole::DIRECTOR) {
-                $query->where('area', $user->area);
-            }
-
-            $members = $query->get();
+            $members = $this->authRepository->getScopedActiveEmployees($user);
 
             // A1 - Không có dữ liệu KPI
             if ($members->isEmpty()) {
@@ -1001,86 +992,18 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $userIds = $members->pluck('id')->toArray();
 
             // Tính toán tổng các chỉ số
-            $totalTransactions = $this->lotDepositRequestRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->where('status', 4) // COMPLETED
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->count();
-
-            $totalTours = $this->siteTourRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->count();
-
-            $totalMeetings = $this->customerMeetingRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->count();
-
-            $totalReferrals = $this->referralHistoryRepository->query()
-                ->whereIn('referrer_id', $userIds)
-                ->where('referral_type', 1) // RECRUITMENT
-                ->where('status', 2) // REGISTERED
-                ->when($dto->fromDate, fn($q) => $q->whereDate('registered_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('registered_at', '<=', $dto->toDate))
-                ->count();
+            $totalTransactions = $this->lotDepositRequestRepository->countCompletedTransactions($userIds, $dto->fromDate, $dto->toDate);
+            $totalTours = $this->siteTourRepository->countSiteTours($userIds, $dto->fromDate, $dto->toDate);
+            $totalMeetings = $this->customerMeetingRepository->countCustomerMeetings($userIds, $dto->fromDate, $dto->toDate);
+            $totalReferrals = $this->referralHistoryRepository->countSuccessfulReferralsForUsers($userIds, $dto->fromDate, $dto->toDate);
 
             // Lấy ngày công và vắng để tính tổng KPI điểm
-            $workDaysQuery = $this->attendanceRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->whereIn('status', [1, 2, 4]) // PRESENT, LATE, HALF_DAY
-                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $absencesQuery = $this->attendanceRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->where('status', 3) // ABSENT
-                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $transactionsByEmployee = $this->lotDepositRequestRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->where('status', 4)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $toursByEmployee = $this->siteTourRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $meetingsByEmployee = $this->customerMeetingRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $referralsByEmployee = $this->referralHistoryRepository->query()
-                ->whereIn('referrer_id', $userIds)
-                ->where('referral_type', 1)
-                ->where('status', 2)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('registered_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('registered_at', '<=', $dto->toDate))
-                ->selectRaw('referrer_id as user_id, count(*) as count')
-                ->groupBy('referrer_id')
-                ->pluck('count', 'user_id');
+            $workDaysQuery = $this->attendanceRepository->countWorkDaysByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $absencesQuery = $this->attendanceRepository->countFixedScheduleAbsencesByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $transactionsByEmployee = $this->lotDepositRequestRepository->countCompletedTransactionsByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $toursByEmployee = $this->siteTourRepository->countSiteToursByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $meetingsByEmployee = $this->customerMeetingRepository->countCustomerMeetingsByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $referralsByEmployee = $this->referralHistoryRepository->countSuccessfulReferralsByUsers($userIds, $dto->fromDate, $dto->toDate);
 
             $totalKpiPoints = 0;
             foreach ($userIds as $mId) {
@@ -1139,28 +1062,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 403
             );
 
-            $query = $this->authRepository->query()
-                ->where('is_active', true)
-                ->where('role', UserRole::EMPLOYEE->value);
-            if ($user->role === UserRole::MANAGER) {
-                $query->where('department', $user->department);
-            } elseif ($user->role === UserRole::DIRECTOR) {
-                $query->where('area', $user->area);
-            }
-
-            // Áp dụng tìm kiếm và vị trí công việc
-            if ($dto->search) {
-                $query->where(function ($q) use ($dto) {
-                    $q->where('name', 'ilike', '%' . $dto->search . '%')
-                      ->orWhere('staff_code', 'ilike', '%' . $dto->search . '%');
-                });
-            }
-
-            if ($dto->jobPosition) {
-                $query->where('job_position', $dto->jobPosition);
-            }
-
-            $members = $query->with('employeeProfile')->get();
+            // Áp dụng scope đội nhóm, tìm kiếm và vị trí công việc tại Repository
+            $members = $this->authRepository->getFilteredScopedActiveEmployees(
+                $user,
+                $dto->search,
+                $dto->jobPosition,
+                true
+            );
 
             // A2 - Không tìm thấy dữ liệu phù hợp
             if ($members->isEmpty()) {
@@ -1174,66 +1082,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $userIds = $members->pluck('id')->toArray();
 
             // Lấy các chỉ số hoạt động hàng loạt
-            $transactions = $this->lotDepositRequestRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->where('status', 4)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $tours = $this->siteTourRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $meetings = $this->customerMeetingRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $referrals = $this->referralHistoryRepository->query()
-                ->whereIn('referrer_id', $userIds)
-                ->where('referral_type', 1)
-                ->where('status', 2)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('registered_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('registered_at', '<=', $dto->toDate))
-                ->selectRaw('referrer_id as user_id, count(*) as count')
-                ->groupBy('referrer_id')
-                ->pluck('count', 'user_id');
-
-            $workDays = $this->attendanceRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->whereIn('status', [1, 2, 4])
-                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $absences = $this->attendanceRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->where('status', 3)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $stars = $this->rewardPointHistoryRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->selectRaw('user_id, sum(stars_changed) as total_stars')
-                ->groupBy('user_id')
-                ->pluck('total_stars', 'user_id');
+            $transactions = $this->lotDepositRequestRepository->countCompletedTransactionsByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $tours = $this->siteTourRepository->countSiteToursByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $meetings = $this->customerMeetingRepository->countCustomerMeetingsByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $referrals = $this->referralHistoryRepository->countSuccessfulReferralsByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $workDays = $this->attendanceRepository->countWorkDaysByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $absences = $this->attendanceRepository->countFixedScheduleAbsencesByUsers($userIds, $dto->fromDate, $dto->toDate);
+            $stars = $this->rewardPointHistoryRepository->sumStarsByUsersAndDateRange($userIds, $dto->fromDate, $dto->toDate);
 
             // Tính toán và định dạng dữ liệu cho từng nhân viên
             $rankedList = $members->map(function ($member) use ($transactions, $tours, $meetings, $referrals, $workDays, $absences, $stars, $dto) {
@@ -1344,46 +1199,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
             }
 
             // Tính toán chi tiết các chỉ số
-            $userTransactions = $this->lotDepositRequestRepository->query()
-                ->where('user_id', $dto->employeeId)
-                ->where('status', 4)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->count();
-
-            $userTours = $this->siteTourRepository->query()
-                ->where('user_id', $dto->employeeId)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->count();
-
-            $userMeetings = $this->customerMeetingRepository->query()
-                ->where('user_id', $dto->employeeId)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('created_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('created_at', '<=', $dto->toDate))
-                ->count();
-
-            $userReferrals = $this->referralHistoryRepository->query()
-                ->where('referrer_id', $dto->employeeId)
-                ->where('referral_type', 1)
-                ->where('status', 2)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('registered_at', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('registered_at', '<=', $dto->toDate))
-                ->count();
-
-            $userWorkDays = $this->attendanceRepository->query()
-                ->where('user_id', $dto->employeeId)
-                ->whereIn('status', [1, 2, 4])
-                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
-                ->count();
-
-            $userAbsences = $this->attendanceRepository->query()
-                ->where('user_id', $dto->employeeId)
-                ->where('status', 3)
-                ->when($dto->fromDate, fn($q) => $q->whereDate('work_date', '>=', $dto->fromDate))
-                ->when($dto->toDate, fn($q) => $q->whereDate('work_date', '<=', $dto->toDate))
-                ->count();
+            $userTransactions = $this->lotDepositRequestRepository->countCompletedTransactions($dto->employeeId, $dto->fromDate, $dto->toDate);
+            $userTours = $this->siteTourRepository->countSiteTours($dto->employeeId, $dto->fromDate, $dto->toDate);
+            $userMeetings = $this->customerMeetingRepository->countCustomerMeetings($dto->employeeId, $dto->fromDate, $dto->toDate);
+            $userReferrals = $this->referralHistoryRepository->countSuccessfulReferralsForUsers($dto->employeeId, $dto->fromDate, $dto->toDate);
+            $userWorkDays = $this->attendanceRepository->countWorkDays($dto->employeeId, $dto->fromDate, $dto->toDate);
+            $userAbsences = $this->attendanceRepository->countFixedScheduleAbsences($dto->employeeId, $dto->fromDate, $dto->toDate);
 
             $kpiPoints = ($userTransactions * 10)
                 + ($userTours * 1)
@@ -1461,26 +1282,15 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 403
             );
 
-            // Lấy tất cả active employees có department
-            $userQuery = $this->authRepository->query()
-                ->where('is_active', true)
-                ->where('role', UserRole::EMPLOYEE->value)
-                ->whereNotNull('department')
-                ->where('department', '<>', '');
-
             // Nếu không có bất kỳ phòng ban nào trong hệ thống trước khi lọc:
-            $hasAnyDept = (clone $userQuery)->exists();
+            $hasAnyDept = $this->authRepository->hasActiveEmployeesWithDepartment();
             if (!$hasAnyDept) {
                 $paginated = new \Illuminate\Pagination\LengthAwarePaginator([], 0, $dto->perPage);
                 return $this->success($paginated, 'Chưa có dữ liệu xếp hạng phòng ban.');
             }
 
-            // Áp dụng lọc theo Area
-            if ($dto->area) {
-                $userQuery->where('area', $dto->area);
-            }
-
-            $users = $userQuery->get();
+            // Áp dụng lọc theo Area tại Repository
+            $users = $this->authRepository->getActiveEmployeesWithDepartment($dto->area);
 
             // Nếu sau khi lọc không tìm thấy dữ liệu phù hợp:
             if ($users->isEmpty()) {
@@ -1508,12 +1318,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 $userIds = $deptUsers->pluck('id')->toArray();
 
                 // 1. Giao dịch công chứng thành công
-                $deptTransactions = $this->lotDepositRequestRepository->query()
-                    ->whereIn('user_id', $userIds)
-                    ->where('status', 4) // COMPLETED
-                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                    ->count();
+                $deptTransactions = $this->lotDepositRequestRepository->countCompletedTransactions($userIds, $fromDate, $toDate);
 
                 // 2. Lượt dẫn khách
                 $deptTours = $this->siteTourRepository->countSiteTours($userIds, $fromDate, $toDate);
@@ -1525,32 +1330,11 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 $deptReferrals = $this->referralHistoryRepository->countSuccessfulReferralsForUsers($userIds, $fromDate, $toDate);
 
                 // 5. Điểm danh / Ngày công
-                $workDaysMap = $this->attendanceRepository->query()
-                    ->whereIn('user_id', $userIds)
-                    ->whereIn('status', [1, 2, 4])
-                    ->when($fromDate, fn($q) => $q->whereDate('work_date', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('work_date', '<=', $toDate))
-                    ->selectRaw('user_id, count(*) as count')
-                    ->groupBy('user_id')
-                    ->pluck('count', 'user_id');
-
-                $absencesMap = $this->attendanceRepository->query()
-                    ->whereIn('user_id', $userIds)
-                    ->where('status', 3)
-                    ->when($fromDate, fn($q) => $q->whereDate('work_date', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('work_date', '<=', $toDate))
-                    ->selectRaw('user_id, count(*) as count')
-                    ->groupBy('user_id')
-                    ->pluck('count', 'user_id');
+                $workDaysMap = $this->attendanceRepository->countWorkDaysByUsers($userIds, $fromDate, $toDate);
+                $absencesMap = $this->attendanceRepository->countFixedScheduleAbsencesByUsers($userIds, $fromDate, $toDate);
 
                 // 6. Số lượng sao
-                $starsMap = $this->rewardPointHistoryRepository->query()
-                    ->whereIn('user_id', $userIds)
-                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                    ->selectRaw('user_id, sum(stars_changed) as total_stars')
-                    ->groupBy('user_id')
-                    ->pluck('total_stars', 'user_id');
+                $starsMap = $this->rewardPointHistoryRepository->sumStarsByUsersAndDateRange($userIds, $fromDate, $toDate);
 
                 // Tính toán KPI và sao của từng nhân viên rồi cộng lại
                 $totalKpiPoints = 0;
@@ -1685,31 +1469,9 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             $totalReferrals = $this->referralHistoryRepository->countSuccessfulReferralsForUsers($userIds, $fromDate, $toDate);
 
-            $workDaysMap = $this->attendanceRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->whereIn('status', [1, 2, 4])
-                ->when($fromDate, fn($q) => $q->whereDate('work_date', '>=', $fromDate))
-                ->when($toDate, fn($q) => $q->whereDate('work_date', '<=', $toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $absencesMap = $this->attendanceRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->where('status', 3)
-                ->when($fromDate, fn($q) => $q->whereDate('work_date', '>=', $fromDate))
-                ->when($toDate, fn($q) => $q->whereDate('work_date', '<=', $toDate))
-                ->selectRaw('user_id, count(*) as count')
-                ->groupBy('user_id')
-                ->pluck('count', 'user_id');
-
-            $starsMap = $this->rewardPointHistoryRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                ->selectRaw('user_id, sum(stars_changed) as total_stars')
-                ->groupBy('user_id')
-                ->pluck('total_stars', 'user_id');
+            $workDaysMap = $this->attendanceRepository->countWorkDaysByUsers($userIds, $fromDate, $toDate);
+            $absencesMap = $this->attendanceRepository->countFixedScheduleAbsencesByUsers($userIds, $fromDate, $toDate);
+            $starsMap = $this->rewardPointHistoryRepository->sumStarsByUsersAndDateRange($userIds, $fromDate, $toDate);
 
             $rankedList = $members->map(function ($member) use ($workDaysMap, $absencesMap, $starsMap, $fromDate, $toDate) {
                 $mId = (string) $member->id;

@@ -25,6 +25,19 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
      */
     public function getActiveEmployeesByDepartment(string $departmentName): Collection;
 
+    public function getScopedActiveEmployees(User $user, bool $withEmployeeProfile = false): Collection;
+
+    public function getFilteredScopedActiveEmployees(
+        User $user,
+        ?string $search,
+        ?string $jobPosition,
+        bool $withEmployeeProfile = false
+    ): Collection;
+
+    public function hasActiveEmployeesWithDepartment(): bool;
+
+    public function getActiveEmployeesWithDepartment(?string $area = null): Collection;
+
     /**
      * Tìm người dùng theo số điện thoại.
      *

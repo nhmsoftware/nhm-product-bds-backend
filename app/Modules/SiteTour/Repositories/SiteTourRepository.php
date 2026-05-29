@@ -78,6 +78,22 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
         return $query->count();
     }
 
+    public function countSiteToursByUsers(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection
+    {
+        $query = $this->model->whereIn('user_id', $userIds);
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        return $query->selectRaw('user_id, count(*) as count')
+            ->groupBy('user_id')
+            ->pluck('count', 'user_id');
+    }
+
     public function getHistory(string $employeeId, FilterDTO $filter): LengthAwarePaginator
     {
         $query = $this->model->where('user_id', $employeeId);
