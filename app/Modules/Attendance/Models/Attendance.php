@@ -16,14 +16,14 @@ use App\Modules\Attendance\Models\Enums\AttendanceStatus;/**
  * @property string $user_id
  * @property \Illuminate\Support\Carbon|null $work_date
  * @property \Illuminate\Support\Carbon|null $check_in_at
- * @property float $check_in_lat
- * @property float $check_in_lng
+ * @property string|null $check_in_lat
+ * @property string|null $check_in_lng
  * @property string $check_in_method
  * @property string $check_in_wifi_ssid
  * @property string $check_in_device_name
  * @property \Illuminate\Support\Carbon|null $check_out_at
- * @property float $check_out_lat
- * @property float $check_out_lng
+ * @property string|null $check_out_lat
+ * @property string|null $check_out_lng
  * @property string $check_out_method
  * @property string $check_out_wifi_ssid
  * @property string $check_out_device_name
@@ -43,14 +43,14 @@ use App\Modules\Attendance\Models\Enums\AttendanceStatus;/**
         new OA\Property(property: 'user_id', type: 'string', format: 'uuid', example: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d'),
         new OA\Property(property: 'work_date', type: 'string', format: 'date', example: '2026-05-19'),
         new OA\Property(property: 'check_in_at', type: 'string', format: 'date-time', nullable: true, example: '2026-05-19T08:15:23+07:00'),
-        new OA\Property(property: 'check_in_lat', type: 'number', format: 'float', nullable: true, example: 10.7769),
-        new OA\Property(property: 'check_in_lng', type: 'number', format: 'float', nullable: true, example: 106.7009),
+        new OA\Property(property: 'check_in_lat', type: 'string', nullable: true, example: '10.7769'),
+        new OA\Property(property: 'check_in_lng', type: 'string', nullable: true, example: '106.7009'),
         new OA\Property(property: 'check_in_method', type: 'string', enum: ['gps', 'wifi', 'qr'], nullable: true, example: 'gps'),
         new OA\Property(property: 'check_in_wifi_ssid', type: 'string', nullable: true, example: 'BDS_Office_Wifi'),
         new OA\Property(property: 'check_in_device_name', type: 'string', nullable: true, example: 'iPhone 15 Pro'),
         new OA\Property(property: 'check_out_at', type: 'string', format: 'date-time', nullable: true, example: null),
-        new OA\Property(property: 'check_out_lat', type: 'number', format: 'float', nullable: true, example: null),
-        new OA\Property(property: 'check_out_lng', type: 'number', format: 'float', nullable: true, example: null),
+        new OA\Property(property: 'check_out_lat', type: 'string', nullable: true, example: null),
+        new OA\Property(property: 'check_out_lng', type: 'string', nullable: true, example: null),
         new OA\Property(property: 'check_out_method', type: 'string', enum: ['gps', 'wifi', 'qr'], nullable: true, example: null),
         new OA\Property(property: 'check_out_wifi_ssid', type: 'string', nullable: true, example: null),
         new OA\Property(property: 'check_out_device_name', type: 'string', nullable: true, example: null),
@@ -90,11 +90,11 @@ class Attendance extends Model
         'user_id' => 'string',
         'work_date' => 'date:Y-m-d',
         'check_in_at' => 'datetime',
-        'check_in_lat' => 'float',
-        'check_in_lng' => 'float',
+        'check_in_lat' => 'string',
+        'check_in_lng' => 'string',
         'check_out_at' => 'datetime',
-        'check_out_lat' => 'float',
-        'check_out_lng' => 'float',
+        'check_out_lat' => 'string',
+        'check_out_lng' => 'string',
         'status' => AttendanceStatus::class,
     ];
 

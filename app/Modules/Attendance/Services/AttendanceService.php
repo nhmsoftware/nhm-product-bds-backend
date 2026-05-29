@@ -75,7 +75,7 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
                 );
                 
                 // Tính khoảng cách từ thiết bị đến tọa độ văn phòng
-                $distance = $this->calculateDistance($dto->latitude, $dto->longitude, $officeLat, $officeLng);
+                $distance = $this->calculateDistance((float) $dto->latitude, (float) $dto->longitude, $officeLat, $officeLng);
                 
                 // A3 - Ngoài phạm vi check-in cho phép
                 $this->validate(
@@ -182,7 +182,7 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
                 );
                 
                 // Tính khoảng cách từ thiết bị đến tọa độ văn phòng
-                $distance = $this->calculateDistance($dto->latitude, $dto->longitude, $officeLat, $officeLng);
+                $distance = $this->calculateDistance((float) $dto->latitude, (float) $dto->longitude, $officeLat, $officeLng);
                 
                 // A4 - Ngoài phạm vi check-out cho phép
                 $this->validate(

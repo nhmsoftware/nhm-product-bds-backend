@@ -11,16 +11,16 @@ final class CheckOutDTO
      *
      * @param string $userId
      * @param string $method
-     * @param float|null $latitude
-     * @param float|null $longitude
+     * @param string|null $latitude
+     * @param string|null $longitude
      * @param string|null $wifiSsid
      * @param string|null $deviceName
      */
     public function __construct(
         public readonly string $userId,
         public readonly string $method,
-        public readonly ?float $latitude,
-        public readonly ?float $longitude,
+        public readonly ?string $latitude,
+        public readonly ?string $longitude,
         public readonly ?string $wifiSsid,
         public readonly ?string $deviceName,
     ) {
@@ -38,8 +38,8 @@ final class CheckOutDTO
         return new self(
             userId: $userId,
             method: $request->input('method'),
-            latitude: $request->input('latitude') ? (float) $request->input('latitude') : null,
-            longitude: $request->input('longitude') ? (float) $request->input('longitude') : null,
+            latitude: $request->input('latitude') ? (string) $request->input('latitude') : null,
+            longitude: $request->input('longitude') ? (string) $request->input('longitude') : null,
             wifiSsid: $request->input('wifi_ssid'),
             deviceName: $request->input('device_name') ?? $request->header('User-Agent') ?? 'Unknown Device',
         );
