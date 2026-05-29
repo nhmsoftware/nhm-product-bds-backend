@@ -145,6 +145,9 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $allowedRoles = [
                 UserRole::EMPLOYEE->value,
                 UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+                UserRole::CEO->value,
+                UserRole::SUPER_ADMIN->value,
                 UserRole::BUYER->value,
             ];
             $this->validate(
