@@ -14,4 +14,14 @@ interface AttendanceRepositoryInterface extends BaseRepositoryInterface
      * @return \App\Modules\Attendance\Models\Attendance|null Trả về model chấm công hoặc null nếu chưa chấm công
      */
     public function findByUserAndDate(string $userId, string $date);
+
+    /**
+     * Đếm số ngày đi làm của danh sách userIds trong khoảng thời gian.
+     */
+    public function countWorkDays(array|string $userIds, ?string $fromDate, ?string $toDate): int;
+
+    /**
+     * Đếm số ngày nghỉ cố định của danh sách userIds trong khoảng thời gian.
+     */
+    public function countFixedScheduleAbsences(array|string $userIds, ?string $fromDate, ?string $toDate): int;
 }

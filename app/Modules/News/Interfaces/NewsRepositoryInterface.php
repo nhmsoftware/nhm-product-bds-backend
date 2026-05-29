@@ -34,6 +34,15 @@ interface NewsRepositoryInterface extends BaseRepositoryInterface
     public function search(string $keyword, int $perPage = 10): LengthAwarePaginator;
 
     /**
+     * Lấy danh sách các bài viết đã thích của một người dùng.
+     * 
+     * @param string $userId
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getLikedNews(string $userId, int $perPage = 10): LengthAwarePaginator;
+
+    /**
      * Tìm tin tức theo slug.
      * 
      * @param string $slug
@@ -58,5 +67,24 @@ interface NewsRepositoryInterface extends BaseRepositoryInterface
      * @return LengthAwarePaginator
      */
     public function getInternalNewsFeed(\App\Modules\Auth\Models\User $user, int $perPage = 10): LengthAwarePaginator;
+
+    /**
+     * Lấy danh sách tin tức (dành cho Admin).
+     * 
+     * @param array $filters
+     * @param int $perPage
+     * @param int $page
+     * @return LengthAwarePaginator
+     */
+    public function getAdminList(array $filters, int $perPage, int $page): LengthAwarePaginator;
+
+    /**
+     * Kiểm tra xem slug đã tồn tại chưa.
+     * 
+     * @param string $slug
+     * @param string|null $ignoreId
+     * @return bool
+     */
+    public function existsBySlug(string $slug, ?string $ignoreId = null): bool;
 }
 

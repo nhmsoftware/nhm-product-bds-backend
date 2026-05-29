@@ -6,6 +6,8 @@ use App\Core\Repository\BaseRepository;
 use App\Modules\SiteTour\Interfaces\SiteTourRepositoryInterface;
 use App\Modules\SiteTour\Models\SiteTour;
 use Illuminate\Database\Eloquent\Collection;
+use App\Core\DTOs\FilterDTO;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 final class SiteTourRepository extends BaseRepository implements SiteTourRepositoryInterface
 {
@@ -59,5 +61,27 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
         }
 
         return $query->get();
+    }
+
+    public function countSiteTours(array|string $userIds, ?string $fromDate, ?string $toDate): int
+    {
+        $userIdsArray = is_array($userIds) ? $userIds : [$userIds];
+        $query = $this->model->whereIn('user_id', $userIdsArray);
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        return $query->count();
+    }
+
+    public function getHistory(string $employeeId, FilterDTO $filter): LengthAwarePaginator
+    {
+        $query = $this->model->where('user_id', $employeeId);
+        return $query->orderBy($filter->getSortBy() ?? 'created_at', $filter->getDirection())
+                     ->paginate($filter->getPerPage(), ['*'], 'page', $filter->getPage());
     }
 }

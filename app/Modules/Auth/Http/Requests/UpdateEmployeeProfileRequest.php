@@ -39,6 +39,7 @@ class UpdateEmployeeProfileRequest extends FormRequest
                 'max:255',
                 'unique:users,email,' . $userId . ',id',
             ],
+            'cccd'                => ['nullable', 'string', 'max:20'],
             'avatar'              => ['nullable', 'string', 'max:255'],
             'dob'                 => ['nullable', 'date', 'before:today'],
             'address'             => ['nullable', 'string', 'max:255'],

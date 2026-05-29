@@ -4904,6 +4904,186 @@
                 }
             }
         },
+        "/api/v1/dashboard/company": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Xem Company Dashboard (UC-111)",
+                "description": "Lấy dữ liệu dashboard tổng quan công ty dành cho Tổng giám đốc (CEO).",
+                "operationId": "72666619e289cbcc4dc68be7118ffa92",
+                "parameters": [
+                    {
+                        "name": "month",
+                        "in": "query",
+                        "description": "Lọc theo tháng (1-12)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "quarter",
+                        "in": "query",
+                        "description": "Lọc theo quý (1-4)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "description": "Lọc theo năm (VD: 2026)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "area",
+                        "in": "query",
+                        "description": "Lọc theo khu vực (string)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải báo cáo dashboard tổng quan thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải báo cáo dashboard tổng quan thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "overview": {
+                                                    "properties": {
+                                                        "total_employees": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_departments": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_transactions": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_revenue": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_customers": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_referrals": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_kpi": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "department_stats": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "department_name": {
+                                                                "type": "string"
+                                                            },
+                                                            "total_kpi": {
+                                                                "type": "integer"
+                                                            },
+                                                            "successful_transactions": {
+                                                                "type": "integer"
+                                                            },
+                                                            "total_revenue": {
+                                                                "type": "integer"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "leaderboards": {
+                                                    "properties": {
+                                                        "top_employees_by_kpi": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "user_id": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "department": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "job_position": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "total_kpi": {
+                                                                        "type": "integer"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        },
+                                                        "top_departments_by_kpi": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "department_name": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "total_kpi": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "successful_transactions": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "total_revenue": {
+                                                                        "type": "integer"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập"
+                    },
+                    "403": {
+                        "description": "Tài khoản bị khóa hoặc không có quyền truy cập"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/dashboard": {
             "get": {
                 "tags": [
@@ -4984,6 +5164,484 @@
                     },
                     "404": {
                         "description": "Không tìm thấy dữ liệu"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/dashboard/employee-reports": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Xem báo cáo nhân viên (UC-109)",
+                "description": "Lấy danh sách báo cáo hiệu suất của từng nhân viên thuộc phạm vi quản lý của Director.",
+                "operationId": "7ba62cdb941076aae8c12c9f1ad5f6ce",
+                "parameters": [
+                    {
+                        "name": "department",
+                        "in": "query",
+                        "description": "Lọc theo phòng ban cụ thể",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "employee_id",
+                        "in": "query",
+                        "description": "Lọc theo một nhân viên cụ thể",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Ngày bắt đầu để tính kết quả (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "Ngày kết thúc để tính kết quả (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải báo cáo nhân viên thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải báo cáo nhân viên thành công."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "format": "uuid"
+                                                    },
+                                                    "full_name": {
+                                                        "description": "Họ tên nhân viên",
+                                                        "type": "string"
+                                                    },
+                                                    "department": {
+                                                        "description": "Phòng ban",
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "job_position": {
+                                                        "description": "Chức vụ",
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "total_kpi": {
+                                                        "description": "Tổng điểm KPI",
+                                                        "type": "integer"
+                                                    },
+                                                    "successful_transactions": {
+                                                        "description": "Số giao dịch công chứng thành công",
+                                                        "type": "integer"
+                                                    },
+                                                    "site_tours": {
+                                                        "description": "Số lượt dẫn khách",
+                                                        "type": "integer"
+                                                    },
+                                                    "customer_meetings": {
+                                                        "description": "Số lượt gặp khách",
+                                                        "type": "integer"
+                                                    },
+                                                    "referrals": {
+                                                        "description": "Số nhân sự giới thiệu",
+                                                        "type": "integer"
+                                                    },
+                                                    "working_days": {
+                                                        "description": "Số ngày công",
+                                                        "type": "integer"
+                                                    },
+                                                    "fixed_schedule_absences": {
+                                                        "description": "Số lần vắng lịch cố định",
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập"
+                    },
+                    "403": {
+                        "description": "Tài khoản bị khóa hoặc không có quyền truy cập"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy người dùng"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/dashboard/department-reports": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Xem báo cáo phòng ban (UC-110)",
+                "description": "Lấy danh sách báo cáo tổng hợp theo phòng ban thuộc phạm vi quản lý của Director.",
+                "operationId": "d5d82c83bec3f28bd6c1ead3ec0a6564",
+                "parameters": [
+                    {
+                        "name": "department",
+                        "in": "query",
+                        "description": "Lọc theo tên phòng ban cụ thể",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Ngày bắt đầu để tính kết quả (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "Ngày kết thúc để tính kết quả (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải báo cáo phòng ban thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải báo cáo phòng ban thành công."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "department_name": {
+                                                        "description": "Tên phòng ban",
+                                                        "type": "string"
+                                                    },
+                                                    "total_employees": {
+                                                        "description": "Tổng số nhân viên",
+                                                        "type": "integer"
+                                                    },
+                                                    "total_kpi": {
+                                                        "description": "Tổng điểm KPI phòng ban",
+                                                        "type": "integer"
+                                                    },
+                                                    "successful_transactions": {
+                                                        "description": "Tổng số giao dịch công chứng thành công",
+                                                        "type": "integer"
+                                                    },
+                                                    "site_tours": {
+                                                        "description": "Tổng lượt dẫn khách",
+                                                        "type": "integer"
+                                                    },
+                                                    "customer_meetings": {
+                                                        "description": "Tổng lượt gặp khách",
+                                                        "type": "integer"
+                                                    },
+                                                    "referrals": {
+                                                        "description": "Tổng referral nhân sự",
+                                                        "type": "integer"
+                                                    },
+                                                    "working_days": {
+                                                        "description": "Tổng ngày công",
+                                                        "type": "integer"
+                                                    },
+                                                    "fixed_schedule_absences": {
+                                                        "description": "Tổng số lần vắng lịch cố định",
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập"
+                    },
+                    "403": {
+                        "description": "Tài khoản bị khóa hoặc không có quyền truy cập"
+                    },
+                    "404": {
+                        "description": "Không tìm thấy người dùng"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/dashboard/revenue-reports": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Xem Revenue Reports (UC-112)",
+                "description": "Lấy dữ liệu báo cáo doanh thu công ty dành cho Tổng giám đốc (CEO).",
+                "operationId": "28430709e5934167710f0f1c2360af25",
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Ngày bắt đầu (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "Ngày kết thúc (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "department",
+                        "in": "query",
+                        "description": "Lọc theo phòng ban (string)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "project_id",
+                        "in": "query",
+                        "description": "Lọc theo ID dự án",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "area",
+                        "in": "query",
+                        "description": "Lọc theo khu vực của nhân sự (string)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải báo cáo doanh thu thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải báo cáo doanh thu thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "overview": {
+                                                    "properties": {
+                                                        "total_revenue": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_transactions": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "by_department": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "department_name": {
+                                                                "type": "string"
+                                                            },
+                                                            "revenue": {
+                                                                "type": "integer"
+                                                            },
+                                                            "transactions_count": {
+                                                                "type": "integer"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "by_project": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "project_id": {
+                                                                "type": "string"
+                                                            },
+                                                            "project_name": {
+                                                                "type": "string"
+                                                            },
+                                                            "revenue": {
+                                                                "type": "integer"
+                                                            },
+                                                            "transactions_count": {
+                                                                "type": "integer"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "by_employee": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "user_id": {
+                                                                "type": "string"
+                                                            },
+                                                            "user_name": {
+                                                                "type": "string"
+                                                            },
+                                                            "revenue": {
+                                                                "type": "integer"
+                                                            },
+                                                            "transactions_count": {
+                                                                "type": "integer"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "charts": {
+                                                    "properties": {
+                                                        "by_month": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "label": {
+                                                                        "type": "string",
+                                                                        "example": "2026-05"
+                                                                    },
+                                                                    "revenue": {
+                                                                        "type": "integer"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        },
+                                                        "by_quarter": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "label": {
+                                                                        "type": "string",
+                                                                        "example": "2026-Q2"
+                                                                    },
+                                                                    "revenue": {
+                                                                        "type": "integer"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        },
+                                                        "by_year": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "properties": {
+                                                                    "label": {
+                                                                        "type": "string",
+                                                                        "example": "2026"
+                                                                    },
+                                                                    "revenue": {
+                                                                        "type": "integer"
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập"
+                    },
+                    "403": {
+                        "description": "Tài khoản bị khóa hoặc không có quyền truy cập"
                     }
                 },
                 "security": [
@@ -10480,6 +11138,291 @@
                 }
             }
         },
+        "/api/v1/admin/news": {
+            "get": {
+                "tags": [
+                    "Admin - News"
+                ],
+                "summary": "Danh sách tin tức (UC-122)",
+                "description": "Lấy danh sách tin tức dành cho Super Admin quản lý.",
+                "operationId": "c7472ecf38be51817b60fa7de8f6d4db",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Tìm kiếm theo tiêu đề",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_published",
+                        "in": "query",
+                        "description": "Trạng thái hiển thị (true/false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Loại bài viết (public/internal)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "public",
+                                "internal"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số lượng / trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải danh sách tin tức thành công"
+                    },
+                    "403": {
+                        "description": "Không có quyền truy cập"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - News"
+                ],
+                "summary": "Tạo tin tức",
+                "description": "Tạo bài viết tin tức mới (UC-122).",
+                "operationId": "d8cf9c5b36bf16d857a7e5495f040d7c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "content",
+                                    "category"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "summary": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "content": {
+                                        "type": "string"
+                                    },
+                                    "thumbnail": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "category": {
+                                        "type": "string"
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "area": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "is_published": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "is_featured": {
+                                        "type": "boolean",
+                                        "default": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tạo tin tức thành công"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/news/{id}": {
+            "get": {
+                "tags": [
+                    "Admin - News"
+                ],
+                "summary": "Chi tiết tin tức",
+                "description": "Xem chi tiết một bài viết tin tức (UC-122).",
+                "operationId": "7a06edb6bb4b1bbd2687ab9e4a3d88d0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy thông tin bài viết thành công"
+                    },
+                    "404": {
+                        "description": "Bài viết không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin - News"
+                ],
+                "summary": "Cập nhật tin tức",
+                "description": "Cập nhật bài viết tin tức (UC-122).",
+                "operationId": "406de613275b2b75863a106c2701c9f0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "summary": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "content": {
+                                        "type": "string"
+                                    },
+                                    "thumbnail": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "category": {
+                                        "type": "string"
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "area": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "is_published": {
+                                        "type": "boolean"
+                                    },
+                                    "is_featured": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật tin tức thành công"
+                    },
+                    "404": {
+                        "description": "Bài viết không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin - News"
+                ],
+                "summary": "Xóa tin tức",
+                "description": "Xóa bài viết tin tức (UC-122).",
+                "operationId": "e977db302e63ec9de2c9cb5db2ef9f61",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa tin tức thành công"
+                    },
+                    "404": {
+                        "description": "Bài viết không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/news": {
             "get": {
                 "tags": [
@@ -14891,6 +15834,10 @@
         {
             "name": "Employee Referral",
             "description": "Employee Referral"
+        },
+        {
+            "name": "Admin - News",
+            "description": "Admin - News"
         }
     ]
 }

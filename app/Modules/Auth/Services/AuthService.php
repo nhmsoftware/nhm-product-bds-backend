@@ -320,6 +320,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'id' => (string) $user->id,
                 'staff_code' => $user->staff_code ?: 'Chưa cập nhật.',
                 'name' => $user->name ?: 'Chưa cập nhật.',
+                'cccd' => $user->cccd ?: 'Chưa cập nhật.',
                 'email' => $user->email ?: 'Chưa cập nhật.',
                 'phone' => $user->phone ?: 'Chưa cập nhật.',
                 'address' => $user->address ?: 'Chưa cập nhật.',
@@ -375,6 +376,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'id' => (string) $updated->id,
                 'staff_code' => $updated->staff_code ?: 'Chưa cập nhật.',
                 'name' => $updated->name ?: 'Chưa cập nhật.',
+                'cccd' => $updated->cccd ?: 'Chưa cập nhật.',
                 'email' => $updated->email ?: 'Chưa cập nhật.',
                 'phone' => $updated->phone ?: 'Chưa cập nhật.',
                 'address' => $updated->address ?: 'Chưa cập nhật.',
@@ -483,6 +485,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'user' => [
                     'id'             => (string) $user->id,
                     'name'           => $user->name,
+                    'cccd'           => $user->cccd ?: 'Chưa cập nhật.',
                     'phone'          => $user->phone ?: 'Chưa cập nhật.',
                     'email'          => $user->email,
                     'avatar'         => $user->avatar,
@@ -546,6 +549,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
             // 2. Cập nhật thông tin cơ bản trên bảng users
             $userUpdated = $this->authRepository->updateById($dto->userId, [
                 'name'    => $dto->name,
+                'cccd'    => $dto->cccd,
                 'phone'   => $dto->phone,
                 'email'   => $dto->email,
                 'avatar'  => $dto->avatar,
@@ -601,6 +605,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'user' => [
                     'id'             => (string) $freshUser->id,
                     'name'           => $freshUser->name,
+                    'cccd'           => $freshUser->cccd ?: 'Chưa cập nhật.',
                     'phone'          => $freshUser->phone ?: 'Chưa cập nhật.',
                     'email'          => $freshUser->email,
                     'avatar'         => $freshUser->avatar,
@@ -1511,27 +1516,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
                     ->count();
 
                 // 2. Lượt dẫn khách
-                $deptTours = $this->siteTourRepository->query()
-                    ->whereIn('user_id', $userIds)
-                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                    ->count();
+                $deptTours = $this->siteTourRepository->countSiteTours($userIds, $fromDate, $toDate);
 
                 // 3. Lượt gặp khách
-                $deptMeetings = $this->customerMeetingRepository->query()
-                    ->whereIn('user_id', $userIds)
-                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                    ->count();
+                $deptMeetings = $this->customerMeetingRepository->countCustomerMeetings($userIds, $fromDate, $toDate);
 
                 // 4. Referral nhân sự giới thiệu thành công
-                $deptReferrals = $this->referralHistoryRepository->query()
-                    ->whereIn('referrer_id', $userIds)
-                    ->where('referral_type', 1)
-                    ->where('status', 2)
-                    ->when($fromDate, fn($q) => $q->whereDate('registered_at', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('registered_at', '<=', $toDate))
-                    ->count();
+                $deptReferrals = $this->referralHistoryRepository->countSuccessfulReferralsForUsers($userIds, $fromDate, $toDate);
 
                 // 5. Điểm danh / Ngày công
                 $workDaysMap = $this->attendanceRepository->query()
@@ -1566,32 +1557,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 $totalStars = 0;
 
                 foreach ($userIds as $uId) {
-                    $uTransactions = $this->lotDepositRequestRepository->query()
-                        ->where('user_id', $uId)
-                        ->where('status', 4)
-                        ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                        ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                        ->count();
+                    $uTransactions = $this->lotDepositRequestRepository->countCompletedTransactions($uId, $fromDate, $toDate);
 
-                    $uTours = $this->siteTourRepository->query()
-                        ->where('user_id', $uId)
-                        ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                        ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                        ->count();
+                    $uTours = $this->siteTourRepository->countSiteTours($uId, $fromDate, $toDate);
 
-                    $uMeetings = $this->customerMeetingRepository->query()
-                        ->where('user_id', $uId)
-                        ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                        ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                        ->count();
+                    $uMeetings = $this->customerMeetingRepository->countCustomerMeetings($uId, $fromDate, $toDate);
 
-                    $uReferrals = $this->referralHistoryRepository->query()
-                        ->where('referrer_id', $uId)
-                        ->where('referral_type', 1)
-                        ->where('status', 2)
-                        ->when($fromDate, fn($q) => $q->whereDate('registered_at', '>=', $fromDate))
-                        ->when($toDate, fn($q) => $q->whereDate('registered_at', '<=', $toDate))
-                        ->count();
+                    $uReferrals = $this->referralHistoryRepository->countSuccessfulReferralsForUsers($uId, $fromDate, $toDate);
 
                     $uWorkDays = $workDaysMap->get($uId, 0);
                     $uAbsences = $absencesMap->get($uId, 0);
@@ -1705,32 +1677,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $userIds = $members->pluck('id')->toArray();
 
             // Tính tổng quát các chỉ số
-            $totalTransactions = $this->lotDepositRequestRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->where('status', 4)
-                ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                ->count();
+            $totalTransactions = $this->lotDepositRequestRepository->countCompletedTransactions($userIds, $fromDate, $toDate);
 
-            $totalTours = $this->siteTourRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                ->count();
+            $totalTours = $this->siteTourRepository->countSiteTours($userIds, $fromDate, $toDate);
 
-            $totalMeetings = $this->customerMeetingRepository->query()
-                ->whereIn('user_id', $userIds)
-                ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                ->count();
+            $totalMeetings = $this->customerMeetingRepository->countCustomerMeetings($userIds, $fromDate, $toDate);
 
-            $totalReferrals = $this->referralHistoryRepository->query()
-                ->whereIn('referrer_id', $userIds)
-                ->where('referral_type', 1)
-                ->where('status', 2)
-                ->when($fromDate, fn($q) => $q->whereDate('registered_at', '>=', $fromDate))
-                ->when($toDate, fn($q) => $q->whereDate('registered_at', '<=', $toDate))
-                ->count();
+            $totalReferrals = $this->referralHistoryRepository->countSuccessfulReferralsForUsers($userIds, $fromDate, $toDate);
 
             $workDaysMap = $this->attendanceRepository->query()
                 ->whereIn('user_id', $userIds)
@@ -1761,32 +1714,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $rankedList = $members->map(function ($member) use ($workDaysMap, $absencesMap, $starsMap, $fromDate, $toDate) {
                 $mId = (string) $member->id;
 
-                $uTransactions = $this->lotDepositRequestRepository->query()
-                    ->where('user_id', $mId)
-                    ->where('status', 4)
-                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                    ->count();
+                $uTransactions = $this->lotDepositRequestRepository->countCompletedTransactions($mId, $fromDate, $toDate);
 
-                $uTours = $this->siteTourRepository->query()
-                    ->where('user_id', $mId)
-                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                    ->count();
+                $uTours = $this->siteTourRepository->countSiteTours($mId, $fromDate, $toDate);
 
-                $uMeetings = $this->customerMeetingRepository->query()
-                    ->where('user_id', $mId)
-                    ->when($fromDate, fn($q) => $q->whereDate('created_at', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('created_at', '<=', $toDate))
-                    ->count();
+                $uMeetings = $this->customerMeetingRepository->countCustomerMeetings($mId, $fromDate, $toDate);
 
-                $uReferrals = $this->referralHistoryRepository->query()
-                    ->where('referrer_id', $mId)
-                    ->where('referral_type', 1)
-                    ->where('status', 2)
-                    ->when($fromDate, fn($q) => $q->whereDate('registered_at', '>=', $fromDate))
-                    ->when($toDate, fn($q) => $q->whereDate('registered_at', '<=', $toDate))
-                    ->count();
+                $uReferrals = $this->referralHistoryRepository->countSuccessfulReferralsForUsers($mId, $fromDate, $toDate);
 
                 $uWorkDays = $workDaysMap->get($mId, 0);
                 $uAbsences = $absencesMap->get($mId, 0);

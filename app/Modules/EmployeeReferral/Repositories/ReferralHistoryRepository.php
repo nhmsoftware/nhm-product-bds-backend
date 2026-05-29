@@ -59,4 +59,53 @@ final class ReferralHistoryRepository extends BaseRepository implements Referral
         return $query->orderBy($filter->getSortBy() ?? 'scanned_at', $filter->getDirection())
                      ->paginate($filter->getPerPage(), ['*'], 'page', $filter->getPage());
     }
+
+    public function countSuccessfulReferrals(
+        ?int $month,
+        ?int $quarter,
+        ?int $year,
+        ?string $area
+    ): int {
+        $query = $this->model->where('status', 2);
+
+        if (!empty($area)) {
+            $query->whereHas('referrer', function ($q) use ($area) {
+                $q->where('area', $area);
+            });
+        }
+
+        if ($year) {
+            $query->whereYear('created_at', $year);
+        }
+        if ($month) {
+            $query->whereMonth('created_at', $month);
+        } elseif ($quarter) {
+            $startMonth = ($quarter - 1) * 3 + 1;
+            $endMonth = $quarter * 3;
+            $query->whereMonth('created_at', '>=', $startMonth)
+                  ->whereMonth('created_at', '<=', $endMonth);
+        }
+
+        return $query->count();
+    }
+
+    public function countSuccessfulReferralsForUsers(
+        array|string $userIds,
+        ?string $fromDate,
+        ?string $toDate
+    ): int {
+        $userIdsArray = is_array($userIds) ? $userIds : [$userIds];
+        $query = $this->model->whereIn('referrer_id', $userIdsArray)
+            ->where('referral_type', 1)
+            ->where('status', 2);
+
+        if ($fromDate) {
+            $query->whereDate('registered_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('registered_at', '<=', $toDate);
+        }
+
+        return $query->count();
+    }
 }

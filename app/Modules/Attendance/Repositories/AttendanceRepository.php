@@ -19,6 +19,54 @@ final class AttendanceRepository extends BaseRepository implements AttendanceRep
     }
 
     /**
+     * Đếm số ngày làm việc của nhân viên trong khoảng thời gian.
+     *
+     * @param array|string $userIds ID của nhân viên (UUID hoặc mảng ID)
+     * @param string|null $fromDate Ngày bắt đầu (Y-m-d)
+     * @param string|null $toDate Ngày kết thúc (Y-m-d)
+     * @return int Số ngày làm việc trong khoảng thời gian
+     */
+    public function countWorkDays(array|string $userIds, ?string $fromDate, ?string $toDate): int
+    {
+        $userIdsArray = is_array($userIds) ? $userIds : [$userIds];
+        $query = $this->model->whereIn('user_id', $userIdsArray)
+            ->whereIn('status', [1, 2, 4]); // WORK, LATE, OVERTIME
+
+        if ($fromDate) {
+            $query->whereDate('work_date', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('work_date', '<=', $toDate);
+        }
+
+        return $query->count();
+    }
+
+    /**
+     * Đếm số ngày nghỉ theo lịch của nhân viên trong khoảng thời gian.
+     *
+     * @param array|string $userIds ID của nhân viên (UUID hoặc mảng ID)
+     * @param string|null $fromDate Ngày bắt đầu (Y-m-d)
+     * @param string|null $toDate Ngày kết thúc (Y-m-d)
+     * @return int Số ngày nghỉ theo lịch trong khoảng thời gian
+     */
+    public function countFixedScheduleAbsences(array|string $userIds, ?string $fromDate, ?string $toDate): int
+    {
+        $userIdsArray = is_array($userIds) ? $userIds : [$userIds];
+        $query = $this->model->whereIn('user_id', $userIdsArray)
+            ->where('status', 3); // ABSENT
+
+        if ($fromDate) {
+            $query->whereDate('work_date', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('work_date', '<=', $toDate);
+        }
+
+        return $query->count();
+    }
+
+    /**
      * Tìm bản ghi chấm công của nhân viên theo ngày làm việc.
      *
      * @param string $userId ID của nhân viên (UUID)

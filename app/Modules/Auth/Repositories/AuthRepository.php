@@ -4,7 +4,9 @@ namespace App\Modules\Auth\Repositories;
 
 use App\Core\Repository\BaseRepository;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
+use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Auth\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 
 final class AuthRepository extends BaseRepository implements AuthRepositoryInterface
 {
@@ -15,7 +17,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
 
     /**
      * Tìm người dùng theo email.
-     * 
+     *
      * @param string $email
      * @return \App\Modules\Auth\Models\User|null
      */
@@ -28,12 +30,12 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
      * Lấy danh sách nhân viên đang hoạt động trong phòng ban.
      *
      * @param string $departmentName
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
-    public function getActiveEmployeesByDepartment(string $departmentName): \Illuminate\Database\Eloquent\Collection
+    public function getActiveEmployeesByDepartment(string $departmentName): Collection
     {
         return $this->model->where('is_active', true)
-            ->where('role', \App\Modules\Auth\Models\Enums\UserRole::EMPLOYEE->value)
+            ->where('role', UserRole::EMPLOYEE->value)
             ->where('department', $departmentName)
             ->with('employeeProfile')
             ->get();
@@ -41,7 +43,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
 
     /**
      * Tìm người dùng theo số điện thoại.
-     * 
+     *
      * @param string $phone
      * @return \App\Modules\Auth\Models\User|null
      */
@@ -52,7 +54,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
 
     /**
      * Tìm người dùng theo mã nhân viên.
-     * 
+     *
      * @param string $staffCode
      * @return \App\Modules\Auth\Models\User|null
      */
@@ -90,14 +92,294 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
 
     private function applyTeamScope(\Illuminate\Database\Eloquent\Builder $query, User $user): \Illuminate\Database\Eloquent\Builder
     {
-        if ($user->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER) {
+        if ($user->role === UserRole::MANAGER) {
             return $query->where('department', $user->department);
         }
 
-        if ($user->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR) {
+        if ($user->role === UserRole::DIRECTOR) {
             return $query->where('area', $user->area);
         }
 
         return $query;
+    }
+
+    /**
+     * Lấy dữ liệu báo cáo nhân viên theo ngày.
+     *
+     * @param User $director
+     * @param string|null $department
+     * @param string|null $employeeId
+     * @param string|null $startDate
+     * @param string|null $endDate
+     * @return Collection
+     */
+    public function getEmployeeReportData(
+        User $director,
+        ?string $department,
+        ?string $employeeId,
+        ?string $startDate,
+        ?string $endDate
+    ): Collection {
+        $query = $this->model->where(function ($q) use ($director) {
+            $hasCondition = false;
+            if (!empty($director->department)) {
+                $q->orWhere('department', $director->department);
+                $hasCondition = true;
+            }
+            if (!empty($director->area)) {
+                $q->orWhere('area', $director->area);
+                $hasCondition = true;
+            }
+            if (!$hasCondition) {
+                $q->whereRaw('1 = 0');
+            }
+        });
+
+        if (!empty($department)) {
+            $query->where('department', $department);
+        }
+
+        if (!empty($employeeId)) {
+            $query->where('id', $employeeId);
+        }
+
+        $query->with('employeeProfile')
+            ->withCount([
+                'lotDepositRequests as successful_transactions' => function ($q) use ($startDate, $endDate) {
+                    $q->where('status', 2); // APPROVED
+                    if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
+                },
+                'siteTours as site_tours_count' => function ($q) use ($startDate, $endDate) {
+                    if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
+                },
+                'customerMeetings as customer_meetings_count' => function ($q) use ($startDate, $endDate) {
+                    if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
+                },
+                'referrals as referrals_count' => function ($q) use ($startDate, $endDate) {
+                    $q->where('referral_type', 1)->where('status', 2);
+                    if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
+                },
+                'attendances as working_days' => function ($q) use ($startDate, $endDate) {
+                    $q->whereIn('status', [1, 2]);
+                    if (!empty($startDate)) $q->whereDate('work_date', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('work_date', '<=', $endDate);
+                },
+                'attendances as fixed_schedule_absences' => function ($q) use ($startDate, $endDate) {
+                    $q->where('status', 3);
+                    if (!empty($startDate)) $q->whereDate('work_date', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('work_date', '<=', $endDate);
+                }
+            ]);
+
+        return $query->get();
+    }
+
+    /**
+     * Lấy dữ liệu báo cáo phòng ban theo ngày.
+     *
+     * @param User $director
+     * @param string|null $department
+     * @param string|null $startDate
+     * @param string|null $endDate
+     * @return Collection
+     */
+    public function getDepartmentReportData(
+        User $director,
+        ?string $department,
+        ?string $startDate,
+        ?string $endDate
+    ): Collection {
+        $query = $this->model->whereNotNull('department')
+            ->where(function ($q) use ($director) {
+                $hasCondition = false;
+                if (!empty($director->department)) {
+                    $q->orWhere('department', $director->department);
+                    $hasCondition = true;
+                }
+                if (!empty($director->area)) {
+                    $q->orWhere('area', $director->area);
+                    $hasCondition = true;
+                }
+                if (!$hasCondition) {
+                    $q->whereRaw('1 = 0');
+                }
+            });
+
+        if (!empty($department)) {
+            $query->where('department', $department);
+        }
+
+        $query->with('employeeProfile')
+            ->withCount([
+                'lotDepositRequests as successful_transactions' => function ($q) use ($startDate, $endDate) {
+                    $q->where('status', 2);
+                    if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
+                },
+                'siteTours as site_tours_count' => function ($q) use ($startDate, $endDate) {
+                    if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
+                },
+                'customerMeetings as customer_meetings_count' => function ($q) use ($startDate, $endDate) {
+                    if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
+                },
+                'referrals as referrals_count' => function ($q) use ($startDate, $endDate) {
+                    $q->where('referral_type', 1)->where('status', 2);
+                    if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
+                },
+                'attendances as working_days' => function ($q) use ($startDate, $endDate) {
+                    $q->whereIn('status', [1, 2]);
+                    if (!empty($startDate)) $q->whereDate('work_date', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('work_date', '<=', $endDate);
+                },
+                'attendances as fixed_schedule_absences' => function ($q) use ($startDate, $endDate) {
+                    $q->where('status', 3);
+                    if (!empty($startDate)) $q->whereDate('work_date', '>=', $startDate);
+                    if (!empty($endDate)) $q->whereDate('work_date', '<=', $endDate);
+                }
+            ]);
+
+        return $query->get();
+    }
+
+    /**
+     * Đếm số lượng nhân viên theo khu vực.
+     *
+     * @param string|null $area
+     * @return int
+     */
+    public function countEmployees(?string $area): int
+    {
+        $query = $this->model->whereIn('role', [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value])
+            ->where('is_active', true);
+        if (!empty($area)) $query->where('area', $area);
+        return $query->count();
+    }
+
+    /**
+     * Đếm số lượng phòng ban theo khu vực.
+     *
+     * @param string|null $area
+     * @return int
+     */
+    public function countDepartments(?string $area): int
+    {
+        $query = $this->model->whereNotNull('department')->where('is_active', true);
+        if (!empty($area)) $query->where('area', $area);
+        return $query->distinct('department')->count('department');
+    }
+
+    /**
+     * Đếm số lượng khách hàng theo khu vực.
+     *
+     * @param string|null $area
+     * @param int|null $month
+     * @param int|null $quarter
+     * @param int|null $year
+     * @return int
+     */
+    public function countCustomers(?string $area, ?int $month, ?int $quarter, ?int $year): int
+    {
+        $query = $this->model->where('role', UserRole::BUYER->value);
+        if (!empty($area)) $query->where('area', $area);
+
+        if ($year) {
+            $query->whereYear('created_at', $year);
+        }
+        if ($month) {
+            $query->whereMonth('created_at', $month);
+        } elseif ($quarter) {
+            $startMonth = ($quarter - 1) * 3 + 1;
+            $endMonth = $quarter * 3;
+            $query->whereMonth('created_at', '>=', $startMonth)
+                  ->whereMonth('created_at', '<=', $endMonth);
+        }
+
+        return $query->count();
+    }
+
+    /**
+     * Đếm tổng số điểm KPI theo khu vực.
+     *
+     * @param string|null $area
+     * @return int
+     */
+    public function countKpiStars(?string $area): int
+    {
+        $query = $this->model->whereNotNull('department')->where('is_active', true)
+            ->join('employee_profiles', 'users.id', '=', 'employee_profiles.user_id');
+        if (!empty($area)) $query->where('users.area', $area);
+        return (int) $query->sum('employee_profiles.kpi_stars');
+    }
+
+    /**
+     * Lấy thống kê phòng ban theo khu vực.
+     *
+     * @param string|null $area
+     * @param int|null $month
+     * @param int|null $quarter
+     * @param int|null $year
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getDepartmentStatsForDashboard(?string $area, ?int $month, ?int $quarter, ?int $year): Collection
+    {
+        $deptUsersQuery = $this->model->whereNotNull('department')
+            ->whereIn('role', [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value]);
+
+        if (!empty($area)) {
+            $deptUsersQuery->where('area', $area);
+        }
+
+        $applyDateFilter = function ($q) use ($month, $quarter, $year) {
+            if ($year) {
+                $q->whereYear('created_at', $year);
+            }
+            if ($month) {
+                $q->whereMonth('created_at', $month);
+            } elseif ($quarter) {
+                $startMonth = ($quarter - 1) * 3 + 1;
+                $endMonth = $quarter * 3;
+                $q->whereMonth('created_at', '>=', $startMonth)
+                  ->whereMonth('created_at', '<=', $endMonth);
+            }
+        };
+
+        $deptUsersQuery->with('employeeProfile')
+            ->withCount([
+                'lotDepositRequests as successful_transactions' => function ($q) use ($applyDateFilter) {
+                    $q->where('status', 2);
+                    $applyDateFilter($q);
+                }
+            ]);
+        $deptUsersQuery->with(['lotDepositRequests' => function ($q) use ($applyDateFilter) {
+            $q->where('status', 2)->with('lot');
+            $applyDateFilter($q);
+        }]);
+
+        return $deptUsersQuery->get();
+    }
+
+    /**
+     * Thêm điểm thưởng và điểm KPI cho người dùng.
+     *
+     * @param string $userId
+     * @param int $points
+     * @param int $stars
+     * @return void
+     */
+    public function addRewardPointsAndStars(string $userId, int $points, int $stars): void
+    {
+        $user = $this->model->with('employeeProfile')->find($userId);
+        if ($user && $user->employeeProfile) {
+            $user->employeeProfile->reward_points += $points;
+            $user->employeeProfile->kpi_stars += $stars;
+            $user->employeeProfile->save();
+        }
     }
 }

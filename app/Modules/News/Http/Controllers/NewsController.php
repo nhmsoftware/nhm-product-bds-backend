@@ -90,6 +90,60 @@ final class NewsController extends BaseController
     }
 
     #[OA\Get(
+        path: '/api/v1/news/liked',
+        description: 'Lấy danh sách các bài viết đã thích của người dùng hiện tại.',
+        summary: 'Danh sách bài viết đã thích',
+        security: [['bearerAuth' => []]],
+        tags: ['News'],
+        parameters: [
+            new OA\Parameter(name: 'page', in: 'query', description: 'Trang hiện tại', required: false, schema: new OA\Schema(type: 'integer', default: 1)),
+            new OA\Parameter(name: 'per_page', in: 'query', description: 'Số lượng mỗi trang', required: false, schema: new OA\Schema(type: 'integer', default: 10)),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Tải dữ liệu thành công',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Tải danh sách bài viết đã thích thành công.'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'list', type: 'array', items: new OA\Items(ref: '#/components/schemas/News')),
+                                new OA\Property(
+                                    property: 'pagination',
+                                    type: 'object',
+                                    properties: [
+                                        new OA\Property(property: 'total', type: 'integer'),
+                                        new OA\Property(property: 'per_page', type: 'integer'),
+                                        new OA\Property(property: 'current_page', type: 'integer'),
+                                        new OA\Property(property: 'last_page', type: 'integer'),
+                                    ]
+                                ),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Chưa đăng nhập'),
+            new OA\Response(response: 500, description: 'Lỗi hệ thống')
+        ]
+    )]
+    public function getLikedNews(Request $request): JsonResponse
+    {
+        $userId = auth()->id();
+        $result = $this->newsService->getLikedNewsList($userId, $request->all());
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Get(
         path: '/api/v1/news/search',
         description: 'Tìm kiếm bài viết tin tức theo từ khóa (tiêu đề, tóm tắt, nội dung).',
         summary: 'Tìm kiếm tin tức công khai (UC-09)',

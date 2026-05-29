@@ -35,4 +35,26 @@ final class CustomerMeetingRepository extends BaseRepository implements Customer
             ->limit($limit)
             ->get();
     }
+
+    public function getHistory(string $employeeId, \App\Core\DTOs\FilterDTO $filter): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        $query = $this->model->where('user_id', $employeeId);
+        return $query->orderBy($filter->getSortBy() ?? 'met_at', $filter->getDirection())
+                     ->paginate($filter->getPerPage(), ['*'], 'page', $filter->getPage());
+    }
+
+    public function countCustomerMeetings(array|string $userIds, ?string $fromDate, ?string $toDate): int
+    {
+        $userIdsArray = is_array($userIds) ? $userIds : [$userIds];
+        $query = $this->model->whereIn('user_id', $userIdsArray);
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        return $query->count();
+    }
 }

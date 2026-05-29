@@ -11,6 +11,20 @@ use Illuminate\Database\Eloquent\Collection;
 interface SiteTourRepositoryInterface extends BaseRepositoryInterface
 {
     /**
+     * Lấy lịch sử dẫn khách của một nhân viên có phân trang.
+     *
+     * @param string $employeeId
+     * @param FilterDTO $filter
+     * @return LengthAwarePaginator
+     */
+    public function getHistory(string $employeeId, FilterDTO $filter): LengthAwarePaginator;
+
+    /**
+     * Đếm số lượt dẫn khách theo userIds và khoảng thời gian.
+     */
+    public function countSiteTours(array|string $userIds, ?string $fromDate, ?string $toDate): int;
+
+    /**
      * Tìm danh sách các hoạt động dẫn khách gần đây nhất của nhân viên.
      *
      * @param string $userId ID của nhân viên (UUID)

@@ -14,6 +14,7 @@ final class UpdateProfileDTO
         public readonly string $name,
         public readonly string $email,
         public readonly string $phone,
+        public readonly ?string $cccd = null,
         public readonly ?string $address = null,
     ) {
     }
@@ -28,6 +29,7 @@ final class UpdateProfileDTO
             name: $request->validated('name'),
             email: $request->validated('email'),
             phone: $request->validated('phone'),
+            cccd: $request->validated('cccd'),
             address: $request->validated('address'),
         );
     }
@@ -41,6 +43,7 @@ final class UpdateProfileDTO
             'name'    => $this->name,
             'email'   => $this->email,
             'phone'   => $this->phone,
+            'cccd'    => $this->cccd,
             'address' => $this->address,
         ];
     }

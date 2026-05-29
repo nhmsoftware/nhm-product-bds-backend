@@ -316,6 +316,7 @@ final class AuthController extends BaseController
                                 new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'uuid-string'),
                                 new OA\Property(property: 'staff_code', type: 'string', example: 'ST-ABCXYZ'),
                                 new OA\Property(property: 'name', type: 'string', example: 'Nguyen Van A'),
+                                new OA\Property(property: 'cccd', type: 'string', nullable: true, example: '037123456789'),
                                 new OA\Property(property: 'email', type: 'string', format: 'email', example: 'nguyenvana@example.com'),
                                 new OA\Property(property: 'phone', type: 'string', example: '0901234567'),
                                 new OA\Property(property: 'address', type: 'string', example: '123 Đường ABC, Quận 1, TP. HCM'),
@@ -378,6 +379,7 @@ final class AuthController extends BaseController
                 required: ['name', 'email', 'phone'],
                 properties: [
                     new OA\Property(property: 'name', type: 'string', example: 'Nguyen Van A'),
+                    new OA\Property(property: 'cccd', type: 'string', nullable: true, example: '037123456789'),
                     new OA\Property(property: 'email', type: 'string', format: 'email', example: 'nguyenvana@example.com'),
                     new OA\Property(property: 'phone', type: 'string', example: '0901234567'),
                     new OA\Property(property: 'address', type: 'string', example: '123 Đường ABC, Quận 1, TP. HCM'),
@@ -399,6 +401,7 @@ final class AuthController extends BaseController
                                 new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'uuid-string'),
                                 new OA\Property(property: 'staff_code', type: 'string', example: 'ST-ABCXYZ'),
                                 new OA\Property(property: 'name', type: 'string', example: 'Nguyen Van A'),
+                                new OA\Property(property: 'cccd', type: 'string', nullable: true, example: '037123456789'),
                                 new OA\Property(property: 'email', type: 'string', format: 'email', example: 'nguyenvana@example.com'),
                                 new OA\Property(property: 'phone', type: 'string', example: '0901234567'),
                                 new OA\Property(property: 'address', type: 'string', example: '123 Đường ABC, Quận 1, TP. HCM'),
@@ -532,6 +535,7 @@ final class AuthController extends BaseController
                                     properties: [
                                         new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '123e4567-e89b-12d3-a456-426614174000'),
                                         new OA\Property(property: 'name', type: 'string', example: 'Nguyễn Văn A'),
+                                        new OA\Property(property: 'cccd', type: 'string', nullable: true, example: '037123456789'),
                                         new OA\Property(property: 'phone', type: 'string', example: '0901234567'),
                                         new OA\Property(property: 'email', type: 'string', example: 'staff@example.com'),
                                         new OA\Property(property: 'avatar', type: 'string', nullable: true),
@@ -629,6 +633,7 @@ final class AuthController extends BaseController
             content: new OA\JsonContent(
                 properties: [
                     new OA\Property(property: 'name', type: 'string', example: 'Nguyễn Văn B'),
+                    new OA\Property(property: 'cccd', type: 'string', nullable: true, example: '037123456789'),
                     new OA\Property(property: 'phone', type: 'string', example: '0987654321'),
                     new OA\Property(property: 'email', type: 'string', format: 'email', example: 'staff@example.com'),
                     new OA\Property(property: 'avatar', type: 'string', nullable: true, example: 'https://example.com/avatar.png'),
@@ -662,6 +667,7 @@ final class AuthController extends BaseController
                                     properties: [
                                         new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '123e4567-e89b-12d3-a456-426614174000'),
                                         new OA\Property(property: 'name', type: 'string', example: 'Nguyễn Văn B'),
+                                        new OA\Property(property: 'cccd', type: 'string', nullable: true, example: '037123456789'),
                                         new OA\Property(property: 'phone', type: 'string', example: '0987654321'),
                                         new OA\Property(property: 'email', type: 'string', example: 'staff@example.com'),
                                         new OA\Property(property: 'avatar', type: 'string', nullable: true),

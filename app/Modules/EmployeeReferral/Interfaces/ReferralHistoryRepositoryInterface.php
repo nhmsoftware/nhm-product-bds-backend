@@ -28,4 +28,23 @@ interface ReferralHistoryRepositoryInterface extends BaseRepositoryInterface
      * @return LengthAwarePaginator
      */
     public function getHistory(string $referrerId, FilterDTO $filter): LengthAwarePaginator;
+
+    /**
+     * Đếm số lượt giới thiệu thành công cho Dashboard
+     */
+    public function countSuccessfulReferrals(
+        ?int $month,
+        ?int $quarter,
+        ?int $year,
+        ?string $area
+    ): int;
+
+    /**
+     * Đếm số lượt giới thiệu thành công theo danh sách userIds và khoảng thời gian.
+     */
+    public function countSuccessfulReferralsForUsers(
+        array|string $userIds,
+        ?string $fromDate,
+        ?string $toDate
+    ): int;
 }

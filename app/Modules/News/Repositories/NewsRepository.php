@@ -132,5 +132,64 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
                      ->orderBy('published_at', 'desc')
                      ->paginate($perPage);
     }
+
+    /**
+     * Lấy danh sách tin tức (dành cho Admin).
+     * 
+     * @param array $filters
+     * @param int $perPage
+     * @param int $page
+     * @return LengthAwarePaginator
+     */
+    public function getAdminList(array $filters, int $perPage, int $page): LengthAwarePaginator
+    {
+        $query = $this->model->with('author:id,name,email');
+
+        if (!empty($filters['search'])) {
+            $query->where('title', 'like', '%' . $filters['search'] . '%');
+        }
+
+        if (isset($filters['isPublished']) && $filters['isPublished'] !== null) {
+            $query->where('is_published', $filters['isPublished']);
+        }
+
+        if (!empty($filters['type'])) {
+            if ($filters['type'] === 'public') {
+                $query->whereNull('department')->whereNull('area');
+            } elseif ($filters['type'] === 'internal') {
+                $query->where(function ($q) {
+                    $q->whereNotNull('department')->orWhereNotNull('area');
+                });
+            }
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    public function getLikedNews(string $userId, int $perPage = 10): LengthAwarePaginator
+    {
+        return $this->model->whereHas('likes', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        })->where('is_published', true)
+          ->with('author')
+          ->orderBy('published_at', 'desc')
+          ->paginate($perPage);
+    }
+
+    /**
+     * Kiểm tra xem slug đã tồn tại chưa.
+     * 
+     * @param string $slug
+     * @param string|null $ignoreId
+     * @return bool
+     */
+    public function existsBySlug(string $slug, ?string $ignoreId = null): bool
+    {
+        $query = $this->model->where('slug', $slug);
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+        return $query->exists();
+    }
 }
 

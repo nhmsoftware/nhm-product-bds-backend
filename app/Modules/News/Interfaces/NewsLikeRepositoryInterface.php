@@ -14,4 +14,13 @@ interface NewsLikeRepositoryInterface extends BaseRepositoryInterface
      * @return mixed
      */
     public function findLike(string $newsId, string $userId);
+
+    /**
+     * Lấy danh sách ID các bài viết đã thích từ một danh sách bài viết.
+     * 
+     * @param string $userId
+     * @param array $newsIds
+     * @return array
+     */
+    public function getLikedNewsIds(string $userId, array $newsIds): array;
 }

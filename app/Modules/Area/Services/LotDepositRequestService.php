@@ -13,12 +13,16 @@ use App\Modules\Area\Interfaces\LotRepositoryInterface;
 use App\Modules\Area\Models\Enums\LotStatus;
 use App\Modules\Area\Models\Enums\LotDepositRequestStatus;
 use App\Modules\Area\Events\LotDepositRequested;
+use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
+use App\Modules\Auth\Interfaces\RewardPointHistoryRepositoryInterface;
 
 final class LotDepositRequestService extends BaseService implements LotDepositRequestServiceInterface
 {
     public function __construct(
         private readonly LotDepositRequestRepositoryInterface $repository,
-        private readonly LotRepositoryInterface $lotRepository
+        private readonly LotRepositoryInterface $lotRepository,
+        private readonly AuthRepositoryInterface $authRepository,
+        private readonly RewardPointHistoryRepositoryInterface $rewardPointHistoryRepository
     ) {
     }
 
@@ -161,21 +165,16 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             $this->lotRepository->updateById($lot->id, ['status' => LotStatus::SOLD->value]);
 
             // Add points to employee
-            $employeeProfile = $model->user?->employeeProfile;
-            if ($employeeProfile) {
-                $employeeProfile->reward_points += 10;
-                $employeeProfile->kpi_stars += 1;
-                $employeeProfile->save();
+            $this->authRepository->addRewardPointsAndStars($model->user_id, 10, 1);
 
-                // Save history
-                \App\Modules\Auth\Models\RewardPointHistory::create([
-                    'user_id' => $model->user_id,
-                    'points_changed' => 10,
-                    'stars_changed' => 1,
-                    'reason' => 'Thưởng giao dịch thành công lô đất ' . $lot->code,
-                    'related_id' => $id,
-                ]);
-            }
+            // Save history
+            $this->rewardPointHistoryRepository->create([
+                'user_id' => $model->user_id,
+                'points_changed' => 10,
+                'stars_changed' => 1,
+                'reason' => 'Thưởng giao dịch thành công lô đất ' . $lot->code,
+                'related_id' => $id,
+            ]);
 
             // Fire Event
             event(new \App\Modules\Area\Events\TransactionCompleted($model));

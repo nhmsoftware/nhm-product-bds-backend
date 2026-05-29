@@ -19,7 +19,8 @@ class NewsServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(NewsRepositoryInterface::class, NewsRepository::class);
         $this->app->singleton(NewsLikeRepositoryInterface::class, NewsLikeRepository::class);
         $this->app->singleton(NewsCommentRepositoryInterface::class, NewsCommentRepository::class);
-        $this->app->singleton(NewsServiceInterface::class, NewsService::class);
+        $this->app->singleton(\App\Modules\News\Interfaces\NewsServiceInterface::class, \App\Modules\News\Services\NewsService::class);
+        $this->app->singleton(\App\Modules\News\Interfaces\AdminNewsServiceInterface::class, \App\Modules\News\Services\AdminNewsService::class);
     }
 
     protected function getModuleName(): string

@@ -10,6 +10,7 @@ use App\Modules\Auth\Models\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\HasDatabaseNotifications;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -21,6 +22,7 @@ use OpenApi\Attributes as OA;
  *
  * @property string $id
  * @property string $staff_code
+ * @property string|null $cccd
  * @property string $name
  * @property string $email
  * @property string $phone
@@ -37,6 +39,13 @@ use OpenApi\Attributes as OA;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read EmployeeProfile|null $employeeProfile
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Modules\Area\Models\LotDepositRequest[] $lotDepositRequests
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Modules\SiteTour\Models\SiteTour[] $siteTours
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Modules\CustomerMeeting\Models\CustomerMeeting[] $customerMeetings
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Modules\EmployeeReferral\Models\ReferralHistory[] $referrals
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Modules\Attendance\Models\Attendance[] $attendances
+ * @property-read \Illuminate\Notifications\DatabaseNotificationCollection $notifications Danh sách thông báo của người dùng
+ * @property-read int $unread_notifications_count Số thông báo chưa đọc
  * @mixin \Eloquent
  */
 #[OA\Schema(
@@ -60,10 +69,11 @@ use OpenApi\Attributes as OA;
 )]
 class User extends Authenticatable implements JWTSubject
 {
-    use HasFactory, Notifiable, SoftDeletes, HasUuids;
+    use HasFactory, Notifiable, HasDatabaseNotifications, SoftDeletes, HasUuids;
 
     protected $fillable = [
         'staff_code',
+        'cccd',
         'name',
         'email',
         'phone',
@@ -131,6 +141,46 @@ class User extends Authenticatable implements JWTSubject
             'user_id',
             'area_id'
         )->withTimestamps()->whereNull('area_assignments.deleted_at');
+    }
+
+    /**
+     * Danh sách yêu cầu đặt cọc (giao dịch) của nhân viên.
+     */
+    public function lotDepositRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Modules\Area\Models\LotDepositRequest::class, 'user_id');
+    }
+
+    /**
+     * Danh sách lượt dẫn khách tham quan dự án.
+     */
+    public function siteTours(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Modules\SiteTour\Models\SiteTour::class, 'user_id');
+    }
+
+    /**
+     * Danh sách lượt gặp khách hàng.
+     */
+    public function customerMeetings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Modules\CustomerMeeting\Models\CustomerMeeting::class, 'user_id');
+    }
+
+    /**
+     * Danh sách lịch sử giới thiệu (tuyển dụng/khách hàng) của nhân viên này (với vai trò người giới thiệu).
+     */
+    public function referrals(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Modules\EmployeeReferral\Models\ReferralHistory::class, 'referrer_id');
+    }
+
+    /**
+     * Danh sách chấm công của nhân viên.
+     */
+    public function attendances(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Modules\Attendance\Models\Attendance::class, 'user_id');
     }
 
     public function setRoleAttribute($value)

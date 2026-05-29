@@ -46,6 +46,25 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $featured = $this->newsRepository->getFeaturedNews();
             $paginatedNews = $this->newsRepository->getPublishedNews($dto->toArray());
 
+            $userId = auth('api')->id();
+            $likedNewsIds = [];
+            if ($userId) {
+                $allIds = array_unique(array_merge(
+                    collect($featured)->pluck('id')->toArray(),
+                    collect($paginatedNews->items())->pluck('id')->toArray()
+                ));
+                if (!empty($allIds)) {
+                    $likedNewsIds = $this->newsLikeRepository->getLikedNewsIds($userId, $allIds);
+                }
+            }
+
+            foreach ($featured as $news) {
+                $news->is_liked = in_array($news->id, $likedNewsIds, true);
+            }
+            foreach ($paginatedNews->items() as $news) {
+                $news->is_liked = in_array($news->id, $likedNewsIds, true);
+            }
+
             $data = [
                 'featured' => $featured,
                 'list' => $paginatedNews->items(),
@@ -63,6 +82,30 @@ final class NewsService extends BaseService implements NewsServiceInterface
 
             return $this->success($data, 'Tải danh sách tin tức thành công.');
         }, useTransaction: false);
+    }
+
+    public function getLikedNewsList(string $userId, array $params): ServiceReturn
+    {
+        return $this->execute(function () use ($userId, $params) {
+            $perPage = (int) ($params['per_page'] ?? 10);
+            $paginatedNews = $this->newsRepository->getLikedNews($userId, $perPage);
+
+            foreach ($paginatedNews->items() as $news) {
+                $news->setAttribute('is_liked', true);
+            }
+
+            $data = [
+                'list' => $paginatedNews->items(),
+                'pagination' => [
+                    'total' => $paginatedNews->total(),
+                    'per_page' => $paginatedNews->perPage(),
+                    'current_page' => $paginatedNews->currentPage(),
+                    'last_page' => $paginatedNews->lastPage(),
+                ]
+            ];
+
+            return $this->success($data, 'Tải danh sách bài viết đã thích thành công.');
+        });
     }
 
     /**

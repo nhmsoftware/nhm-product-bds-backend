@@ -17,6 +17,11 @@ interface NewsServiceInterface
     public function getList(GetNewsListDTO $dto): ServiceReturn;
 
     /**
+     * Tải danh sách bài viết đã thích.
+     */
+    public function getLikedNewsList(string $userId, array $params): ServiceReturn;
+
+    /**
      * Tìm kiếm tin tức.
      * 
      * @param SearchNewsDTO $dto

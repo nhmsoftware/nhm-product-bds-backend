@@ -27,6 +27,7 @@ use OpenApi\Attributes as OA;
  * @property string $author_id
  * @property bool $is_published
  * @property bool $is_featured
+ * @property bool $is_liked
  * @property int $likes_count
  * @property \Illuminate\Support\Carbon|null $published_at
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -49,6 +50,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'category', type: 'string'),
         new OA\Property(property: 'department', type: 'string', nullable: true),
         new OA\Property(property: 'area', type: 'string', nullable: true),
+        new OA\Property(property: 'is_liked', type: 'boolean', example: false),
         new OA\Property(property: 'likes_count', type: 'integer'),
         new OA\Property(property: 'published_at', type: 'string', format: 'date-time'),
     ]

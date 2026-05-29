@@ -22,8 +22,8 @@ use OpenApi\Attributes as OA;
  * @property string $customer_name
  * @property string $customer_phone
  * @property string $image_path
- * @property string $latitude
- * @property string $longitude
+ * @property float $latitude
+ * @property float $longitude
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -65,8 +65,8 @@ class CustomerMeeting extends Model
     ];
 
     protected $casts = [
-        'latitude' => 'decimal:7',
-        'longitude' => 'decimal:7',
+        'latitude' => 'float',
+        'longitude' => 'float',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

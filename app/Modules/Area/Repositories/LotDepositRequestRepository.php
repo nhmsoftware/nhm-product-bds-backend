@@ -69,4 +69,104 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
 
         return $query->orderBy('created_at', 'desc')->paginate($dto->per_page, ['*'], 'page', $dto->page);
     }
+
+    public function getRevenueReportData(
+        ?string $startDate,
+        ?string $endDate,
+        ?string $department,
+        ?string $projectId,
+        ?string $area
+    ): \Illuminate\Database\Eloquent\Collection {
+        $query = $this->model->select([
+                'lot_deposit_requests.id',
+                'lot_deposit_requests.created_at',
+                'lots.price',
+                'users.department',
+                'users.area',
+                'users.name as user_name',
+                'users.id as user_id',
+                'projects.name as project_name',
+                'projects.id as project_id'
+            ])
+            ->join('lots', 'lot_deposit_requests.lot_id', '=', 'lots.id')
+            ->join('areas', 'lots.area_id', '=', 'areas.id')
+            ->leftJoin('projects', 'areas.project_id', '=', 'projects.id')
+            ->join('users', 'lot_deposit_requests.user_id', '=', 'users.id')
+            ->where('lot_deposit_requests.status', 2) // APPROVED
+            ->whereNull('lot_deposit_requests.deleted_at');
+
+        if (!empty($startDate)) {
+            $query->whereDate('lot_deposit_requests.created_at', '>=', $startDate);
+        }
+        if (!empty($endDate)) {
+            $query->whereDate('lot_deposit_requests.created_at', '<=', $endDate);
+        }
+        if (!empty($department)) {
+            $query->where('users.department', $department);
+        }
+        if (!empty($projectId)) {
+            $query->where('projects.id', $projectId);
+        }
+        if (!empty($area)) {
+            $query->where('users.area', $area);
+        }
+
+        return $query->get();
+    }
+
+    public function getCompanyDashboardTransactionStats(
+        ?int $month,
+        ?int $quarter,
+        ?int $year,
+        ?string $area
+    ): array {
+        $query = $this->model->where('lot_deposit_requests.status', 2)
+            ->join('lots', 'lot_deposit_requests.lot_id', '=', 'lots.id');
+
+        if (!empty($area)) {
+            $query->join('users', 'lot_deposit_requests.user_id', '=', 'users.id')
+                  ->where('users.area', $area);
+        }
+
+        if ($year) {
+            $query->whereYear('lot_deposit_requests.created_at', $year);
+        }
+        if ($month) {
+            $query->whereMonth('lot_deposit_requests.created_at', $month);
+        } elseif ($quarter) {
+            $startMonth = ($quarter - 1) * 3 + 1;
+            $endMonth = $quarter * 3;
+            $query->whereMonth('lot_deposit_requests.created_at', '>=', $startMonth)
+                  ->whereMonth('lot_deposit_requests.created_at', '<=', $endMonth);
+        }
+
+        // We can't clone a query with a join easily without issues in count vs sum depending on the driver, but we can do it directly.
+        // Or we can just get the sum and count in one query:
+        // SELECT COUNT(*) as total_transactions, SUM(lots.price) as total_revenue
+        $result = $query->selectRaw('COUNT(lot_deposit_requests.id) as total_transactions, SUM(lots.price) as total_revenue')->first();
+
+        return [
+            'total_transactions' => (int) ($result->total_transactions ?? 0),
+            'total_revenue' => (int) ($result->total_revenue ?? 0)
+        ];
+    }
+
+    public function countCompletedTransactions(
+        array|string $userIds,
+        ?string $fromDate,
+        ?string $toDate
+    ): int {
+        $userIdsArray = is_array($userIds) ? $userIds : [$userIds];
+        $query = $this->model->whereIn('user_id', $userIdsArray)
+            ->where('status', 4); // COMPLETED
+
+        if ($fromDate) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        return $query->count();
+    }
 }

@@ -33,4 +33,6 @@ return [
     \App\Modules\Learning\Providers\LearningServiceProvider::class,
     \App\Modules\Area\Providers\AreaServiceProvider::class,
     \App\Modules\EmployeeReferral\Providers\EmployeeReferralServiceProvider::class,
+    \App\Modules\Recruitment\Providers\RecruitmentServiceProvider::class,
+    \App\Modules\Notification\Providers\NotificationServiceProvider::class,
 ];

@@ -41,6 +41,7 @@ class UpdateProfileRequest extends FormRequest
                 'regex:/^(0[3|5|7|8|9])[0-9]{8}$/', // Định dạng số điện thoại Việt Nam chuẩn
                 Rule::unique('users', 'phone')->ignore($userId),
             ],
+            'cccd' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
         ];
     }
