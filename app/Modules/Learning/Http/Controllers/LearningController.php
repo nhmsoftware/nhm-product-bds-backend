@@ -258,15 +258,17 @@ final class LearningController extends BaseController
                                 new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0'),
                                 new OA\Property(property: 'course_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
                                 new OA\Property(property: 'title', type: 'string', example: 'Bài 1: Tổng quan về doanh nghiệp'),
-                                new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung chi tiết bài học...'),
-                                new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/videos/lesson1.mp4'),
-                                new OA\Property(property: 'duration_seconds', type: 'integer', example: 15),
-                                new OA\Property(property: 'order', type: 'integer', example: 1),
-                                new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Learning\Models\Enums\LessonStatus::LEARNING->value, description: 'Trạng thái bài học: 1 (completed), 2 (learning), 3 (locked)'),
-                                new OA\Property(property: 'status_label', type: 'string', example: 'Đang học'),
+                                new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung chi tiết bài học...', description: 'Nội dung chi tiết bài học'),
+                                new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Nội dung chi tiết bài học...', description: 'Mô tả bài học'),
+                                new OA\Property(property: 'video_url', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/videos/lesson1.mp4', description: 'Đường dẫn video bài học'),
+                                new OA\Property(property: 'duration_seconds', type: 'integer', example: 15, description: 'Thời lượng video tính bằng giây'),
+                                new OA\Property(property: 'order', type: 'integer', example: 1, description: 'Thứ tự bài học'),
+                                new OA\Property(property: 'status', type: 'string', example: 'learning', description: 'Trạng thái bài học: completed, learning, locked'),
+                                new OA\Property(property: 'status_label', type: 'string', example: 'Đang học', description: 'Trạng thái bài học/Bài thi (Đang học, Xem lại, Làm bài kiểm tra, Chưa đạt, Đang chấm bài)'),
                                 new OA\Property(
                                     property: 'attachments',
                                     type: 'array',
+                                    description: 'Danh sách tài liệu đính kèm',
                                     items: new OA\Items(
                                         properties: [
                                             new OA\Property(property: 'type', type: 'string', example: 'pdf'),
@@ -276,7 +278,8 @@ final class LearningController extends BaseController
                                         type: 'object'
                                     )
                                 ),
-                                new OA\Property(property: 'unlock_condition', type: 'string', example: 'Hoàn thành bài học này để mở khóa bài tiếp theo: Bài học số 2')
+                                new OA\Property(property: 'attachment_message', type: 'string', nullable: true, example: 'Không có tài liệu đính kèm.', description: 'Thông báo nếu không có tài liệu'),
+                                new OA\Property(property: 'unlock_condition', type: 'string', example: 'Hoàn thành bài học này để mở khóa bài tiếp theo: Bài học số 2', description: 'Thông báo điều kiện mở khóa')
                             ],
                             type: 'object'
                         )
