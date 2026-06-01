@@ -619,17 +619,20 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 $mappedOptions = [];
                 foreach ($item->options ?? [] as $idx => $content) {
                     $mappedOptions[] = [
-                        'id' => chr(97 + $idx), // 'a', 'b', 'c', 'd'...
-                        'content' => $content
+                        'value' => $idx,
+                        'label' => $content
                     ];
                 }
 
                 return [
                     'id' => (string) $item->id,
                     'type' => $item->type ?? \App\Modules\Learning\Models\Enums\CourseQuizType::MULTIPLE_CHOICE->value,
-                    'image_url' => $item->image_url,
+                    'order' => $item->order ?? 1,
+                    'title' => $item->title ?? ('Câu hỏi ' . ($item->order ?? 1)),
                     'question' => $item->question,
+                    'image_url' => $item->image_url,
                     'options' => $mappedOptions,
+                    'placeholder' => $item->placeholder,
                     'draft_selected_option' => $draft ? $draft->selected_option : null,
                     'draft_essay_answer' => $draft ? $draft->essay_answer : null,
                 ];
@@ -639,8 +642,9 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 data: [
                     'lesson_id' => (string) $lesson->id,
                     'lesson_title' => $lesson->title,
+                    'quiz_title' => 'Bài kiểm tra kiến thức',
+                    'time_limit_minutes' => 45, // Thời gian làm bài theo yêu cầu mới là 45 phút
                     'questions' => $quizQuestions,
-                    'time_limit_minutes' => 15, // Thời gian làm bài mặc định là 15 phút
                 ],
                 message: 'Tải danh sách câu hỏi kiểm tra thành công.'
             );
@@ -696,11 +700,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $submittedEssayMap = [];
             foreach ($answers as $ans) {
                 if (isset($ans['quiz_id'])) {
-                    $rawSelected = isset($ans['selected_option']) ? $ans['selected_option'] : -1;
-                    if (is_string($rawSelected) && strlen($rawSelected) === 1 && ctype_lower($rawSelected)) {
-                        $rawSelected = ord($rawSelected) - 97;
-                    }
-                    $submittedMap[(string) $ans['quiz_id']] = (int) $rawSelected;
+                    $submittedMap[(string) $ans['quiz_id']] = isset($ans['selected_option']) ? (int) $ans['selected_option'] : -1;
                     
                     if (isset($ans['essay_answer'])) {
                         $submittedEssayMap[(string) $ans['quiz_id']] = $ans['essay_answer'];
@@ -762,14 +762,16 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 $mappedOptions = [];
                 foreach ($q->options ?? [] as $idx => $content) {
                     $mappedOptions[] = [
-                        'id' => chr(97 + $idx),
-                        'content' => $content
+                        'value' => $idx,
+                        'label' => $content
                     ];
                 }
 
                 $details[] = [
                     'quiz_id' => (string) $q->id,
                     'type' => $type,
+                    'order' => $q->order ?? 1,
+                    'title' => $q->title,
                     'question' => $q->question,
                     'options' => $mappedOptions,
                     'selected_option' => $selectedOption === -1 ? null : $selectedOption,

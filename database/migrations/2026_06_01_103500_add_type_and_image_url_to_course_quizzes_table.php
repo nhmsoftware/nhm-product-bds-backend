@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::table('course_quizzes', function (Blueprint $table) {
             $table->string('type', 50)->default('multiple_choice')->after('lesson_id');
+            $table->integer('order')->default(0)->after('type');
+            $table->string('title', 255)->nullable()->after('order');
             $table->string('image_url')->nullable()->after('question');
+            $table->string('placeholder', 255)->nullable()->after('options');
             // Change correct_option to nullable
             $table->integer('correct_option')->nullable()->change();
         });
@@ -33,7 +36,7 @@ return new class extends Migration
         });
 
         Schema::table('course_quizzes', function (Blueprint $table) {
-            $table->dropColumn(['type', 'image_url']);
+            $table->dropColumn(['type', 'order', 'title', 'image_url', 'placeholder']);
             // NOTE: changing back to nullable(false) might fail if there are existing null values,
             // so we handle with care. We assume safe down migrations.
             $table->integer('correct_option')->nullable(false)->change();

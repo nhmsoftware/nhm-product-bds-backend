@@ -475,7 +475,9 @@ final class LearningController extends BaseController
                             property: 'data',
                             properties: [
                                 new OA\Property(property: 'lesson_id', type: 'string', format: 'uuid', example: 'f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0'),
-                                new OA\Property(property: 'lesson_title', type: 'string', example: 'Bài 1: Tổng quan về doanh nghiệp'),
+                                new OA\Property(property: 'lesson_title', type: 'string', example: 'Tổng quan thị trường BĐS Cao cấp'),
+                                new OA\Property(property: 'quiz_title', type: 'string', example: 'Bài kiểm tra kiến thức'),
+                                new OA\Property(property: 'time_limit_minutes', type: 'integer', example: 45),
                                 new OA\Property(
                                     property: 'questions',
                                     type: 'array',
@@ -483,32 +485,32 @@ final class LearningController extends BaseController
                                         properties: [
                                             new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0'),
                                             new OA\Property(property: 'type', type: 'string', example: 'multiple_choice'),
-                                            new OA\Property(property: 'image_url', type: 'string', nullable: true, example: 'https://example.com/img.png'),
+                                            new OA\Property(property: 'order', type: 'integer', example: 1),
+                                            new OA\Property(property: 'title', type: 'string', nullable: true, example: 'Câu 1: Quy hoạch phân khu'),
                                             new OA\Property(property: 'question', type: 'string', example: 'Giá trị cốt lõi đầu tiên của công ty là gì?'),
+                                            new OA\Property(property: 'image_url', type: 'string', nullable: true, example: 'https://example.com/img.png'),
                                             new OA\Property(
                                                 property: 'options',
                                                 type: 'array',
                                                 items: new OA\Items(
                                                     properties: [
-                                                        new OA\Property(property: 'id', type: 'string', example: 'a'),
-                                                        new OA\Property(property: 'content', type: 'string', example: 'Hà Nội và TP.HCM')
+                                                        new OA\Property(property: 'value', type: 'integer', example: 0),
+                                                        new OA\Property(property: 'label', type: 'string', example: 'Đất thương mại dịch vụ')
                                                     ],
                                                     type: 'object'
                                                 ),
                                                 example: [
-                                                    ['id' => 'a', 'content' => 'Hà Nội và TP.HCM'],
-                                                    ['id' => 'b', 'content' => 'Đà Nẵng'],
-                                                    ['id' => 'c', 'content' => 'Cần Thơ'],
-                                                    ['id' => 'd', 'content' => 'Hải Phòng']
+                                                    ['value' => 0, 'label' => 'Đất thương mại dịch vụ'],
+                                                    ['value' => 1, 'label' => 'Đất ở đô thị hỗn hợp']
                                                 ]
                                             ),
+                                            new OA\Property(property: 'placeholder', type: 'string', nullable: true, example: 'Nhập câu trả lời của bạn tại đây...'),
                                             new OA\Property(property: 'draft_selected_option', type: 'integer', nullable: true, example: 0),
                                             new OA\Property(property: 'draft_essay_answer', type: 'string', nullable: true, example: 'Câu trả lời tự luận')
                                         ],
                                         type: 'object'
                                     )
-                                ),
-                                new OA\Property(property: 'time_limit_minutes', type: 'integer', example: 15)
+                                )
                             ],
                             type: 'object'
                         )
@@ -615,22 +617,22 @@ final class LearningController extends BaseController
                                         properties: [
                                             new OA\Property(property: 'quiz_id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0'),
                                             new OA\Property(property: 'type', type: 'string', example: 'multiple_choice'),
+                                            new OA\Property(property: 'order', type: 'integer', example: 1),
+                                            new OA\Property(property: 'title', type: 'string', nullable: true, example: 'Câu 1: Quy hoạch phân khu'),
                                             new OA\Property(property: 'question', type: 'string', example: 'Giá trị cốt lõi đầu tiên của công ty là gì?'),
                                             new OA\Property(
                                                 property: 'options',
                                                 type: 'array',
                                                 items: new OA\Items(
                                                     properties: [
-                                                        new OA\Property(property: 'id', type: 'string', example: 'a'),
-                                                        new OA\Property(property: 'content', type: 'string', example: 'Hà Nội và TP.HCM')
+                                                        new OA\Property(property: 'value', type: 'integer', example: 0),
+                                                        new OA\Property(property: 'label', type: 'string', example: 'Hà Nội và TP.HCM')
                                                     ],
                                                     type: 'object'
                                                 ),
                                                 example: [
-                                                    ['id' => 'a', 'content' => 'Hà Nội và TP.HCM'],
-                                                    ['id' => 'b', 'content' => 'Đà Nẵng'],
-                                                    ['id' => 'c', 'content' => 'Cần Thơ'],
-                                                    ['id' => 'd', 'content' => 'Hải Phòng']
+                                                    ['value' => 0, 'label' => 'Hà Nội và TP.HCM'],
+                                                    ['value' => 1, 'label' => 'Đà Nẵng']
                                                 ]
                                             ),
                                             new OA\Property(property: 'selected_option', type: 'integer', nullable: true, example: 0),

@@ -18,7 +18,10 @@ use OpenApi\Attributes as OA;
  * @property string $lesson_id
  * @property string $question
  * @property string $type
+ * @property int $order
+ * @property string|null $title
  * @property string|null $image_url
+ * @property string|null $placeholder
  * @property array|null $options
  * @property int|null $correct_option
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -35,23 +38,26 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0', description: 'ID duy nhất của câu hỏi'),
         new OA\Property(property: 'lesson_id', type: 'string', format: 'uuid', example: 'f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0', description: 'ID bài học sở hữu'),
         new OA\Property(property: 'type', type: 'string', example: 'multiple_choice', description: 'Loại câu hỏi (multiple_choice, essay)'),
+        new OA\Property(property: 'order', type: 'integer', example: 1, description: 'Thứ tự câu hỏi'),
+        new OA\Property(property: 'title', type: 'string', nullable: true, example: 'Câu 1: Quy hoạch phân khu', description: 'Tiêu đề câu hỏi'),
         new OA\Property(property: 'question', type: 'string', example: 'Giá trị cốt lõi đầu tiên của công ty là gì?', description: 'Nội dung câu hỏi'),
         new OA\Property(property: 'image_url', type: 'string', nullable: true, example: 'https://example.com/image.jpg', description: 'Ảnh minh họa câu hỏi'),
+        new OA\Property(property: 'placeholder', type: 'string', nullable: true, example: 'Nhập câu trả lời của bạn...', description: 'Gợi ý nhập cho câu tự luận'),
         new OA\Property(
             property: 'options',
             type: 'array',
             items: new OA\Items(
                 properties: [
-                    new OA\Property(property: 'id', type: 'string', example: 'a'),
-                    new OA\Property(property: 'content', type: 'string', example: 'Hà Nội và TP.HCM')
+                    new OA\Property(property: 'value', type: 'integer', example: 0),
+                    new OA\Property(property: 'label', type: 'string', example: 'Hà Nội và TP.HCM')
                 ],
                 type: 'object'
             ),
             example: [
-                ['id' => 'a', 'content' => 'Hà Nội và TP.HCM'],
-                ['id' => 'b', 'content' => 'Đà Nẵng'],
-                ['id' => 'c', 'content' => 'Cần Thơ'],
-                ['id' => 'd', 'content' => 'Hải Phòng']
+                ['value' => 0, 'label' => 'Hà Nội và TP.HCM'],
+                ['value' => 1, 'label' => 'Đà Nẵng'],
+                ['value' => 2, 'label' => 'Cần Thơ'],
+                ['value' => 3, 'label' => 'Hải Phòng']
             ],
             description: 'Các phương án lựa chọn'
         ),
@@ -67,9 +73,12 @@ class CourseQuiz extends Model
     protected $fillable = [
         'lesson_id',
         'type',
+        'order',
+        'title',
         'question',
         'image_url',
         'options',
+        'placeholder',
         'correct_option',
     ];
 
@@ -77,6 +86,7 @@ class CourseQuiz extends Model
         'id' => 'string',
         'lesson_id' => 'string',
         'type' => 'string',
+        'order' => 'integer',
         'options' => 'array',
         'correct_option' => 'integer',
     ];
