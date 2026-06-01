@@ -5,6 +5,8 @@ namespace App\Modules\Learning\Repositories;
 use App\Core\Repository\BaseRepository;
 use App\Modules\Learning\Interfaces\CourseRepositoryInterface;
 use App\Modules\Learning\Models\Course;
+use App\Modules\Learning\Models\CourseLesson;
+use App\Modules\Learning\Models\CourseQuiz;
 use Illuminate\Support\Collection;
 
 /**
@@ -82,9 +84,9 @@ final class CourseRepository extends BaseRepository implements CourseRepositoryI
             ->first();
     }
 
-    public function findLesson(string $lessonId): ?\App\Modules\Learning\Models\CourseLesson
+    public function findLesson(string $lessonId): ?CourseLesson
     {
-        return \App\Modules\Learning\Models\CourseLesson::find($lessonId);
+        return CourseLesson::find($lessonId);
     }
 
     /**
@@ -95,7 +97,7 @@ final class CourseRepository extends BaseRepository implements CourseRepositoryI
      */
     public function getQuizQuestions(string $lessonId): Collection
     {
-        return \App\Modules\Learning\Models\CourseQuiz::where('lesson_id', $lessonId)->get();
+        return CourseQuiz::where('lesson_id', $lessonId)->get();
     }
 
     /**

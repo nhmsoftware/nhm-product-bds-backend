@@ -7,6 +7,7 @@ namespace App\Modules\Area\Http\Controllers;
 use App\Core\Controller\BaseController;
 use App\Modules\Area\DTO\FilterLotDepositRequestDTO;
 use App\Modules\Area\Interfaces\LotDepositRequestServiceInterface;
+use App\Modules\Auth\Models\Enums\UserRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -19,7 +20,7 @@ final class AdminLotDepositRequestController extends BaseController
     }
 
     #[OA\Get(
-        path: '/api/admin/deposit-requests',
+        path: '/api/v1/admin/deposit-requests',
         summary: 'Lấy danh sách yêu cầu đặt cọc (Admin) [UC-091]',
         security: [['bearerAuth' => []]],
         tags: ['Area'],
@@ -45,7 +46,7 @@ final class AdminLotDepositRequestController extends BaseController
 
         // Nếu không phải SUPER_ADMIN (5) thì ép branch theo area của User (nếu role là Giám đốc/CEO)
         // Giả sử role CEO (4) hoặc DIRECTOR (3)
-        if ($role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value) {
+        if ($role !== UserRole::SUPER_ADMIN->value) {
             $branch = $user->area;
             $request->merge(['branch' => $branch]);
         }
@@ -61,7 +62,7 @@ final class AdminLotDepositRequestController extends BaseController
     }
 
     #[OA\Get(
-        path: '/api/admin/deposit-requests/{id}',
+        path: '/api/v1/admin/deposit-requests/{id}',
         summary: 'Xem chi tiết yêu cầu đặt cọc (Admin) [UC-091]',
         security: [['bearerAuth' => []]],
         tags: ['Area'],
@@ -85,7 +86,7 @@ final class AdminLotDepositRequestController extends BaseController
     }
 
     #[OA\Patch(
-        path: '/api/admin/deposit-requests/{id}/approve',
+        path: '/api/v1/admin/deposit-requests/{id}/approve',
         summary: 'Duyệt yêu cầu đặt cọc (Admin) [UC-091]',
         security: [['bearerAuth' => []]],
         tags: ['Area'],
@@ -109,7 +110,7 @@ final class AdminLotDepositRequestController extends BaseController
     }
 
     #[OA\Patch(
-        path: '/api/admin/deposit-requests/{id}/reject',
+        path: '/api/v1/admin/deposit-requests/{id}/reject',
         summary: 'Từ chối yêu cầu đặt cọc (Admin) [UC-091, UC-093]',
         security: [['bearerAuth' => []]],
         tags: ['Area'],
@@ -147,7 +148,7 @@ final class AdminLotDepositRequestController extends BaseController
     }
 
     #[OA\Patch(
-        path: '/api/admin/deposit-requests/{id}/confirm-transaction',
+        path: '/api/v1/admin/deposit-requests/{id}/confirm-transaction',
         summary: 'Xác nhận giao dịch thành công (Admin) [UC-091]',
         security: [['bearerAuth' => []]],
         tags: ['Area'],
