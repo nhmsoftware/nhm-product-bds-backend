@@ -25,10 +25,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('course_lessons', function (Blueprint $table) {
-            $table->string('video_url', 255)->nullable()->change();
+            // Reverting to varchar(255) causes truncation errors in PostgreSQL if data is > 255 chars
+            // $table->string('video_url', 255)->nullable()->change();
         });
         Schema::table('legal_videos', function (Blueprint $table) {
-            $table->string('video_url', 255)->change();
+            // $table->string('video_url', 255)->change();
         });
     }
 };
