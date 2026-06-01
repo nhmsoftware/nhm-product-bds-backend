@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('course_lessons', function (Blueprint $table) {
-            $table->renameColumn('duration_minutes', 'duration_seconds');
+            if (Schema::hasColumn('course_lessons', 'duration_minutes') && !Schema::hasColumn('course_lessons', 'duration_seconds')) {
+                $table->renameColumn('duration_minutes', 'duration_seconds');
+            }
         });
     }
 
@@ -22,7 +24,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('course_lessons', function (Blueprint $table) {
-            $table->renameColumn('duration_seconds', 'duration_minutes');
+            // Because the initial migration was modified to directly create duration_seconds,
+            // we don't necessarily want to rename it back to duration_minutes unless it's strictly needed.
+            // Leaving this empty or checking avoids errors.
+            if (Schema::hasColumn('course_lessons', 'duration_seconds') && !Schema::hasColumn('course_lessons', 'duration_minutes')) {
+                // $table->renameColumn('duration_seconds', 'duration_minutes');
+            }
         });
     }
 };
