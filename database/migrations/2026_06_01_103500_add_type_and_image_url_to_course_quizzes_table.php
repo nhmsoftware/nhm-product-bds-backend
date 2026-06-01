@@ -35,17 +35,12 @@ return new class extends Migration
             $table->dropColumn('essay_answer');
         });
 
-        $columnsToDrop = [];
-        foreach (['type', 'order', 'title', 'image_url', 'placeholder'] as $col) {
-            if (Schema::hasColumn('course_quizzes', $col)) {
-                $columnsToDrop[] = $col;
-            }
+        $columns = ['type', 'order', 'title', 'image_url', 'placeholder'];
+        foreach ($columns as $col) {
+            \Illuminate\Support\Facades\DB::statement('ALTER TABLE "course_quizzes" DROP COLUMN IF EXISTS "' . $col . '"');
         }
 
-        Schema::table('course_quizzes', function (Blueprint $table) use ($columnsToDrop) {
-            if (!empty($columnsToDrop)) {
-                $table->dropColumn($columnsToDrop);
-            }
+        Schema::table('course_quizzes', function (Blueprint $table) {
             // NOTE: changing back to nullable(false) might fail if there are existing null values,
             // so we handle with care. We assume safe down migrations.
             $table->integer('correct_option')->nullable(false)->change();
