@@ -618,9 +618,12 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 $draft = $draftAttempts->get($item->id);
                 return [
                     'id' => (string) $item->id,
+                    'type' => $item->type ?? \App\Modules\Learning\Models\Enums\CourseQuizType::MULTIPLE_CHOICE->value,
+                    'image_url' => $item->image_url,
                     'question' => $item->question,
-                    'options' => $item->options,
+                    'options' => (object) ($item->options ?? []),
                     'draft_selected_option' => $draft ? $draft->selected_option : null,
+                    'draft_essay_answer' => $draft ? $draft->essay_answer : null,
                 ];
             })->toArray();
 
@@ -682,9 +685,13 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             // Tạo map câu trả lời đã gửi
             $submittedMap = [];
+            $submittedEssayMap = [];
             foreach ($answers as $ans) {
                 if (isset($ans['quiz_id'])) {
-                    $submittedMap[(string) $ans['quiz_id']] = (int) ($ans['selected_option'] ?? -1);
+                    $submittedMap[(string) $ans['quiz_id']] = isset($ans['selected_option']) ? (int) $ans['selected_option'] : -1;
+                    if (isset($ans['essay_answer'])) {
+                        $submittedEssayMap[(string) $ans['quiz_id']] = $ans['essay_answer'];
+                    }
                 }
             }
 
@@ -692,8 +699,15 @@ final class LearningService extends BaseService implements LearningServiceInterf
             if (!$isTimeout) {
                 $answeredCount = 0;
                 foreach ($questions as $q) {
-                    if (isset($submittedMap[(string) $q->id]) && $submittedMap[(string) $q->id] !== -1) {
-                        $answeredCount++;
+                    $type = $q->type ?? \App\Modules\Learning\Models\Enums\CourseQuizType::MULTIPLE_CHOICE->value;
+                    if ($type === \App\Modules\Learning\Models\Enums\CourseQuizType::ESSAY->value) {
+                        if (isset($submittedEssayMap[(string) $q->id]) && trim($submittedEssayMap[(string) $q->id]) !== '') {
+                            $answeredCount++;
+                        }
+                    } else {
+                        if (isset($submittedMap[(string) $q->id]) && $submittedMap[(string) $q->id] !== -1) {
+                            $answeredCount++;
+                        }
                     }
                 }
                 $this->validate($answeredCount === $questions->count(), 'Vui lòng hoàn thành tất cả câu hỏi.', 422);
@@ -703,17 +717,23 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $questionIds = $questions->pluck('id')->toArray();
             $this->quizAttemptRepository->deleteByUserAndQuizIds($userId, $questionIds);
 
-            // Chấm điểm và lưu kết quả
             $correctCount = 0;
+            $multipleChoiceCount = 0;
             $totalCount = $questions->count();
             $details = [];
 
             foreach ($questions as $q) {
+                $type = $q->type ?? \App\Modules\Learning\Models\Enums\CourseQuizType::MULTIPLE_CHOICE->value;
                 $selectedOption = $submittedMap[(string) $q->id] ?? -1;
-                $isCorrect = ($selectedOption === (int) $q->correct_option);
+                $essayAnswer = $submittedEssayMap[(string) $q->id] ?? null;
+                $isCorrect = null;
 
-                if ($isCorrect) {
-                    $correctCount++;
+                if ($type === \App\Modules\Learning\Models\Enums\CourseQuizType::MULTIPLE_CHOICE->value) {
+                    $multipleChoiceCount++;
+                    $isCorrect = ($selectedOption !== -1 && $selectedOption === (int) $q->correct_option);
+                    if ($isCorrect) {
+                        $correctCount++;
+                    }
                 }
 
                 // Lưu kết quả bài làm vào DB
@@ -721,22 +741,29 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'id' => (string) \Illuminate\Support\Str::uuid(),
                     'user_id' => $userId,
                     'quiz_id' => $q->id,
-                    'selected_option' => $selectedOption,
+                    'selected_option' => $selectedOption === -1 ? null : $selectedOption,
+                    'essay_answer' => $essayAnswer,
                     'is_correct' => $isCorrect,
                 ]);
 
                 $details[] = [
                     'quiz_id' => (string) $q->id,
+                    'type' => $type,
                     'question' => $q->question,
-                    'options' => $q->options,
-                    'selected_option' => $selectedOption,
-                    'correct_option' => (int) $q->correct_option,
+                    'options' => (object) ($q->options ?? []),
+                    'selected_option' => $selectedOption === -1 ? null : $selectedOption,
+                    'essay_answer' => $essayAnswer,
+                    'correct_option' => $type === \App\Modules\Learning\Models\Enums\CourseQuizType::ESSAY->value ? null : (int) $q->correct_option,
                     'is_correct' => $isCorrect,
                 ];
             }
 
             // Tính điểm số (%)
-            $score = round(($correctCount / $totalCount) * 100, 2);
+            if ($multipleChoiceCount > 0) {
+                $score = round(($correctCount / $multipleChoiceCount) * 100, 2);
+            } else {
+                $score = 100.00; // Mặc định 100% nếu toàn câu tự luận
+            }
             $passingScore = 80.00; // Tiêu chuẩn đạt là 80% câu đúng
             $isPassed = $score >= $passingScore;
 

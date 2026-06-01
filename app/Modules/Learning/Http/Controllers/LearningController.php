@@ -482,13 +482,16 @@ final class LearningController extends BaseController
                                     items: new OA\Items(
                                         properties: [
                                             new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0'),
+                                            new OA\Property(property: 'type', type: 'string', example: 'multiple_choice'),
+                                            new OA\Property(property: 'image_url', type: 'string', nullable: true, example: 'https://example.com/img.png'),
                                             new OA\Property(property: 'question', type: 'string', example: 'Giá trị cốt lõi đầu tiên của công ty là gì?'),
                                             new OA\Property(
                                                 property: 'options',
-                                                type: 'array',
-                                                items: new OA\Items(type: 'string'),
-                                                example: ["Trung thực", "Tận tâm", "Tốc độ", "Đột phá"]
-                                            )
+                                                type: 'object',
+                                                example: ['0' => 'Trung thực', '1' => 'Tận tâm', '2' => 'Tốc độ', '3' => 'Đột phá']
+                                            ),
+                                            new OA\Property(property: 'draft_selected_option', type: 'integer', nullable: true, example: 0),
+                                            new OA\Property(property: 'draft_essay_answer', type: 'string', nullable: true, example: 'Câu trả lời tự luận')
                                         ],
                                         type: 'object'
                                     )
@@ -557,7 +560,8 @@ final class LearningController extends BaseController
                         items: new OA\Items(
                             properties: [
                                 new OA\Property(property: 'quiz_id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0'),
-                                new OA\Property(property: 'selected_option', type: 'integer', example: 0)
+                                new OA\Property(property: 'selected_option', type: 'integer', nullable: true, example: 0),
+                                new OA\Property(property: 'essay_answer', type: 'string', nullable: true, example: 'Nội dung tự luận')
                             ],
                             type: 'object'
                         )
@@ -598,16 +602,17 @@ final class LearningController extends BaseController
                                     items: new OA\Items(
                                         properties: [
                                             new OA\Property(property: 'quiz_id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0'),
+                                            new OA\Property(property: 'type', type: 'string', example: 'multiple_choice'),
                                             new OA\Property(property: 'question', type: 'string', example: 'Giá trị cốt lõi đầu tiên của công ty là gì?'),
                                             new OA\Property(
                                                 property: 'options',
-                                                type: 'array',
-                                                items: new OA\Items(type: 'string'),
-                                                example: ["Trung thực", "Tận tâm", "Tốc độ", "Đột phá"]
+                                                type: 'object',
+                                                example: ['0' => 'Trung thực', '1' => 'Tận tâm', '2' => 'Tốc độ', '3' => 'Đột phá']
                                             ),
-                                            new OA\Property(property: 'selected_option', type: 'integer', example: 0),
-                                            new OA\Property(property: 'correct_option', type: 'integer', example: 0),
-                                            new OA\Property(property: 'is_correct', type: 'boolean', example: true)
+                                            new OA\Property(property: 'selected_option', type: 'integer', nullable: true, example: 0),
+                                            new OA\Property(property: 'essay_answer', type: 'string', nullable: true, example: 'Nội dung tự luận'),
+                                            new OA\Property(property: 'correct_option', type: 'integer', nullable: true, example: 0),
+                                            new OA\Property(property: 'is_correct', type: 'boolean', nullable: true, example: true)
                                         ],
                                         type: 'object'
                                     )

@@ -17,8 +17,9 @@ use OpenApi\Attributes as OA;
  * @property string $id
  * @property string $user_id
  * @property string $quiz_id
- * @property int $selected_option
- * @property bool $is_correct
+ * @property int|null $selected_option
+ * @property string|null $essay_answer
+ * @property bool|null $is_correct
  * @property bool $is_draft
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -35,6 +36,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'user_id', type: 'string', format: 'uuid', example: 'uuid-user-string'),
         new OA\Property(property: 'quiz_id', type: 'string', format: 'uuid', example: 'uuid-quiz-string'),
         new OA\Property(property: 'selected_option', type: 'integer', nullable: true, example: 1),
+        new OA\Property(property: 'essay_answer', type: 'string', nullable: true, example: 'Câu trả lời tự luận của tôi'),
         new OA\Property(property: 'is_correct', type: 'boolean', nullable: true, example: true),
         new OA\Property(property: 'is_draft', type: 'boolean', example: false),
     ]
@@ -49,6 +51,7 @@ class QuizAttempt extends Model
         'user_id',
         'quiz_id',
         'selected_option',
+        'essay_answer',
         'is_correct',
         'is_draft',
     ];

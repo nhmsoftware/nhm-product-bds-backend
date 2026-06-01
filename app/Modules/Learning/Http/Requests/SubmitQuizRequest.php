@@ -43,8 +43,12 @@ class SubmitQuizRequest extends FormRequest
                 'uuid',
             ],
             'answers.*.selected_option' => [
-                'required',
+                'nullable',
                 'integer',
+            ],
+            'answers.*.essay_answer' => [
+                'nullable',
+                'string',
             ],
             'is_timeout' => [
                 'nullable',
@@ -65,8 +69,8 @@ class SubmitQuizRequest extends FormRequest
             'answers.array' => 'Danh sách câu trả lời phải là định dạng mảng.',
             'answers.*.quiz_id.required' => 'Mã câu hỏi không được để trống.',
             'answers.*.quiz_id.uuid' => 'Mã câu hỏi phải là định dạng UUID hợp lệ.',
-            'answers.*.selected_option.required' => 'Vui lòng chọn phương án trả lời.',
             'answers.*.selected_option.integer' => 'Phương án trả lời phải là số nguyên.',
+            'answers.*.essay_answer.string' => 'Câu trả lời tự luận phải là chuỗi.',
             'is_timeout.boolean' => 'Giá trị is_timeout phải là kiểu boolean.',
         ];
     }
