@@ -39,8 +39,20 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'image_url', type: 'string', nullable: true, example: 'https://example.com/image.jpg', description: 'Ảnh minh họa câu hỏi'),
         new OA\Property(
             property: 'options',
-            type: 'object',
-            example: ['0' => 'Trung thực', '1' => 'Tận tâm', '2' => 'Tốc độ', '3' => 'Đột phá'],
+            type: 'array',
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: 'id', type: 'string', example: 'a'),
+                    new OA\Property(property: 'content', type: 'string', example: 'Hà Nội và TP.HCM')
+                ],
+                type: 'object'
+            ),
+            example: [
+                ['id' => 'a', 'content' => 'Hà Nội và TP.HCM'],
+                ['id' => 'b', 'content' => 'Đà Nẵng'],
+                ['id' => 'c', 'content' => 'Cần Thơ'],
+                ['id' => 'd', 'content' => 'Hải Phòng']
+            ],
             description: 'Các phương án lựa chọn'
         ),
         new OA\Property(property: 'correct_option', type: 'integer', nullable: true, example: 0, description: 'Chỉ mục phương án đúng (0-based)'),

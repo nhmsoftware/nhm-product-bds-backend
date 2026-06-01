@@ -44,7 +44,7 @@ class SubmitQuizRequest extends FormRequest
             ],
             'answers.*.selected_option' => [
                 'nullable',
-                'integer',
+                // 'integer', // It can be string "a", "b" or integer 0, 1
             ],
             'answers.*.essay_answer' => [
                 'nullable',
@@ -69,7 +69,7 @@ class SubmitQuizRequest extends FormRequest
             'answers.array' => 'Danh sách câu trả lời phải là định dạng mảng.',
             'answers.*.quiz_id.required' => 'Mã câu hỏi không được để trống.',
             'answers.*.quiz_id.uuid' => 'Mã câu hỏi phải là định dạng UUID hợp lệ.',
-            'answers.*.selected_option.integer' => 'Phương án trả lời phải là số nguyên.',
+            // 'answers.*.selected_option.integer' => 'Phương án trả lời phải là số nguyên.',
             'answers.*.essay_answer.string' => 'Câu trả lời tự luận phải là chuỗi.',
             'is_timeout.boolean' => 'Giá trị is_timeout phải là kiểu boolean.',
         ];

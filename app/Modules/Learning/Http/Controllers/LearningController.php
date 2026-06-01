@@ -487,8 +487,20 @@ final class LearningController extends BaseController
                                             new OA\Property(property: 'question', type: 'string', example: 'Giá trị cốt lõi đầu tiên của công ty là gì?'),
                                             new OA\Property(
                                                 property: 'options',
-                                                type: 'object',
-                                                example: ['0' => 'Trung thực', '1' => 'Tận tâm', '2' => 'Tốc độ', '3' => 'Đột phá']
+                                                type: 'array',
+                                                items: new OA\Items(
+                                                    properties: [
+                                                        new OA\Property(property: 'id', type: 'string', example: 'a'),
+                                                        new OA\Property(property: 'content', type: 'string', example: 'Hà Nội và TP.HCM')
+                                                    ],
+                                                    type: 'object'
+                                                ),
+                                                example: [
+                                                    ['id' => 'a', 'content' => 'Hà Nội và TP.HCM'],
+                                                    ['id' => 'b', 'content' => 'Đà Nẵng'],
+                                                    ['id' => 'c', 'content' => 'Cần Thơ'],
+                                                    ['id' => 'd', 'content' => 'Hải Phòng']
+                                                ]
                                             ),
                                             new OA\Property(property: 'draft_selected_option', type: 'integer', nullable: true, example: 0),
                                             new OA\Property(property: 'draft_essay_answer', type: 'string', nullable: true, example: 'Câu trả lời tự luận')
@@ -606,8 +618,20 @@ final class LearningController extends BaseController
                                             new OA\Property(property: 'question', type: 'string', example: 'Giá trị cốt lõi đầu tiên của công ty là gì?'),
                                             new OA\Property(
                                                 property: 'options',
-                                                type: 'object',
-                                                example: ['0' => 'Trung thực', '1' => 'Tận tâm', '2' => 'Tốc độ', '3' => 'Đột phá']
+                                                type: 'array',
+                                                items: new OA\Items(
+                                                    properties: [
+                                                        new OA\Property(property: 'id', type: 'string', example: 'a'),
+                                                        new OA\Property(property: 'content', type: 'string', example: 'Hà Nội và TP.HCM')
+                                                    ],
+                                                    type: 'object'
+                                                ),
+                                                example: [
+                                                    ['id' => 'a', 'content' => 'Hà Nội và TP.HCM'],
+                                                    ['id' => 'b', 'content' => 'Đà Nẵng'],
+                                                    ['id' => 'c', 'content' => 'Cần Thơ'],
+                                                    ['id' => 'd', 'content' => 'Hải Phòng']
+                                                ]
                                             ),
                                             new OA\Property(property: 'selected_option', type: 'integer', nullable: true, example: 0),
                                             new OA\Property(property: 'essay_answer', type: 'string', nullable: true, example: 'Nội dung tự luận'),

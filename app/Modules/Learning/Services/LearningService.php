@@ -616,12 +616,20 @@ final class LearningService extends BaseService implements LearningServiceInterf
             // Trả về danh sách câu hỏi không kèm đáp án đúng, kèm câu trả lời nháp đã lưu nếu có
             $quizQuestions = $questions->map(function ($item) use ($draftAttempts) {
                 $draft = $draftAttempts->get($item->id);
+                $mappedOptions = [];
+                foreach ($item->options ?? [] as $idx => $content) {
+                    $mappedOptions[] = [
+                        'id' => chr(97 + $idx), // 'a', 'b', 'c', 'd'...
+                        'content' => $content
+                    ];
+                }
+
                 return [
                     'id' => (string) $item->id,
                     'type' => $item->type ?? \App\Modules\Learning\Models\Enums\CourseQuizType::MULTIPLE_CHOICE->value,
                     'image_url' => $item->image_url,
                     'question' => $item->question,
-                    'options' => (object) ($item->options ?? []),
+                    'options' => $mappedOptions,
                     'draft_selected_option' => $draft ? $draft->selected_option : null,
                     'draft_essay_answer' => $draft ? $draft->essay_answer : null,
                 ];
@@ -688,7 +696,12 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $submittedEssayMap = [];
             foreach ($answers as $ans) {
                 if (isset($ans['quiz_id'])) {
-                    $submittedMap[(string) $ans['quiz_id']] = isset($ans['selected_option']) ? (int) $ans['selected_option'] : -1;
+                    $rawSelected = isset($ans['selected_option']) ? $ans['selected_option'] : -1;
+                    if (is_string($rawSelected) && strlen($rawSelected) === 1 && ctype_lower($rawSelected)) {
+                        $rawSelected = ord($rawSelected) - 97;
+                    }
+                    $submittedMap[(string) $ans['quiz_id']] = (int) $rawSelected;
+                    
                     if (isset($ans['essay_answer'])) {
                         $submittedEssayMap[(string) $ans['quiz_id']] = $ans['essay_answer'];
                     }
@@ -746,11 +759,19 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'is_correct' => $isCorrect,
                 ]);
 
+                $mappedOptions = [];
+                foreach ($q->options ?? [] as $idx => $content) {
+                    $mappedOptions[] = [
+                        'id' => chr(97 + $idx),
+                        'content' => $content
+                    ];
+                }
+
                 $details[] = [
                     'quiz_id' => (string) $q->id,
                     'type' => $type,
                     'question' => $q->question,
-                    'options' => (object) ($q->options ?? []),
+                    'options' => $mappedOptions,
                     'selected_option' => $selectedOption === -1 ? null : $selectedOption,
                     'essay_answer' => $essayAnswer,
                     'correct_option' => $type === \App\Modules\Learning\Models\Enums\CourseQuizType::ESSAY->value ? null : (int) $q->correct_option,
