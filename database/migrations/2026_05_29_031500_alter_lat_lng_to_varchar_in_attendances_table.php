@@ -24,11 +24,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('attendances', function (Blueprint $table) {
-            $table->decimal('check_in_lat', 10, 7)->nullable()->change();
-            $table->decimal('check_in_lng', 10, 7)->nullable()->change();
-            $table->decimal('check_out_lat', 10, 7)->nullable()->change();
-            $table->decimal('check_out_lng', 10, 7)->nullable()->change();
-        });
+        // Use raw SQL to handle PostgreSQL's explicit cast requirement from varchar to numeric
+        // NULLIF is used to handle empty strings safely
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE attendances ALTER COLUMN check_in_lat TYPE numeric(10, 7) USING NULLIF(check_in_lat, '')::numeric(10, 7)");
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE attendances ALTER COLUMN check_in_lng TYPE numeric(10, 7) USING NULLIF(check_in_lng, '')::numeric(10, 7)");
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE attendances ALTER COLUMN check_out_lat TYPE numeric(10, 7) USING NULLIF(check_out_lat, '')::numeric(10, 7)");
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE attendances ALTER COLUMN check_out_lng TYPE numeric(10, 7) USING NULLIF(check_out_lng, '')::numeric(10, 7)");
     }
 };
