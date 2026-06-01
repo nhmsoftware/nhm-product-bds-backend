@@ -449,9 +449,9 @@ final class LearningController extends BaseController
     }
 
     #[OA\Get(
-        path: '/api/v1/learning/lessons/{id}/quiz',
-        description: 'Tải danh sách các câu hỏi trắc nghiệm của bài học để nhân viên bắt đầu làm bài. Danh sách câu hỏi không chứa kết quả đúng.',
-        summary: 'Lấy danh sách câu hỏi kiểm tra bài học (UC-056)',
+        path: '/api/v1/learning/courses/{id}/quiz',
+        description: 'Tải danh sách các câu hỏi trắc nghiệm của khóa học để nhân viên bắt đầu làm bài. Danh sách câu hỏi không chứa kết quả đúng.',
+        summary: 'Lấy danh sách câu hỏi kiểm tra khóa học (UC-056)',
         security: [['sanctum' => []]],
         tags: ['Learning'],
         parameters: [
@@ -459,7 +459,7 @@ final class LearningController extends BaseController
                 name: 'id',
                 in: 'path',
                 required: true,
-                description: 'ID của bài học (UUID)',
+                description: 'ID của khóa học (UUID)',
                 schema: new OA\Schema(type: 'string', format: 'uuid')
             )
         ],
@@ -533,7 +533,7 @@ final class LearningController extends BaseController
             ),
             new OA\Response(
                 response: 404,
-                description: 'Bài học không tồn tại hoặc bài quiz không khả dụng',
+                description: 'Khóa học không tồn tại hoặc bài quiz không khả dụng',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: false),
@@ -547,9 +547,9 @@ final class LearningController extends BaseController
             )
         ]
     )]
-    public function getQuiz(ViewLessonDetailsRequest $request, string $id): JsonResponse
+    public function getQuiz(ViewCourseDetailsRequest $request, string $id): JsonResponse
     {
-        $result = $this->learningService->getLessonQuiz($id, $request->user()->id);
+        $result = $this->learningService->getCourseQuiz($id, $request->user()->id);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());
@@ -559,9 +559,9 @@ final class LearningController extends BaseController
     }
 
     #[OA\Post(
-        path: '/api/v1/learning/lessons/{id}/quiz/submit',
+        path: '/api/v1/learning/courses/{id}/quiz/submit',
         description: 'Chấm điểm bài thi và lưu lịch sử làm bài kiểm tra của nhân viên.',
-        summary: 'Nộp bài kiểm tra trắc nghiệm của bài học (UC-056)',
+        summary: 'Nộp bài kiểm tra trắc nghiệm của khóa học (UC-056)',
         security: [['sanctum' => []]],
         requestBody: new OA\RequestBody(
             required: true,
@@ -590,7 +590,7 @@ final class LearningController extends BaseController
                 name: 'id',
                 in: 'path',
                 required: true,
-                description: 'ID của bài học (UUID)',
+                description: 'ID của khóa học (UUID)',
                 schema: new OA\Schema(type: 'string', format: 'uuid')
             )
         ],
@@ -681,7 +681,7 @@ final class LearningController extends BaseController
     )]
     public function submitQuiz(SubmitQuizRequest $request, string $id): JsonResponse
     {
-        $result = $this->learningService->submitLessonQuiz(
+        $result = $this->learningService->submitCourseQuiz(
             $id,
             (array) $request->input('answers'),
             (bool) $request->input('is_timeout', false),
@@ -912,7 +912,7 @@ final class LearningController extends BaseController
     }
 
     #[OA\Post(
-        path: '/api/v1/learning/lessons/{id}/quiz/draft',
+        path: '/api/v1/learning/courses/{id}/quiz/draft',
         description: 'Cho phép nhân viên lưu nháp tiến trình làm bài kiểm tra để tiếp tục hoàn thiện sau.',
         summary: 'Lưu tạm bài làm quiz (lưu bản nháp) (UC-059)',
         security: [['sanctum' => []]],
@@ -940,7 +940,7 @@ final class LearningController extends BaseController
                 name: 'id',
                 in: 'path',
                 required: true,
-                description: 'ID của bài học (UUID) có bài quiz cần lưu nháp',
+                description: 'ID của khóa học (UUID) có bài quiz cần lưu nháp',
                 schema: new OA\Schema(type: 'string', format: 'uuid')
             )
         ],
@@ -993,7 +993,7 @@ final class LearningController extends BaseController
     )]
     public function saveDraft(SaveQuizDraftRequest $request, string $id): JsonResponse
     {
-        $result = $this->learningService->saveQuizDraft($id, $request->input('answers'), $request->user()->id);
+        $result = $this->learningService->saveCourseQuizDraft($id, $request->input('answers'), $request->user()->id);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());

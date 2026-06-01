@@ -36,13 +36,13 @@ Route::middleware('auth:api')->prefix('v1/learning')->group(function () {
     Route::post('/lessons/{id}/progress', [LearningController::class, 'updateProgress'])->name('learning.lessons.progress');
 
     // Lấy câu hỏi kiểm tra (UC-056)
-    Route::get('/lessons/{id}/quiz', [LearningController::class, 'getQuiz'])->name('learning.lessons.quiz');
+    Route::get('/courses/{id}/quiz', [LearningController::class, 'getQuiz'])->name('learning.courses.quiz');
 
     // Nộp bài kiểm tra trắc nghiệm (UC-056)
-    Route::post('/lessons/{id}/quiz/submit', [LearningController::class, 'submitQuiz'])->name('learning.lessons.quiz.submit');
+    Route::post('/courses/{id}/quiz/submit', [LearningController::class, 'submitQuiz'])->name('learning.courses.quiz.submit');
 
     // Lưu tạm bài làm quiz (lưu bản nháp) (UC-059)
-    Route::post('/lessons/{id}/quiz/draft', [LearningController::class, 'saveDraft'])->name('learning.lessons.quiz.draft');
+    Route::post('/courses/{id}/quiz/draft', [LearningController::class, 'saveDraft'])->name('learning.courses.quiz.draft');
 });
 
 Route::middleware('auth:api')->prefix('v1/learning/admin')->group(function () {

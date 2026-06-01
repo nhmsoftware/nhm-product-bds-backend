@@ -572,15 +572,15 @@ final class LearningService extends BaseService implements LearningServiceInterf
     }
 
     /**
-     * Lấy danh sách câu hỏi kiểm tra (Quiz) của bài học (UC-056).
+     * Lấy danh sách câu hỏi kiểm tra (Quiz) của khóa học (UC-056).
      *
-     * @param string $lessonId
+     * @param string $courseId
      * @param string $userId
      * @return ServiceReturn
      */
-    public function getLessonQuiz(string $lessonId, string $userId): ServiceReturn
+    public function getCourseQuiz(string $courseId, string $userId): ServiceReturn
     {
-        return $this->execute(function () use ($lessonId, $userId) {
+        return $this->execute(function () use ($courseId, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
             $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
@@ -588,24 +588,24 @@ final class LearningService extends BaseService implements LearningServiceInterf
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
-            // 3. Tìm thông tin bài học
-            $lesson = $this->courseRepository->findLesson($lessonId);
-            $this->validate($lesson !== null, 'Bài học không tồn tại.', 404);
-
-            // 4. Tìm thông tin khóa học tương ứng
-            $course = $this->courseRepository->getCourseDetails($lesson->course_id, $userId);
+            // 3. Tìm thông tin khóa học
+            $course = $this->courseRepository->getCourseDetails($courseId, $userId);
             $this->validate($course !== null, 'Không tìm thấy khóa học bắt buộc.', 404);
 
-            // 5. Kiểm tra Preconditions: Nhân viên đã tham gia khóa học
+            // 4. Kiểm tra Preconditions: Nhân viên đã tham gia khóa học
             $enrollment = $course->enrollments->first();
             $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
 
-            // 6. A1 – Employee chưa hoàn thành bài học trước (hoặc chưa xem hoàn thành video bài này)
-            $progressRecord = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);
-            $this->validate($progressRecord !== null && $progressRecord->is_completed === true, 'Bạn cần hoàn thành bài học trước khi làm quiz.', 403);
+            $lessons = $course->lessons;
+            $this->validate($lessons->isNotEmpty(), 'Khóa học chưa có bài học.', 400);
 
-            // 7. Lấy danh sách câu hỏi kiểm tra (Quiz)
-            $questions = $this->courseRepository->getQuizQuestions($lesson->id);
+            // 5. Employee cần hoàn thành toàn bộ bài học trước khi làm bài quiz khóa học
+            $completedLessonsCount = $this->courseEnrollmentRepository->countCompletedLessons($enrollment->id);
+            $this->validate($completedLessonsCount === $lessons->count(), 'Bạn cần hoàn thành tất cả bài học trước khi làm quiz.', 403);
+
+            // 6. Lấy danh sách câu hỏi kiểm tra (Quiz) của khóa học
+            $lessonIds = $lessons->pluck('id')->toArray();
+            $questions = $this->quizRepository->getByLessonIds($lessonIds);
             $this->validate($questions->isNotEmpty(), 'Bài quiz không khả dụng.', 404);
 
             $questionIds = $questions->pluck('id')->toArray();
@@ -640,8 +640,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             return $this->success(
                 data: [
-                    'lesson_id' => (string) $lesson->id,
-                    'lesson_title' => $lesson->title,
+                    'course_id' => (string) $course->id,
+                    'course_title' => $course->title,
                     'quiz_title' => 'Bài kiểm tra kiến thức',
                     'time_limit_minutes' => 45, // Thời gian làm bài theo yêu cầu mới là 45 phút
                     'questions' => $quizQuestions,
@@ -657,17 +657,17 @@ final class LearningService extends BaseService implements LearningServiceInterf
     }
 
     /**
-     * Nộp kết quả làm bài kiểm tra trắc nghiệm (UC-056).
+     * Nộp kết quả làm bài kiểm tra trắc nghiệm khóa học (UC-056).
      *
-     * @param string $lessonId
+     * @param string $courseId
      * @param array $answers
      * @param bool $isTimeout
      * @param string $userId
      * @return ServiceReturn
      */
-    public function submitLessonQuiz(string $lessonId, array $answers, bool $isTimeout, string $userId): ServiceReturn
+    public function submitCourseQuiz(string $courseId, array $answers, bool $isTimeout, string $userId): ServiceReturn
     {
-        return $this->execute(function () use ($lessonId, $answers, $isTimeout, $userId) {
+        return $this->execute(function () use ($courseId, $answers, $isTimeout, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
             $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
@@ -675,24 +675,24 @@ final class LearningService extends BaseService implements LearningServiceInterf
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
-            // 3. Tìm thông tin bài học
-            $lesson = $this->courseRepository->findLesson($lessonId);
-            $this->validate($lesson !== null, 'Bài học không tồn tại.', 404);
-
-            // 4. Tìm thông tin khóa học tương ứng
-            $course = $this->courseRepository->getCourseDetails($lesson->course_id, $userId);
+            // 3. Tìm thông tin khóa học
+            $course = $this->courseRepository->getCourseDetails($courseId, $userId);
             $this->validate($course !== null, 'Không tìm thấy khóa học bắt buộc.', 404);
 
-            // 5. Kiểm tra Preconditions: Nhân viên đã tham gia khóa học
+            // 4. Kiểm tra Preconditions: Nhân viên đã tham gia khóa học
             $enrollment = $course->enrollments->first();
             $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
 
-            // 6. A1 – Employee chưa hoàn thành bài học trước
-            $progressRecord = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);
-            $this->validate($progressRecord !== null && $progressRecord->is_completed === true, 'Bạn cần hoàn thành bài học trước khi làm quiz.', 403);
+            $lessons = $course->lessons;
+            $this->validate($lessons->isNotEmpty(), 'Khóa học chưa có bài học.', 400);
 
-            // 7. Lấy danh sách câu hỏi kiểm tra (Quiz) của bài học từ DB
-            $questions = $this->courseRepository->getQuizQuestions($lesson->id);
+            // 5. Employee cần hoàn thành toàn bộ bài học trước khi làm bài quiz khóa học
+            $completedLessonsCount = $this->courseEnrollmentRepository->countCompletedLessons($enrollment->id);
+            $this->validate($completedLessonsCount === $lessons->count(), 'Bạn cần hoàn thành tất cả bài học trước khi làm quiz.', 403);
+
+            // 6. Lấy danh sách câu hỏi kiểm tra (Quiz) của khóa học từ DB
+            $lessonIds = $lessons->pluck('id')->toArray();
+            $questions = $this->quizRepository->getByLessonIds($lessonIds);
             $this->validate($questions->isNotEmpty(), 'Bài quiz không khả dụng.', 404);
 
             // Tạo map câu trả lời đã gửi
@@ -964,7 +964,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'employee_name' => $user->name,
                 'completed_at' => $enrollment->completed_at ? $enrollment->completed_at->toIso8601String() : now()->toIso8601String(),
                 'score' => (float) number_format($score, 2),
-                'certificate_code' => $enrollment->id,
+'certificate_code' => $enrollment->id,
             ];
 
             return $this->success(
@@ -1027,14 +1027,14 @@ final class LearningService extends BaseService implements LearningServiceInterf
     /**
      * Lưu tạm bài làm quiz (lưu bản nháp) (UC-059).
      *
-     * @param string $lessonId ID bài học
+     * @param string $courseId ID khóa học
      * @param array $answers Danh sách câu trả lời nháp [{quiz_id, selected_option}]
      * @param string $userId ID nhân viên
      * @return ServiceReturn
      */
-    public function saveQuizDraft(string $lessonId, array $answers, string $userId): ServiceReturn
+    public function saveCourseQuizDraft(string $courseId, array $answers, string $userId): ServiceReturn
     {
-        return $this->execute(function () use ($lessonId, $answers, $userId) {
+        return $this->execute(function () use ($courseId, $answers, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
             $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
@@ -1042,24 +1042,24 @@ final class LearningService extends BaseService implements LearningServiceInterf
             // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
-            // 3. Tìm thông tin bài học
-            $lesson = $this->courseRepository->findLesson($lessonId);
-            $this->validate($lesson !== null, 'Bài học không tồn tại.', 404);
-
-            // 4. Tìm thông tin khóa học tương ứng
-            $course = $this->courseRepository->getCourseDetails($lesson->course_id, $userId);
+            // 3. Tìm thông tin khóa học
+            $course = $this->courseRepository->getCourseDetails($courseId, $userId);
             $this->validate($course !== null, 'Không tìm thấy khóa học bắt buộc.', 404);
 
-            // 5. Kiểm tra Preconditions: Nhân viên đã tham gia khóa học
+            // 4. Kiểm tra Preconditions: Nhân viên đã tham gia khóa học
             $enrollment = $course->enrollments->first();
             $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
 
-            // 6. Kiểm tra Preconditions: Nhân viên cần hoàn thành xem video bài học này trước khi làm quiz
-            $progressRecord = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);
-            $this->validate($progressRecord !== null && $progressRecord->is_completed === true, 'Bạn cần hoàn thành bài học trước khi làm quiz.', 403);
+            $lessons = $course->lessons;
+            $this->validate($lessons->isNotEmpty(), 'Khóa học chưa có bài học.', 400);
 
-            // 7. Lấy danh sách câu hỏi kiểm tra (Quiz) của bài học từ DB
-            $questions = $this->courseRepository->getQuizQuestions($lesson->id);
+            // 5. Employee cần hoàn thành toàn bộ bài học trước khi lưu nháp quiz
+            $completedLessonsCount = $this->courseEnrollmentRepository->countCompletedLessons($enrollment->id);
+            $this->validate($completedLessonsCount === $lessons->count(), 'Bạn cần hoàn thành tất cả bài học trước khi làm quiz.', 403);
+
+            // 6. Lấy danh sách câu hỏi kiểm tra (Quiz) của khóa học
+            $lessonIds = $lessons->pluck('id')->toArray();
+            $questions = $this->quizRepository->getByLessonIds($lessonIds);
             $this->validate($questions->isNotEmpty(), 'Bài quiz không khả dụng.', 404);
 
             // 8. A1 – Không có dữ liệu để lưu

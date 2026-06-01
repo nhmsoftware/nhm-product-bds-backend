@@ -51,24 +51,24 @@ interface LearningServiceInterface
     public function updateLessonProgress(string $lessonId, int $watchTimeSeconds, string $userId): ServiceReturn;
 
     /**
-     * Lấy danh sách câu hỏi kiểm tra (Quiz) của bài học (UC-056).
+     * Lấy danh sách câu hỏi kiểm tra (Quiz) của khóa học (UC-056).
      *
-     * @param string $lessonId
+     * @param string $courseId
      * @param string $userId
      * @return ServiceReturn
      */
-    public function getLessonQuiz(string $lessonId, string $userId): ServiceReturn;
+    public function getCourseQuiz(string $courseId, string $userId): ServiceReturn;
 
     /**
-     * Nộp kết quả làm bài kiểm tra trắc nghiệm (UC-056).
+     * Nộp kết quả làm bài kiểm tra trắc nghiệm khóa học (UC-056).
      *
-     * @param string $lessonId
+     * @param string $courseId
      * @param array $answers Danh sách câu trả lời [{quiz_id, selected_option}]
      * @param bool $isTimeout True nếu tự động nộp do hết thời gian làm bài
      * @param string $userId
      * @return ServiceReturn
      */
-    public function submitLessonQuiz(string $lessonId, array $answers, bool $isTimeout, string $userId): ServiceReturn;
+    public function submitCourseQuiz(string $courseId, array $answers, bool $isTimeout, string $userId): ServiceReturn;
 
     /**
      * Ghi nhận nhân viên hoàn thành khóa học (UC-057).
@@ -100,12 +100,12 @@ interface LearningServiceInterface
     /**
      * Lưu tạm bài làm quiz (lưu bản nháp) (UC-059).
      *
-     * @param string $lessonId ID bài học
+     * @param string $courseId ID khóa học
      * @param array $answers Danh sách câu trả lời nháp [{quiz_id, selected_option}]
      * @param string $userId ID nhân viên
      * @return ServiceReturn
      */
-    public function saveQuizDraft(string $lessonId, array $answers, string $userId): ServiceReturn;
+    public function saveCourseQuizDraft(string $courseId, array $answers, string $userId): ServiceReturn;
 
     /**
      * Tải danh sách khóa học cho Admin kèm tìm kiếm và lọc.
