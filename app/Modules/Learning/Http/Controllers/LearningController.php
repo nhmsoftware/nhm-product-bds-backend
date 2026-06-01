@@ -85,6 +85,21 @@ final class LearningController extends BaseController
                                             ]
                                         ),
                                         new OA\Property(
+                                            property: 'quiz',
+                                            type: 'object',
+                                            description: 'Thông tin bài thi trắc nghiệm/tự luận của khóa học',
+                                            properties: [
+                                                new OA\Property(property: 'hasQuiz', type: 'boolean', example: true, description: 'Khóa học có bài thi không'),
+                                                new OA\Property(property: 'status', type: 'string', example: 'grading', description: 'Trạng thái bài thi (not_started, grading, failed, passed)'),
+                                                new OA\Property(property: 'actionText', type: 'string', example: 'Đang chấm bài', description: 'Nhãn hành động hiển thị cho bài thi'),
+                                                new OA\Property(property: 'isPassed', type: 'boolean', example: false, description: 'Đã thi đạt chưa'),
+                                                new OA\Property(property: 'lastScore', type: 'number', format: 'float', nullable: true, example: null, description: 'Điểm số bài thi gần nhất'),
+                                                new OA\Property(property: 'passingScore', type: 'integer', example: 8, description: 'Điểm đạt yêu cầu'),
+                                                new OA\Property(property: 'canStart', type: 'boolean', example: true, description: 'Có đủ điều kiện để bắt đầu thi (hoàn thành hết video)')
+                                            ]
+                                        ),
+                                        new OA\Property(property: 'canAccessPremiumLearning', type: 'boolean', example: false, description: 'Có quyền truy cập kho học liệu cao cấp không'),
+                                        new OA\Property(
                                             property: 'notice',
                                             type: 'object',
                                             description: 'Thông báo/Lưu ý học tập',

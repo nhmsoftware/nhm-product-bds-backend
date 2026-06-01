@@ -193,6 +193,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $lastScore = null;
             $passingScore = 8;
             $canStart = false;
+            $quizStatus = 'not_started';
+            $quizActionText = 'Làm bài kiểm tra';
 
             if ($hasQuiz) {
                 $questionIds = $quizQuestions->pluck('id')->toArray();
@@ -201,9 +203,23 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
                 $attemptsCount = $this->quizAttemptRepository->countAttemptsByUserAndQuizIds($dto->userId, $questionIds);
                 if ($attemptsCount > 0 && $totalQuestionsCount > 0) {
-                    $correctAttemptsCount = $this->quizAttemptRepository->countCorrectByUserAndQuizIds($dto->userId, $questionIds);
-                    $lastScore = round(($correctAttemptsCount / $totalQuestionsCount) * 10, 1);
-                    $isPassed = $lastScore >= $passingScore;
+                    $hasUngraded = $this->quizAttemptRepository->hasUngradedAttempts($dto->userId, $questionIds);
+                    if ($hasUngraded) {
+                        $quizStatus = 'grading';
+                        $quizActionText = 'Đang chấm bài';
+                    } else {
+                        $correctAttemptsCount = $this->quizAttemptRepository->countCorrectByUserAndQuizIds($dto->userId, $questionIds);
+                        $lastScore = round(($correctAttemptsCount / $totalQuestionsCount) * 10, 1);
+                        $isPassed = $lastScore >= $passingScore;
+                        
+                        if ($isPassed) {
+                            $quizStatus = 'passed';
+                            $quizActionText = 'Xem lại';
+                        } else {
+                            $quizStatus = 'failed';
+                            $quizActionText = 'Chưa đạt';
+                        }
+                    }
                 }
             }
 
@@ -239,6 +255,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     ],
                     'quiz' => [
                         'hasQuiz'      => $hasQuiz,
+                        'status'       => $quizStatus,
+                        'actionText'   => $quizActionText,
                         'isPassed'     => $isPassed,
                         'lastScore'    => $lastScore,
                         'passingScore' => $passingScore,
