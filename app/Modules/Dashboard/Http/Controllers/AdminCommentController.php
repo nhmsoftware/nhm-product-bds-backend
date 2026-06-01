@@ -17,7 +17,7 @@ final class AdminCommentController extends BaseController
     ) {}
 
     #[OA\Get(
-        path: '/api/dashboard/admin/comments',
+        path: '/api/v1/dashboard/admin/comments',
         summary: 'Lấy danh sách tất cả bình luận (UC-095)',
         tags: ['Dashboard', 'Manage Comment'],
         parameters: [
@@ -45,7 +45,7 @@ final class AdminCommentController extends BaseController
     }
 
     #[OA\Delete(
-        path: '/api/dashboard/admin/comments/{id}',
+        path: '/api/v1/dashboard/admin/comments/{id}',
         summary: 'Xóa bình luận (UC-095)',
         tags: ['Dashboard', 'Manage Comment'],
         parameters: [

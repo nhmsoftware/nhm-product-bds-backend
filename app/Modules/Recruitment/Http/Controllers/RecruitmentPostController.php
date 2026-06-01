@@ -22,7 +22,7 @@ class RecruitmentPostController extends BaseController
     }
 
     #[OA\Get(
-        path: '/api/recruitment/posts',
+        path: '/api/v1/recruitment/posts',
         summary: 'Lấy danh sách bài tuyển dụng (UC-126)',
         security: [['bearerAuth' => []]],
         tags: ['Recruitment Management'],
@@ -43,7 +43,7 @@ class RecruitmentPostController extends BaseController
     }
 
     #[OA\Get(
-        path: '/api/recruitment/posts/{id}',
+        path: '/api/v1/recruitment/posts/{id}',
         summary: 'Xem chi tiết bài tuyển dụng (UC-126)',
         security: [['bearerAuth' => []]],
         tags: ['Recruitment Management'],
@@ -62,7 +62,7 @@ class RecruitmentPostController extends BaseController
     }
 
     #[OA\Post(
-        path: '/api/recruitment/posts',
+        path: '/api/v1/recruitment/posts',
         summary: 'Tạo bài tuyển dụng mới (UC-126)',
         security: [['bearerAuth' => []]],
         tags: ['Recruitment Management'],
@@ -96,7 +96,7 @@ class RecruitmentPostController extends BaseController
     }
 
     #[OA\Put(
-        path: '/api/recruitment/posts/{id}',
+        path: '/api/v1/recruitment/posts/{id}',
         summary: 'Cập nhật bài tuyển dụng (UC-126)',
         security: [['bearerAuth' => []]],
         tags: ['Recruitment Management'],
@@ -131,7 +131,7 @@ class RecruitmentPostController extends BaseController
     }
 
     #[OA\Delete(
-        path: '/api/recruitment/posts/{id}',
+        path: '/api/v1/recruitment/posts/{id}',
         summary: 'Ẩn bài tuyển dụng (UC-129)',
         security: [['bearerAuth' => []]],
         tags: ['Recruitment Management'],

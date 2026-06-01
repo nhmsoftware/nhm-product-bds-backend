@@ -19,7 +19,7 @@ final class LotDepositRequestController extends BaseController
     }
 
     #[OA\Post(
-        path: '/api/lots/{lot}/deposit-requests',
+        path: '/api/v1/lots/{lot}/deposit-requests',
         summary: 'Tạo yêu cầu đặt cọc lô đất [UC-083]',
         security: [['bearerAuth' => []]],
         tags: ['Area'],
