@@ -226,7 +226,6 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $enrollmentStatusStr = match (true) {
                 $enrollment === null                                           => 'not_started',
                 $enrollment->status === CourseEnrollmentStatus::COMPLETED     => 'completed',
-                $completedCount === $totalLessons && $hasQuiz && !$isPassed    => 'quiz_pending',
                 $enrollment->status === CourseEnrollmentStatus::IN_PROGRESS   => 'in_progress',
                 default                                                        => 'not_started',
             };
