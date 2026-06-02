@@ -100,12 +100,14 @@ interface LearningServiceInterface
     /**
      * Lưu tạm bài làm quiz (lưu bản nháp) (UC-059).
      *
-     * @param string $courseId ID khóa học
-     * @param array $answers Danh sách câu trả lời nháp [{quiz_id, selected_option}]
-     * @param string $userId ID nhân viên
+     * @param string $courseId
+     * @param string $attemptId
+     * @param int $remainingSeconds
+     * @param array $answers
+     * @param string $userId
      * @return ServiceReturn
      */
-    public function saveCourseQuizDraft(string $courseId, array $answers, string $userId): ServiceReturn;
+    public function saveCourseQuizDraft(string $courseId, string $attemptId, int $remainingSeconds, array $answers, string $userId): ServiceReturn;
 
     /**
      * Tải danh sách khóa học cho Admin kèm tìm kiếm và lọc.

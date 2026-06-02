@@ -719,12 +719,30 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 ];
             })->toArray();
 
+            // Nếu chưa có attempt session hoặc session cũ đã hoàn thành/hết hạn và cần thi lại (ở đây deleteByUserAndQuizIds đã xử lý reset), ta có thể tạo attempt ID mới nếu chưa có.
+            if (!$enrollment->quiz_attempt_id) {
+                $enrollment->quiz_attempt_id = (string) \Illuminate\Support\Str::uuid();
+                $enrollment->quiz_status = 'in_progress';
+                $enrollment->quiz_started_at = now();
+                $enrollment->quiz_expires_at = now()->addMinutes(45);
+                $enrollment->quiz_remaining_seconds = 45 * 60;
+                $enrollment->save();
+            }
+
             return $this->success(
                 data: [
                     'course_id' => (string) $course->id,
                     'course_title' => $course->title,
                     'quiz_title' => 'Bài kiểm tra kiến thức',
                     'time_limit_minutes' => 45, // Thời gian làm bài theo yêu cầu mới là 45 phút
+                    'attempt' => [
+                        'id' => $enrollment->quiz_attempt_id,
+                        'status' => $enrollment->quiz_status ?? 'in_progress',
+                        'started_at' => $enrollment->quiz_started_at ? $enrollment->quiz_started_at->toIso8601String() : null,
+                        'expires_at' => $enrollment->quiz_expires_at ? $enrollment->quiz_expires_at->toIso8601String() : null,
+                        'remaining_seconds' => $enrollment->quiz_remaining_seconds ?? (45 * 60),
+                        'last_saved_at' => $enrollment->quiz_last_saved_at ? $enrollment->quiz_last_saved_at->toIso8601String() : null,
+                    ],
                     'questions' => $quizQuestions,
                 ],
                 message: 'Tải danh sách câu hỏi kiểm tra thành công.'
@@ -872,6 +890,15 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $isPassed = $score >= $passingScore;
 
             $message = $isPassed ? 'Chúc mừng! Bạn đã hoàn thành bài quiz đạt yêu cầu.' : 'Rất tiếc! Bạn chưa đạt điểm yêu cầu của bài quiz.';
+
+            // Reset attempt data in course_enrollments
+            $enrollment->quiz_attempt_id = null;
+            $enrollment->quiz_status = null;
+            $enrollment->quiz_started_at = null;
+            $enrollment->quiz_expires_at = null;
+            $enrollment->quiz_remaining_seconds = null;
+            $enrollment->quiz_last_saved_at = null;
+            $enrollment->save();
 
             $responsePayload = [
                 'score' => $score,
@@ -1108,14 +1135,16 @@ final class LearningService extends BaseService implements LearningServiceInterf
     /**
      * Lưu tạm bài làm quiz (lưu bản nháp) (UC-059).
      *
-     * @param string $courseId ID khóa học
-     * @param array $answers Danh sách câu trả lời nháp [{quiz_id, selected_option}]
-     * @param string $userId ID nhân viên
+     * @param string $courseId
+     * @param string $attemptId
+     * @param int $remainingSeconds
+     * @param array $answers
+     * @param string $userId
      * @return ServiceReturn
      */
-    public function saveCourseQuizDraft(string $courseId, array $answers, string $userId): ServiceReturn
+    public function saveCourseQuizDraft(string $courseId, string $attemptId, int $remainingSeconds, array $answers, string $userId): ServiceReturn
     {
-        return $this->execute(function () use ($courseId, $answers, $userId) {
+        return $this->execute(function () use ($courseId, $attemptId, $remainingSeconds, $answers, $userId) {
             // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
             $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
@@ -1147,8 +1176,11 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $hasData = false;
             $submittedMap = [];
             foreach ($answers as $ans) {
-                if (isset($ans['quiz_id']) && isset($ans['selected_option']) && $ans['selected_option'] !== null && $ans['selected_option'] !== '') {
-                    $submittedMap[(string) $ans['quiz_id']] = (int) $ans['selected_option'];
+                if (isset($ans['quiz_id'])) {
+                    $submittedMap[(string) $ans['quiz_id']] = [
+                        'selected_option' => isset($ans['selected_option']) ? (int) $ans['selected_option'] : null,
+                        'essay_answer' => $ans['essay_answer'] ?? null,
+                    ];
                     $hasData = true;
                 }
             }
@@ -1166,21 +1198,36 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
             // Lưu các câu trả lời nháp hiện tại
             foreach ($questions as $q) {
-                $selectedOption = $submittedMap[(string) $q->id] ?? null;
-                if ($selectedOption !== null) {
+                $ansData = $submittedMap[(string) $q->id] ?? null;
+                if ($ansData !== null) {
                     $this->quizAttemptRepository->create([
                         'id' => (string) \Illuminate\Support\Str::uuid(),
                         'user_id' => $userId,
                         'quiz_id' => $q->id,
-                        'selected_option' => $selectedOption,
+                        'selected_option' => $ansData['selected_option'],
+                        'essay_answer' => $ansData['essay_answer'],
                         'is_correct' => null, // Chưa đánh giá điểm số cho bản nháp
                         'is_draft' => true,
                     ]);
                 }
             }
 
+            // Cập nhật thông tin attempt vào CourseEnrollment
+            $enrollment->quiz_attempt_id = $attemptId;
+            $enrollment->quiz_remaining_seconds = $remainingSeconds;
+            $enrollment->quiz_last_saved_at = now();
+            if (empty($enrollment->quiz_started_at)) {
+                $enrollment->quiz_started_at = now();
+            }
+            $enrollment->save();
+
             return $this->success(
-                data: null,
+                data: [
+                    'attempt_id' => $attemptId,
+                    'status' => 'draft',
+                    'remaining_seconds' => $remainingSeconds,
+                    'last_saved_at' => $enrollment->quiz_last_saved_at->toIso8601String(),
+                ],
                 message: 'Lưu bản nháp thành công.'
             );
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {

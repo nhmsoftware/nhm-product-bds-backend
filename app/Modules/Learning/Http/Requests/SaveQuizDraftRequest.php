@@ -34,6 +34,15 @@ class SaveQuizDraftRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'attempt_id' => [
+                'required',
+                'uuid',
+            ],
+            'remaining_seconds' => [
+                'required',
+                'integer',
+                'min:0',
+            ],
             'answers' => [
                 'required',
                 'array',
@@ -46,6 +55,10 @@ class SaveQuizDraftRequest extends FormRequest
                 'nullable',
                 'integer',
             ],
+            'answers.*.essay_answer' => [
+                'nullable',
+                'string',
+            ],
         ];
     }
 
@@ -57,11 +70,17 @@ class SaveQuizDraftRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'attempt_id.required' => 'Mã lượt làm bài (attempt_id) không được để trống.',
+            'attempt_id.uuid' => 'Mã lượt làm bài phải là định dạng UUID hợp lệ.',
+            'remaining_seconds.required' => 'Thời gian còn lại không được để trống.',
+            'remaining_seconds.integer' => 'Thời gian còn lại phải là số nguyên.',
+            'remaining_seconds.min' => 'Thời gian còn lại không hợp lệ.',
             'answers.required' => 'Vui lòng cung cấp danh sách câu trả lời.',
             'answers.array' => 'Danh sách câu trả lời phải là định dạng mảng.',
             'answers.*.quiz_id.required' => 'Mã câu hỏi không được để trống.',
             'answers.*.quiz_id.uuid' => 'Mã câu hỏi phải là định dạng UUID hợp lệ.',
             'answers.*.selected_option.integer' => 'Phương án trả lời phải là số nguyên.',
+            'answers.*.essay_answer.string' => 'Câu trả lời tự luận phải là chuỗi văn bản.',
         ];
     }
 }

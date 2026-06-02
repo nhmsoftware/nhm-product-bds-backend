@@ -1011,12 +1011,18 @@ final class LearningController extends BaseController
     )]
     public function saveDraft(SaveQuizDraftRequest $request, string $id): JsonResponse
     {
-        $result = $this->learningService->saveCourseQuizDraft($id, $request->input('answers'), $request->user()->id);
+        $result = $this->learningService->saveCourseQuizDraft(
+            $id,
+            $request->input('attempt_id'),
+            (int) $request->input('remaining_seconds'),
+            $request->input('answers'),
+            $request->user()->id
+        );
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());
         }
 
-        return $this->sendSuccess(null, $result->getMessage());
+        return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 }

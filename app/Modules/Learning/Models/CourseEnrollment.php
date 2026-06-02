@@ -54,6 +54,12 @@ class CourseEnrollment extends Model
         'status',
         'progress_percent',
         'completed_at',
+        'quiz_attempt_id',
+        'quiz_status',
+        'quiz_started_at',
+        'quiz_expires_at',
+        'quiz_remaining_seconds',
+        'quiz_last_saved_at',
     ];
 
     protected $casts = [
@@ -62,6 +68,10 @@ class CourseEnrollment extends Model
         'course_id' => 'string',
         'progress_percent' => 'decimal:2',
         'completed_at' => 'datetime',
+        'quiz_started_at' => 'datetime',
+        'quiz_expires_at' => 'datetime',
+        'quiz_last_saved_at' => 'datetime',
+        'quiz_remaining_seconds' => 'integer',
         'status' => CourseEnrollmentStatus::class,
     ];
 
