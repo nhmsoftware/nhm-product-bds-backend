@@ -60,6 +60,15 @@ interface LearningServiceInterface
     public function getCourseQuiz(string $courseId, string $userId): ServiceReturn;
 
     /**
+     * Xem lại kết quả bài làm quiz sau khi nộp.
+     *
+     * @param string $courseId
+     * @param string $userId
+     * @return ServiceReturn
+     */
+    public function getQuizResult(string $courseId, string $userId): ServiceReturn;
+
+    /**
      * Nộp kết quả làm bài kiểm tra trắc nghiệm khóa học (UC-056).
      *
      * @param string $courseId

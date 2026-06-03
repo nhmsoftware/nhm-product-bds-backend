@@ -43,6 +43,9 @@ Route::middleware('auth:api')->prefix('v1/learning')->group(function () {
 
     // Lưu tạm bài làm quiz (lưu bản nháp) (UC-059)
     Route::post('/courses/{id}/quiz/draft', [LearningController::class, 'saveDraft'])->name('learning.courses.quiz.draft');
+
+    // Xem lại kết quả bài làm quiz sau khi nộp
+    Route::get('/courses/{id}/quiz/result', [LearningController::class, 'resultQuiz'])->name('learning.courses.quiz.result');
 });
 
 Route::middleware('auth:api')->prefix('v1/learning/admin')->group(function () {

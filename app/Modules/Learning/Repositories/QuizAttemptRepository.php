@@ -21,6 +21,14 @@ final class QuizAttemptRepository extends BaseRepository implements QuizAttemptR
             ->get();
     }
 
+    public function getAttemptsByUserAndQuizIds(string $userId, array $quizIds): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->model->where('user_id', $userId)
+            ->whereIn('quiz_id', $quizIds)
+            ->where('is_draft', false)
+            ->get();
+    }
+
     public function deleteByUserAndQuizIds(string $userId, array $quizIds): int
     {
         return $this->model->where('user_id', $userId)

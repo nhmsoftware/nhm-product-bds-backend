@@ -497,6 +497,18 @@ final class LearningController extends BaseController
                                 new OA\Property(property: 'quiz_title', type: 'string', example: 'Bài kiểm tra kiến thức'),
                                 new OA\Property(property: 'time_limit_minutes', type: 'integer', example: 45),
                                 new OA\Property(
+                                    property: 'attempt',
+                                    type: 'object',
+                                    properties: [
+                                        new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0'),
+                                        new OA\Property(property: 'status', type: 'string', example: 'in_progress'),
+                                        new OA\Property(property: 'started_at', type: 'string', format: 'date-time', example: '2026-06-03T02:45:12Z'),
+                                        new OA\Property(property: 'expires_at', type: 'string', format: 'date-time', example: '2026-06-03T03:30:12Z'),
+                                        new OA\Property(property: 'remaining_seconds', type: 'integer', example: 2700),
+                                        new OA\Property(property: 'last_saved_at', type: 'string', format: 'date-time', nullable: true, example: '2026-06-03T02:46:00Z')
+                                    ]
+                                ),
+                                new OA\Property(
                                     property: 'questions',
                                     type: 'array',
                                     items: new OA\Items(
@@ -938,13 +950,16 @@ final class LearningController extends BaseController
             required: true,
             content: new OA\JsonContent(
                 properties: [
+                    new OA\Property(property: 'attempt_id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0'),
+                    new OA\Property(property: 'remaining_seconds', type: 'integer', example: 2700),
                     new OA\Property(
                         property: 'answers',
                         type: 'array',
                         items: new OA\Items(
                             properties: [
                                 new OA\Property(property: 'quiz_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
-                                new OA\Property(property: 'selected_option', type: 'integer', example: 1, nullable: true)
+                                new OA\Property(property: 'selected_option', type: 'integer', example: 1, nullable: true),
+                                new OA\Property(property: 'essay_answer', type: 'string', example: 'Câu trả lời tự luận', nullable: true)
                             ],
                             type: 'object'
                         )
@@ -969,7 +984,17 @@ final class LearningController extends BaseController
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'message', type: 'string', example: 'Lưu bản nháp thành công.')
+                        new OA\Property(property: 'message', type: 'string', example: 'Lưu bản nháp thành công.'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'attempt_id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0'),
+                                new OA\Property(property: 'status', type: 'string', example: 'draft'),
+                                new OA\Property(property: 'remaining_seconds', type: 'integer', example: 2700),
+                                new OA\Property(property: 'last_saved_at', type: 'string', format: 'date-time', example: '2026-06-03T02:46:00Z')
+                            ]
+                        )
                     ]
                 )
             ),
@@ -1018,6 +1043,102 @@ final class LearningController extends BaseController
             $request->input('answers'),
             $request->user()->id
         );
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Get(
+        path: '/api/v1/learning/courses/{id}/quiz/result',
+        summary: 'Xem lại kết quả bài làm quiz sau khi nộp',
+        description: 'Lấy thông tin chi tiết kết quả bài kiểm tra sau khi đã nộp bài thành công (Task 4).',
+        tags: ['Learning'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID của khóa học (UUID)',
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Tải kết quả bài làm thành công',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Tải kết quả bài làm thành công.'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'status', type: 'string', example: 'passed'),
+                                new OA\Property(property: 'score', type: 'number', format: 'float', example: 8.0),
+                                new OA\Property(property: 'correct_count', type: 'integer', example: 4),
+                                new OA\Property(property: 'total_questions', type: 'integer', example: 5),
+                                new OA\Property(property: 'is_passed', type: 'boolean', example: true),
+                                new OA\Property(property: 'passing_score', type: 'number', format: 'float', example: 8.0),
+                                new OA\Property(
+                                    property: 'details',
+                                    type: 'array',
+                                    items: new OA\Items(
+                                        properties: [
+                                            new OA\Property(property: 'quiz_id', type: 'string', format: 'uuid', example: 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0'),
+                                            new OA\Property(property: 'type', type: 'string', example: 'multiple_choice'),
+                                            new OA\Property(property: 'order', type: 'integer', example: 1),
+                                            new OA\Property(property: 'title', type: 'string', nullable: true, example: 'Câu 1'),
+                                            new OA\Property(property: 'question', type: 'string', example: 'Câu hỏi chi tiết...'),
+                                            new OA\Property(
+                                                property: 'options',
+                                                type: 'array',
+                                                items: new OA\Items(
+                                                    properties: [
+                                                        new OA\Property(property: 'value', type: 'integer', example: 0),
+                                                        new OA\Property(property: 'label', type: 'string', example: 'Lựa chọn A')
+                                                    ],
+                                                    type: 'object'
+                                                )
+                                            ),
+                                            new OA\Property(property: 'selected_option', type: 'integer', nullable: true, example: 1),
+                                            new OA\Property(property: 'essay_answer', type: 'string', nullable: true, example: null),
+                                            new OA\Property(property: 'correct_option', type: 'integer', nullable: true, example: 1),
+                                            new OA\Property(property: 'is_correct', type: 'boolean', nullable: true, example: true)
+                                        ],
+                                        type: 'object'
+                                    )
+                                )
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Chưa đăng nhập (Unauthenticated)'
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Tài khoản nhân viên bị khóa, hoặc chưa tham gia khóa học'
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Chưa nộp bài kiểm tra hoặc bài quiz không khả dụng'
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Lỗi tải kết quả bài làm'
+            )
+        ]
+    )]
+    public function resultQuiz(ViewCourseDetailsRequest $request, string $id): JsonResponse
+    {
+        $result = $this->learningService->getQuizResult($id, $request->user()->id);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());

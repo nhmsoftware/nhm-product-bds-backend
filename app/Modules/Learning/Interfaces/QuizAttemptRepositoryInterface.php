@@ -8,6 +8,8 @@ interface QuizAttemptRepositoryInterface extends BaseRepositoryInterface
 {
     public function getDraftsByUserAndQuizIds(string $userId, array $quizIds): \Illuminate\Database\Eloquent\Collection;
 
+    public function getAttemptsByUserAndQuizIds(string $userId, array $quizIds): \Illuminate\Database\Eloquent\Collection;
+
     public function deleteByUserAndQuizIds(string $userId, array $quizIds): int;
 
     public function countCorrectByUserAndQuizIds(string $userId, array $quizIds): int;

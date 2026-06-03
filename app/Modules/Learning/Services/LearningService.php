@@ -922,6 +922,126 @@ final class LearningService extends BaseService implements LearningServiceInterf
     }
 
     /**
+     * Xem lại kết quả bài làm quiz sau khi nộp (Task 4).
+     *
+     * @param string $courseId
+     * @param string $userId
+     * @return ServiceReturn
+     */
+    public function getQuizResult(string $courseId, string $userId): ServiceReturn
+    {
+        return $this->execute(function () use ($courseId, $userId) {
+            // 1. Kiểm tra Preconditions: Tài khoản nhân viên tồn tại trong hệ thống
+            $user = $this->authRepository->find($userId);
+            $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
+
+            // 2. Kiểm tra Preconditions: Tài khoản của nhân viên đang hoạt động
+            $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
+
+            // 3. Tìm thông tin khóa học
+            $course = $this->courseRepository->getCourseDetails($courseId, $userId);
+            $this->validate($course !== null, 'Không tìm thấy khóa học bắt buộc.', 404);
+
+            // 4. Kiểm tra Preconditions: Nhân viên đã tham gia khóa học
+            $enrollment = $course->enrollments->first();
+            $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
+
+            $lessons = $course->lessons;
+            $this->validate($lessons->isNotEmpty(), 'Khóa học chưa có bài học.', 400);
+
+            // Lấy danh sách câu hỏi kiểm tra (Quiz) của khóa học
+            $lessonIds = $lessons->pluck('id')->toArray();
+            $questions = $this->quizRepository->getByLessonIds($lessonIds);
+            $this->validate($questions->isNotEmpty(), 'Bài quiz không khả dụng.', 404);
+
+            $questionIds = $questions->pluck('id')->toArray();
+            $attempts = $this->quizAttemptRepository->getAttemptsByUserAndQuizIds($userId, $questionIds);
+
+            // Nếu không có attempt nào, hoặc chưa thi
+            $this->validate($attempts->isNotEmpty(), 'Bạn chưa nộp bài kiểm tra.', 404);
+
+            // Nếu đang chấm bài
+            $hasUngraded = $this->quizAttemptRepository->hasUngradedAttempts($userId, $questionIds);
+            if ($hasUngraded) {
+                return $this->success(
+                    data: ['status' => 'grading'],
+                    message: 'Bài thi đang được chấm.'
+                );
+            }
+
+            $correctCount = 0;
+            $multipleChoiceCount = 0;
+            $totalCount = $questions->count();
+            $details = [];
+
+            $attemptMap = $attempts->keyBy('quiz_id');
+
+            foreach ($questions as $q) {
+                $attempt = $attemptMap->get($q->id);
+                $type = $q->type ?? \App\Modules\Learning\Models\Enums\CourseQuizType::MULTIPLE_CHOICE->value;
+                $isCorrect = $attempt ? $attempt->is_correct : null;
+                
+                if ($type === \App\Modules\Learning\Models\Enums\CourseQuizType::MULTIPLE_CHOICE->value) {
+                    $multipleChoiceCount++;
+                    if ($isCorrect) {
+                        $correctCount++;
+                    }
+                }
+
+                $mappedOptions = [];
+                foreach ($q->options ?? [] as $idx => $content) {
+                    $mappedOptions[] = [
+                        'value' => $idx,
+                        'label' => $content
+                    ];
+                }
+
+                $details[] = [
+                    'quiz_id' => (string) $q->id,
+                    'type' => $type,
+                    'order' => $q->order ?? 1,
+                    'title' => $q->title,
+                    'question' => $q->question,
+                    'options' => $mappedOptions,
+                    'selected_option' => $attempt ? $attempt->selected_option : null,
+                    'essay_answer' => $attempt ? $attempt->essay_answer : null,
+                    'correct_option' => $type === \App\Modules\Learning\Models\Enums\CourseQuizType::ESSAY->value ? null : (int) $q->correct_option,
+                    'is_correct' => $isCorrect,
+                ];
+            }
+
+            if ($multipleChoiceCount > 0) {
+                $score = round(($correctCount / $multipleChoiceCount) * 10, 2); // Hệ số 10
+            } else {
+                $score = 10.0;
+            }
+            $passingScore = 8.0;
+            $isPassed = $score >= $passingScore;
+            $status = $isPassed ? 'passed' : 'failed';
+
+            $responsePayload = [
+                'status' => $status,
+                'score' => $score,
+                'correct_count' => $correctCount,
+                'total_questions' => $totalCount,
+                'is_passed' => $isPassed,
+                'passing_score' => $passingScore,
+                'details' => $details,
+            ];
+
+            return $this->success(
+                data: $responsePayload,
+                message: 'Tải kết quả bài làm thành công.'
+            );
+        }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
+            return ServiceReturn::error(
+                message: 'Không thể tải kết quả bài làm.',
+                code: 500
+            );
+        });
+    }
+
+    /**
      * Ghi nhận nhân viên hoàn thành khóa học (UC-057).
      *
      * @param string $courseId ID khóa học
