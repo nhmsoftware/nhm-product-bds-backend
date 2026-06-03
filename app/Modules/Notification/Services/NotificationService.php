@@ -65,6 +65,7 @@ final class NotificationService extends BaseService implements NotificationServi
                 message: $message
             );
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('getNotifications Error: ' . $e->getMessage() . ' - ' . $e->getTraceAsString());
             // A2: Lỗi tải dữ liệu thông báo
             return ServiceReturn::error(
                 message: 'Không thể tải thông báo. Vui lòng thử lại.',
