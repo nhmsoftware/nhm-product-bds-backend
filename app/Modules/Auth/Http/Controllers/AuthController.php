@@ -13,6 +13,8 @@ use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Http\Requests\UpdateProfileRequest;
 use App\Modules\Auth\Http\Requests\UpdateEmployeeProfileRequest;
 use App\Modules\Auth\Http\Requests\UploadEmployeeDocumentRequest;
+use App\Modules\Auth\Http\Requests\UpdateFcmTokenRequest;
+use App\Modules\Auth\DTO\UpdateFcmTokenDTO;
 use App\Modules\Auth\Interfaces\AuthServiceInterface;
 use Illuminate\Http\JsonResponse;
 use OpenApi\Attributes as OA;

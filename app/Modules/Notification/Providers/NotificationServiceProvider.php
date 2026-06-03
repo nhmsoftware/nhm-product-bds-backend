@@ -9,6 +9,8 @@ use App\Modules\Notification\Interfaces\NotificationRepositoryInterface;
 use App\Modules\Notification\Interfaces\NotificationServiceInterface;
 use App\Modules\Notification\Repositories\NotificationRepository;
 use App\Modules\Notification\Services\NotificationService;
+use App\Modules\Notification\Models\Notification;
+use App\Modules\Notification\Observers\NotificationObserver;
 
 /**
  * Service Provider đăng ký và khởi tạo module Notification vào ứng dụng Laravel.
@@ -46,5 +48,8 @@ class NotificationServiceProvider extends BaseModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // Đăng ký Observer để tự động gửi Push Notification khi có bản ghi mới
+        Notification::observe(NotificationObserver::class);
     }
 }

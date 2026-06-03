@@ -17,6 +17,7 @@ use App\Modules\Auth\DTO\VerifyOtpDTO;
 use App\Modules\Auth\DTO\GetTeamKpiDTO;
 use App\Modules\Auth\DTO\GetEmployeeKpiDTO;
 use App\Modules\Auth\DTO\GetDepartmentRankingDTO;
+use App\Modules\Auth\DTO\UpdateFcmTokenDTO;
 
 interface AuthServiceInterface
 {
@@ -193,5 +194,14 @@ interface AuthServiceInterface
      * @throws \Throwable
      */
     public function uploadEmployeeDocument(UploadEmployeeDocumentDTO $dto): ServiceReturn;
+
+    /**
+     * Cập nhật FCM Token của người dùng (Test case 5).
+     *
+     * @param UpdateFcmTokenDTO $dto
+     * @return ServiceReturn
+     */
+    public function updateFcmToken(UpdateFcmTokenDTO $dto): ServiceReturn;
 }
+
 

@@ -15,6 +15,7 @@ use App\Modules\Auth\DTO\VerifyOtpDTO;
 use App\Modules\Auth\DTO\GetTeamKpiDTO;
 use App\Modules\Auth\DTO\GetEmployeeKpiDTO;
 use App\Modules\Auth\DTO\GetDepartmentRankingDTO;
+use App\Modules\Auth\DTO\UpdateFcmTokenDTO;
 
 use App\Modules\Auth\Events\UserRegistered;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
@@ -1547,6 +1548,34 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 ],
                 'employee_ranking' => $ranked,
             ], 'Tải chi tiết KPI phòng ban thành công.');
+        });
+    }
+    /**
+     * Cập nhật FCM Token của người dùng (Test case 5).
+     *
+     * @param UpdateFcmTokenDTO $dto
+     * @return ServiceReturn
+     */
+    public function updateFcmToken(UpdateFcmTokenDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            $user = $this->authRepository->findById($dto->userId);
+
+            $this->validate(
+                $user !== null,
+                'Không tìm thấy thông tin tài khoản.',
+                404
+            );
+
+            // Cập nhật fcm_token
+            $this->authRepository->updateById($dto->userId, [
+                'fcm_token' => $dto->fcmToken,
+            ]);
+
+            return $this->success(
+                ['fcm_token' => $dto->fcmToken],
+                'Cập nhật token thông báo thành công.'
+            );
         });
     }
 }

@@ -30,6 +30,8 @@ Route::prefix('v1/auth')->group(function () {
         Route::put('employee-profile', [AuthController::class, 'updateEmployeeProfile'])->name('auth.updateEmployeeProfile');
         // UC-035: Tải lên tài liệu hồ sơ nhân sự
         Route::post('employee-profile/documents', [AuthController::class, 'uploadEmployeeDocument'])->name('auth.uploadEmployeeDocument');
+        // Test case 5: Cập nhật FCM token
+        Route::put('fcm-token', [AuthController::class, 'updateFcmToken'])->name('auth.updateFcmToken');
 
         // UC-105: Điểm thưởng cá nhân
         Route::get('reward-points/overview', [RewardPointController::class, 'overview'])->name('auth.rewardPoints.overview');
