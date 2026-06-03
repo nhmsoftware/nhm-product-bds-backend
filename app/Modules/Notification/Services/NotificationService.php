@@ -56,10 +56,13 @@ final class NotificationService extends BaseService implements NotificationServi
                 $message = 'Hiện chưa có thông báo nào.';
             }
 
+            $notificationsData = $notifications->toArray();
+            unset($notificationsData['links']);
+
             // 5. Trả về kết quả thành công kèm metadata
             return $this->success(
                 data: [
-                    'notifications' => $notifications,
+                    'notifications' => $notificationsData,
                     'unread_count'  => $unreadCount,
                 ],
                 message: $message
