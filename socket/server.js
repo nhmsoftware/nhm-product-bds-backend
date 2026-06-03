@@ -41,15 +41,31 @@ redis.on('pmessage', (pattern, channel, message) => {
     const parsedMessage = JSON.parse(message);
     console.log('Payload:', parsedMessage);
     
-    // Broadcast message tới toàn bộ client của Socket.io
     // Cấu trúc event từ Laravel thường có dạng { event: 'TênEvent', data: { ... } }
-    if (parsedMessage.event) {
-       io.emit(parsedMessage.event, parsedMessage.data);
+    if (parsedMessage.event && parsedMessage.data) {
+      const eventName = parsedMessage.event;
+      const data = parsedMessage.data;
+      
+      // Nếu có user_id hoặc notifiable_id, emit vào user-specific room
+      // FE phải join room trước với format: user.{id}
+      if (data.user_id || data.notifiable_id) {
+        const userId = data.user_id || data.notifiable_id;
+        const roomName = `user.${userId}`;
+        console.log(`[Emit] Event: ${eventName} -> Room: ${roomName}`);
+        io.to(roomName).emit(eventName, data);
+      } else {
+        // Nếu không có user_id, broadcast tới toàn bộ clients
+        console.log(`[Emit] Event: ${eventName} -> All clients`);
+        io.emit(eventName, data);
+      }
+    } else if (parsedMessage.event) {
+       io.emit(parsedMessage.event, parsedMessage.data || {});
     } else {
        io.emit(channel, parsedMessage);
     }
   } catch (error) {
     console.error('Lỗi khi xử lý message từ Redis:', error);
+    console.error('Raw message:', message);
   }
 });
 

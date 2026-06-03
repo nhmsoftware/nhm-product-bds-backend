@@ -26,7 +26,7 @@ class NotificationCreatedEvent implements ShouldBroadcastNow
     {
         // Theo yêu cầu của FE: BE publish đúng event/payload và đảm bảo chỉ gửi đúng user
         // Hoặc gửi với user_id/notifiable_id để FE lọc
-        return new Channel('notification_channel');
+        return new Channel('bds.communication.events');
     }
 
     public function broadcastAs(): string
