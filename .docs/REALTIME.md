@@ -24,10 +24,11 @@ Khi cần thêm tính năng realtime mới, bạn chỉ cần làm bên Laravel:
 4. Define tên Event bằng hàm `broadcastAs()` (ví dụ return `'property.approved'`).
 5. Fire event: `event(new PropertyApproved($data))`.
 
-Ở phía Frontend / Mobile App, kết nối trực tiếp vào Socket.io (Port 3000):
+Ở phía Frontend / Mobile App, kết nối trực tiếp vào Socket.io (Port 8012 - theo cấu hình server hiện tại):
 ```javascript
 import { io } from "socket.io-client";
-const socket = io("http://localhost:3000");
+// Thay thế localhost hoặc domain bằng địa chỉ server thực tế
+const socket = io("http://localhost:8012");
 
 // Lắng nghe đúng tên Event mà Laravel định nghĩa trong broadcastAs()
 socket.on("property.approved", (data) => {
