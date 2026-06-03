@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Notification\Repositories;
 
+use App\Modules\Auth\Models\User;
 use App\Modules\Notification\Interfaces\NotificationRepositoryInterface;
 use App\Modules\Notification\Models\Notification;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Repository thực thi các thao tác CSDL cho bảng notifications.
@@ -18,6 +20,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class NotificationRepository implements NotificationRepositoryInterface
 {
+    public function __construct(
+        private readonly Notification $model
+    ) {}
+
     /**
      * Lấy danh sách thông báo của người dùng có phân trang.
      * Sắp xếp: chưa đọc lên trước, sau đó theo thời gian mới nhất.
@@ -30,8 +36,8 @@ final class NotificationRepository implements NotificationRepositoryInterface
      */
     public function getNotifications(string $userId, int $perPage, int $page, ?bool $isRead): LengthAwarePaginator
     {
-        $userClass = \App\Modules\Auth\Models\User::class;
-        $query = Notification::where('notifiable_type', $userClass)
+        $userClass = User::class;
+        $query = $this->model->where('notifiable_type', $userClass)
             ->where('notifiable_id', $userId);
 
         // A5: Lọc theo trạng thái đọc/chưa đọc nếu có
@@ -56,7 +62,7 @@ final class NotificationRepository implements NotificationRepositoryInterface
      */
     public function findById(string $notificationId): ?DatabaseNotification
     {
-        return Notification::find($notificationId);
+        return $this->model->find($notificationId);
     }
 
     /**
@@ -84,7 +90,7 @@ final class NotificationRepository implements NotificationRepositoryInterface
     public function markAllAsRead(string $userId): int
     {
         return DB::table('notifications')
-            ->where('notifiable_type', \App\Modules\Auth\Models\User::class)
+            ->where('notifiable_type', User::class)
             ->where('notifiable_id', $userId)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
@@ -98,7 +104,7 @@ final class NotificationRepository implements NotificationRepositoryInterface
      */
     public function countUnread(string $userId): int
     {
-        return Notification::where('notifiable_type', \App\Modules\Auth\Models\User::class)
+        return $this->model->where('notifiable_type', User::class)
             ->where('notifiable_id', $userId)
             ->whereNull('read_at')
             ->count();
@@ -113,16 +119,14 @@ final class NotificationRepository implements NotificationRepositoryInterface
      */
     public function createForUser(string $userId, array $data): DatabaseNotification
     {
-        $notification = Notification::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+        $notification = $this->model->create([
+            'id' => (string) Str::uuid(),
             'type' => 'internal_post_created',
-            'notifiable_type' => \App\Modules\Auth\Models\User::class,
+            'notifiable_type' => User::class,
             'notifiable_id' => $userId,
             'data' => $data,
             'read_at' => null,
         ]);
-
-        event(new \App\Modules\Notification\Events\NotificationCreatedEvent($notification));
 
         return $notification;
     }
