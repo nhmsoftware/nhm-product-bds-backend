@@ -10,23 +10,19 @@ use App\Modules\Notification\Models\Notification;
 class NotificationObserver
 {
     /**
-     * Handle the Notification "created" event.
+     * Xử lý sau khi thông báo database được tạo.
      *
-     * @param Notification $notification
+     * @param Notification $notification Thông báo vừa được tạo
      * @return void
      */
     public function created(Notification $notification): void
     {
-        // Khi một database notification được tạo, tự động gửi qua Expo Push
-        
         $notifiable = $notification->notifiable;
         if (!$notifiable) {
             return;
         }
 
-        // Tạo một object notification giả lập để tương thích với ExpoPushChannel
-        // Vì ExpoPushChannel kỳ vọng nhận vào đối tượng Illuminate\Notifications\Notification
-        // Ở đây ta bọc lại data của database notification.
+        // Bọc data hiện có để tái sử dụng ExpoPushChannel cho thông báo database.
         $fakeNotification = new class($notification->data) extends \Illuminate\Notifications\Notification {
             private array $data;
 
@@ -46,10 +42,8 @@ class NotificationObserver
             }
         };
 
-        // Gửi push notification thông qua ExpoPushChannel
         app(ExpoPushChannel::class)->send($notifiable, $fakeNotification);
 
-        // Gửi realtime qua Redis -> Socket.io
         event(new \App\Modules\Notification\Events\NotificationCreatedEvent($notification));
     }
 }

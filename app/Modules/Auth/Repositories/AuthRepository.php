@@ -109,6 +109,30 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     }
 
     /**
+     * Lấy danh sách người dùng đang hoạt động cần nhận thông báo khi có bài viết nội bộ mới.
+     *
+     * @param string|null $department Phòng ban của bài viết
+     * @param string|null $area Khu vực của bài viết
+     * @param string $authorId UUID của người tạo bài viết
+     * @return Collection Danh sách người dùng nhận thông báo
+     */
+    public function getActiveUsersForInternalPost(?string $department, ?string $area, string $authorId): Collection
+    {
+        $query = $this->model->where('is_active', true)
+            ->where('id', '!=', $authorId);
+
+        if (!empty($department)) {
+            $query->where('department', $department);
+        } elseif (!empty($area)) {
+            $query->where('area', $area);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+
+        return $query->get();
+    }
+
+    /**
      * Tìm người dùng theo số điện thoại.
      *
      * @param string $phone

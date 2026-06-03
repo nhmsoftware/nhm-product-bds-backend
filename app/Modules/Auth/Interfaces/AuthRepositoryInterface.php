@@ -39,6 +39,16 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
     public function getActiveEmployeesWithDepartment(?string $area = null): Collection;
 
     /**
+     * Lấy danh sách người dùng đang hoạt động cần nhận thông báo khi có bài viết nội bộ mới.
+     *
+     * @param string|null $department Phòng ban của bài viết
+     * @param string|null $area Khu vực của bài viết
+     * @param string $authorId UUID của người tạo bài viết
+     * @return Collection Danh sách người dùng nhận thông báo
+     */
+    public function getActiveUsersForInternalPost(?string $department, ?string $area, string $authorId): Collection;
+
+    /**
      * Tìm người dùng theo số điện thoại.
      *
      * @param string $phone

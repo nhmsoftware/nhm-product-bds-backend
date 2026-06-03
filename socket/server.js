@@ -40,13 +40,19 @@ redis.on('pmessage', (pattern, channel, message) => {
   try {
     const parsedMessage = JSON.parse(message);
     console.log('Payload:', parsedMessage);
-    
-    // Broadcast message tới toàn bộ client của Socket.io
-    // Cấu trúc event từ Laravel thường có dạng { event: 'TênEvent', data: { ... } }
-    if (parsedMessage.event) {
-       io.emit(parsedMessage.event, parsedMessage.data);
+
+    const eventName = (parsedMessage.event || channel).replace(/^\./, '');
+    const eventData = parsedMessage.data || parsedMessage;
+    const normalizedChannel = channel.match(/user\.[A-Za-z0-9-]+/)?.[0] || channel.replace(/^.*?:/, '');
+    const targetRoom = eventData.room || normalizedChannel;
+
+    // Laravel Redis broadcast gửi channel dạng user.{id}; Socket.IO chỉ emit một lần vào đúng room đó.
+    if (targetRoom && targetRoom !== channel && targetRoom !== 'notification_channel') {
+      io.to(targetRoom).emit(eventName, eventData);
+    } else if (eventData.notifiable_id || eventData.user_id) {
+      io.to(`user.${eventData.notifiable_id || eventData.user_id}`).emit(eventName, eventData);
     } else {
-       io.emit(channel, parsedMessage);
+      io.emit(eventName, eventData);
     }
   } catch (error) {
     console.error('Lỗi khi xử lý message từ Redis:', error);
