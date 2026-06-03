@@ -844,5 +844,60 @@ final class AuthController extends BaseController
 
         return $this->sendSuccess($result->getData(), $result->getMessage());
     }
+
+    #[OA\Put(
+        path: '/api/v1/auth/fcm-token',
+        description: 'Cập nhật FCM Token của người dùng (dùng cho Push Notification).',
+        summary: 'Cập nhật FCM Token',
+        security: [['bearerAuth' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['fcm_token'],
+                properties: [
+                    new OA\Property(property: 'fcm_token', type: 'string', example: 'ExponentPushToken[xxx]'),
+                ]
+            )
+        ),
+        tags: ['Auth'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Cập nhật thành công',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'fcm_token', type: 'string', example: 'ExponentPushToken[xxx]'),
+                            ],
+                            type: 'object'
+                        ),
+                        new OA\Property(property: 'message', type: 'string', example: 'Cập nhật token thông báo thành công.'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Chưa đăng nhập hoặc phiên đã hết hạn'),
+            new OA\Response(response: 422, description: 'Dữ liệu không hợp lệ'),
+        ]
+    )]
+    /**
+     * Cập nhật FCM Token.
+     *
+     * @param UpdateFcmTokenRequest $request
+     * @return JsonResponse
+     */
+    public function updateFcmToken(UpdateFcmTokenRequest $request): JsonResponse
+    {
+        $dto = UpdateFcmTokenDTO::fromRequest($request);
+        $result = $this->authService->updateFcmToken($dto);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
 }
 
