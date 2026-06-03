@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth\Http\Requests;
 
-use App\Core\Http\Requests\BaseRequest;
+use App\Core\Traits\HandleApi;
+use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateFcmTokenRequest extends BaseRequest
+class UpdateFcmTokenRequest extends FormRequest
 {
+    use HandleApi;
     /**
      * Determine if the user is authorized to make this request.
      *
