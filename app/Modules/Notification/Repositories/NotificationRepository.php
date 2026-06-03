@@ -42,7 +42,7 @@ final class NotificationRepository implements NotificationRepositoryInterface
 
         // Sắp xếp: chưa đọc (read_at IS NULL) lên trước, sau đó theo created_at mới nhất
         return $query
-            ->orderByRaw('read_at IS NULL DESC')
+            ->orderByRaw('CASE WHEN read_at IS NULL THEN 1 ELSE 0 END DESC')
             ->orderByDesc('created_at')
             ->paginate($perPage, ['*'], 'page', $page);
     }

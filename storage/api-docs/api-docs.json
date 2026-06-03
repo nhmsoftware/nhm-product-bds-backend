@@ -173,13 +173,13 @@
                 ]
             }
         },
-        "/api/admin/deposit-requests": {
+        "/api/v1/admin/deposit-requests": {
             "get": {
                 "tags": [
                     "Area"
                 ],
                 "summary": "Lấy danh sách yêu cầu đặt cọc (Admin) [UC-091]",
-                "operationId": "ca6d5d7c4461d86f919378c01f3f5ba9",
+                "operationId": "32f7cedf348c12611384c0fec4e3634b",
                 "parameters": [
                     {
                         "name": "status",
@@ -261,13 +261,13 @@
                 ]
             }
         },
-        "/api/admin/deposit-requests/{id}": {
+        "/api/v1/admin/deposit-requests/{id}": {
             "get": {
                 "tags": [
                     "Area"
                 ],
                 "summary": "Xem chi tiết yêu cầu đặt cọc (Admin) [UC-091]",
-                "operationId": "1d3251f921a9e061b245e7ec8a97a483",
+                "operationId": "930ac686f60f738f6379f7d9c19ad8e5",
                 "parameters": [
                     {
                         "name": "id",
@@ -295,13 +295,13 @@
                 ]
             }
         },
-        "/api/admin/deposit-requests/{id}/approve": {
+        "/api/v1/admin/deposit-requests/{id}/approve": {
             "patch": {
                 "tags": [
                     "Area"
                 ],
                 "summary": "Duyệt yêu cầu đặt cọc (Admin) [UC-091]",
-                "operationId": "64dab98691c6cb12fdf35dc1299fd4e1",
+                "operationId": "b0772b6fd32f70a4d8d6a23eed9dd23c",
                 "parameters": [
                     {
                         "name": "id",
@@ -329,13 +329,13 @@
                 ]
             }
         },
-        "/api/admin/deposit-requests/{id}/reject": {
+        "/api/v1/admin/deposit-requests/{id}/reject": {
             "patch": {
                 "tags": [
                     "Area"
                 ],
                 "summary": "Từ chối yêu cầu đặt cọc (Admin) [UC-091, UC-093]",
-                "operationId": "61ced4d4e842d1ade09dd1bc86f8f33d",
+                "operationId": "f4b293d75d792b96c9744bab9ddcd440",
                 "parameters": [
                     {
                         "name": "id",
@@ -383,13 +383,13 @@
                 ]
             }
         },
-        "/api/admin/deposit-requests/{id}/confirm-transaction": {
+        "/api/v1/admin/deposit-requests/{id}/confirm-transaction": {
             "patch": {
                 "tags": [
                     "Area"
                 ],
                 "summary": "Xác nhận giao dịch thành công (Admin) [UC-091]",
-                "operationId": "463eb1c329f2f72f0d2e4595b6bac8d4",
+                "operationId": "1c19cf9ff31df2d4bd6f32f5ad582307",
                 "parameters": [
                     {
                         "name": "id",
@@ -1515,13 +1515,13 @@
                 ]
             }
         },
-        "/api/lots/{lot}/deposit-requests": {
+        "/api/v1/lots/{lot}/deposit-requests": {
             "post": {
                 "tags": [
                     "Area"
                 ],
                 "summary": "Tạo yêu cầu đặt cọc lô đất [UC-083]",
-                "operationId": "afc865a34e17dbfb441f4abdf7a5f24c",
+                "operationId": "1ec7581ea3cafe2866ef89410a6ea7d1",
                 "parameters": [
                     {
                         "name": "lot",
@@ -3230,6 +3230,77 @@
                 ]
             }
         },
+        "/api/v1/auth/fcm-token": {
+            "put": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Cập nhật FCM Token",
+                "description": "Cập nhật FCM Token của người dùng (dùng cho Push Notification).",
+                "operationId": "f3a0d90dd584c1bb399aaecb846108bc",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "fcm_token"
+                                ],
+                                "properties": {
+                                    "fcm_token": {
+                                        "type": "string",
+                                        "example": "ExponentPushToken[xxx]"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "fcm_token": {
+                                                    "type": "string",
+                                                    "example": "ExponentPushToken[xxx]"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cập nhật token thông báo thành công."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập hoặc phiên đã hết hạn"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/auth/reward-points/overview": {
             "get": {
                 "tags": [
@@ -4821,14 +4892,14 @@
                 ]
             }
         },
-        "/api/dashboard/admin/comments": {
+        "/api/v1/dashboard/admin/comments": {
             "get": {
                 "tags": [
                     "Dashboard",
                     "Manage Comment"
                 ],
                 "summary": "Lấy danh sách tất cả bình luận (UC-095)",
-                "operationId": "932b22283eedf2f59037282a09755c38",
+                "operationId": "035f609b6508fc83fd06f0ae95e486a6",
                 "parameters": [
                     {
                         "name": "keyword",
@@ -4895,14 +4966,14 @@
                 }
             }
         },
-        "/api/dashboard/admin/comments/{id}": {
+        "/api/v1/dashboard/admin/comments/{id}": {
             "delete": {
                 "tags": [
                     "Dashboard",
                     "Manage Comment"
                 ],
                 "summary": "Xóa bình luận (UC-095)",
-                "operationId": "92e4f577546993a522d9a05a3df52aec",
+                "operationId": "b02b6164cc24223be27c774593009f10",
                 "parameters": [
                     {
                         "name": "id",
@@ -8667,6 +8738,54 @@
                                                             },
                                                             "type": "object"
                                                         },
+                                                        "quiz": {
+                                                            "description": "Thông tin bài thi trắc nghiệm/tự luận của khóa học",
+                                                            "properties": {
+                                                                "hasQuiz": {
+                                                                    "description": "Khóa học có bài thi không",
+                                                                    "type": "boolean",
+                                                                    "example": true
+                                                                },
+                                                                "status": {
+                                                                    "description": "Trạng thái bài thi (not_started, grading, failed, passed)",
+                                                                    "type": "string",
+                                                                    "example": "grading"
+                                                                },
+                                                                "actionText": {
+                                                                    "description": "Nhãn hành động hiển thị cho bài thi",
+                                                                    "type": "string",
+                                                                    "example": "Đang chấm bài"
+                                                                },
+                                                                "isPassed": {
+                                                                    "description": "Đã thi đạt chưa",
+                                                                    "type": "boolean",
+                                                                    "example": false
+                                                                },
+                                                                "lastScore": {
+                                                                    "description": "Điểm số bài thi gần nhất",
+                                                                    "type": "number",
+                                                                    "format": "float",
+                                                                    "example": null,
+                                                                    "nullable": true
+                                                                },
+                                                                "passingScore": {
+                                                                    "description": "Điểm đạt yêu cầu",
+                                                                    "type": "integer",
+                                                                    "example": 8
+                                                                },
+                                                                "canStart": {
+                                                                    "description": "Có đủ điều kiện để bắt đầu thi (hoàn thành hết video)",
+                                                                    "type": "boolean",
+                                                                    "example": true
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "canAccessPremiumLearning": {
+                                                            "description": "Có quyền truy cập kho học liệu cao cấp không",
+                                                            "type": "boolean",
+                                                            "example": false
+                                                        },
                                                         "notice": {
                                                             "description": "Thông báo/Lưu ý học tập",
                                                             "properties": {
@@ -8957,33 +9076,45 @@
                                                     "example": "Bài 1: Tổng quan về doanh nghiệp"
                                                 },
                                                 "content": {
+                                                    "description": "Nội dung chi tiết bài học",
+                                                    "type": "string",
+                                                    "example": "Nội dung chi tiết bài học...",
+                                                    "nullable": true
+                                                },
+                                                "description": {
+                                                    "description": "Mô tả bài học",
                                                     "type": "string",
                                                     "example": "Nội dung chi tiết bài học...",
                                                     "nullable": true
                                                 },
                                                 "video_url": {
+                                                    "description": "Đường dẫn video bài học",
                                                     "type": "string",
                                                     "example": "https://bds-app.s3.amazonaws.com/videos/lesson1.mp4",
                                                     "nullable": true
                                                 },
                                                 "duration_seconds": {
+                                                    "description": "Thời lượng video tính bằng giây",
                                                     "type": "integer",
                                                     "example": 15
                                                 },
                                                 "order": {
+                                                    "description": "Thứ tự bài học",
                                                     "type": "integer",
                                                     "example": 1
                                                 },
                                                 "status": {
-                                                    "description": "Trạng thái bài học: 1 (completed), 2 (learning), 3 (locked)",
-                                                    "type": "integer",
-                                                    "example": 2
+                                                    "description": "Trạng thái bài học: completed, learning, locked",
+                                                    "type": "string",
+                                                    "example": "learning"
                                                 },
                                                 "status_label": {
+                                                    "description": "Trạng thái bài học/Bài thi (Đang học, Xem lại, Làm bài kiểm tra, Chưa đạt, Đang chấm bài)",
                                                     "type": "string",
                                                     "example": "Đang học"
                                                 },
                                                 "attachments": {
+                                                    "description": "Danh sách tài liệu đính kèm",
                                                     "type": "array",
                                                     "items": {
                                                         "properties": {
@@ -9003,7 +9134,14 @@
                                                         "type": "object"
                                                     }
                                                 },
+                                                "attachment_message": {
+                                                    "description": "Thông báo nếu không có tài liệu",
+                                                    "type": "string",
+                                                    "example": "Không có tài liệu đính kèm.",
+                                                    "nullable": true
+                                                },
                                                 "unlock_condition": {
+                                                    "description": "Thông báo điều kiện mở khóa",
                                                     "type": "string",
                                                     "example": "Hoàn thành bài học này để mở khóa bài tiếp theo: Bài học số 2"
                                                 }
@@ -9275,19 +9413,19 @@
                 ]
             }
         },
-        "/api/v1/learning/lessons/{id}/quiz": {
+        "/api/v1/learning/courses/{id}/quiz": {
             "get": {
                 "tags": [
                     "Learning"
                 ],
-                "summary": "Lấy danh sách câu hỏi kiểm tra bài học (UC-056)",
-                "description": "Tải danh sách các câu hỏi trắc nghiệm của bài học để nhân viên bắt đầu làm bài. Danh sách câu hỏi không chứa kết quả đúng.",
-                "operationId": "10ef0de16b336d48fb0e126e89e84d07",
+                "summary": "Lấy danh sách câu hỏi kiểm tra khóa học (UC-056)",
+                "description": "Tải danh sách các câu hỏi trắc nghiệm của khóa học để nhân viên bắt đầu làm bài. Danh sách câu hỏi không chứa kết quả đúng.",
+                "operationId": "7c187d9bb4a8b5871f17cce1062fb788",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "ID của bài học (UUID)",
+                        "description": "ID của khóa học (UUID)",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -9319,7 +9457,49 @@
                                                 },
                                                 "lesson_title": {
                                                     "type": "string",
-                                                    "example": "Bài 1: Tổng quan về doanh nghiệp"
+                                                    "example": "Tổng quan thị trường BĐS Cao cấp"
+                                                },
+                                                "quiz_title": {
+                                                    "type": "string",
+                                                    "example": "Bài kiểm tra kiến thức"
+                                                },
+                                                "time_limit_minutes": {
+                                                    "type": "integer",
+                                                    "example": 45
+                                                },
+                                                "attempt": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid",
+                                                            "example": "e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0"
+                                                        },
+                                                        "status": {
+                                                            "type": "string",
+                                                            "example": "in_progress"
+                                                        },
+                                                        "started_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2026-06-03T02:45:12Z"
+                                                        },
+                                                        "expires_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2026-06-03T03:30:12Z"
+                                                        },
+                                                        "remaining_seconds": {
+                                                            "type": "integer",
+                                                            "example": 2700
+                                                        },
+                                                        "last_saved_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2026-06-03T02:46:00Z",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 },
                                                 "questions": {
                                                     "type": "array",
@@ -9330,29 +9510,72 @@
                                                                 "format": "uuid",
                                                                 "example": "e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0"
                                                             },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "multiple_choice"
+                                                            },
+                                                            "order": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "title": {
+                                                                "type": "string",
+                                                                "example": "Câu 1: Quy hoạch phân khu",
+                                                                "nullable": true
+                                                            },
                                                             "question": {
                                                                 "type": "string",
                                                                 "example": "Giá trị cốt lõi đầu tiên của công ty là gì?"
                                                             },
+                                                            "image_url": {
+                                                                "type": "string",
+                                                                "example": "https://example.com/img.png",
+                                                                "nullable": true
+                                                            },
                                                             "options": {
                                                                 "type": "array",
                                                                 "items": {
-                                                                    "type": "string"
+                                                                    "properties": {
+                                                                        "value": {
+                                                                            "type": "integer",
+                                                                            "example": 0
+                                                                        },
+                                                                        "label": {
+                                                                            "type": "string",
+                                                                            "example": "Đất thương mại dịch vụ"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
                                                                 },
                                                                 "example": [
-                                                                    "Trung thực",
-                                                                    "Tận tâm",
-                                                                    "Tốc độ",
-                                                                    "Đột phá"
+                                                                    {
+                                                                        "value": 0,
+                                                                        "label": "Đất thương mại dịch vụ"
+                                                                    },
+                                                                    {
+                                                                        "value": 1,
+                                                                        "label": "Đất ở đô thị hỗn hợp"
+                                                                    }
                                                                 ]
+                                                            },
+                                                            "placeholder": {
+                                                                "type": "string",
+                                                                "example": "Nhập câu trả lời của bạn tại đây...",
+                                                                "nullable": true
+                                                            },
+                                                            "draft_selected_option": {
+                                                                "type": "integer",
+                                                                "example": 0,
+                                                                "nullable": true
+                                                            },
+                                                            "draft_essay_answer": {
+                                                                "type": "string",
+                                                                "example": "Câu trả lời tự luận",
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object"
                                                     }
-                                                },
-                                                "time_limit_minutes": {
-                                                    "type": "integer",
-                                                    "example": 15
                                                 }
                                             },
                                             "type": "object"
@@ -9387,7 +9610,7 @@
                         }
                     },
                     "404": {
-                        "description": "Bài học không tồn tại hoặc bài quiz không khả dụng",
+                        "description": "Khóa học không tồn tại hoặc bài quiz không khả dụng",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -9417,19 +9640,19 @@
                 ]
             }
         },
-        "/api/v1/learning/lessons/{id}/quiz/submit": {
+        "/api/v1/learning/courses/{id}/quiz/submit": {
             "post": {
                 "tags": [
                     "Learning"
                 ],
-                "summary": "Nộp bài kiểm tra trắc nghiệm của bài học (UC-056)",
+                "summary": "Nộp bài kiểm tra trắc nghiệm của khóa học (UC-056)",
                 "description": "Chấm điểm bài thi và lưu lịch sử làm bài kiểm tra của nhân viên.",
-                "operationId": "eb5446c0e8da1683a3add74679633e8f",
+                "operationId": "82ffdbfd054b779e3a7b17fd238b6dc5",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "ID của bài học (UUID)",
+                        "description": "ID của khóa học (UUID)",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -9457,7 +9680,13 @@
                                                 },
                                                 "selected_option": {
                                                     "type": "integer",
-                                                    "example": 0
+                                                    "example": 0,
+                                                    "nullable": true
+                                                },
+                                                "essay_answer": {
+                                                    "type": "string",
+                                                    "example": "Nội dung tự luận",
+                                                    "nullable": true
                                                 }
                                             },
                                             "type": "object"
@@ -9522,6 +9751,19 @@
                                                                 "format": "uuid",
                                                                 "example": "e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0"
                                                             },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "multiple_choice"
+                                                            },
+                                                            "order": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "title": {
+                                                                "type": "string",
+                                                                "example": "Câu 1: Quy hoạch phân khu",
+                                                                "nullable": true
+                                                            },
                                                             "question": {
                                                                 "type": "string",
                                                                 "example": "Giá trị cốt lõi đầu tiên của công ty là gì?"
@@ -9529,26 +9771,48 @@
                                                             "options": {
                                                                 "type": "array",
                                                                 "items": {
-                                                                    "type": "string"
+                                                                    "properties": {
+                                                                        "value": {
+                                                                            "type": "integer",
+                                                                            "example": 0
+                                                                        },
+                                                                        "label": {
+                                                                            "type": "string",
+                                                                            "example": "Hà Nội và TP.HCM"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
                                                                 },
                                                                 "example": [
-                                                                    "Trung thực",
-                                                                    "Tận tâm",
-                                                                    "Tốc độ",
-                                                                    "Đột phá"
+                                                                    {
+                                                                        "value": 0,
+                                                                        "label": "Hà Nội và TP.HCM"
+                                                                    },
+                                                                    {
+                                                                        "value": 1,
+                                                                        "label": "Đà Nẵng"
+                                                                    }
                                                                 ]
                                                             },
                                                             "selected_option": {
                                                                 "type": "integer",
-                                                                "example": 0
+                                                                "example": 0,
+                                                                "nullable": true
+                                                            },
+                                                            "essay_answer": {
+                                                                "type": "string",
+                                                                "example": "Nội dung tự luận",
+                                                                "nullable": true
                                                             },
                                                             "correct_option": {
                                                                 "type": "integer",
-                                                                "example": 0
+                                                                "example": 0,
+                                                                "nullable": true
                                                             },
                                                             "is_correct": {
                                                                 "type": "boolean",
-                                                                "example": true
+                                                                "example": true,
+                                                                "nullable": true
                                                             }
                                                         },
                                                         "type": "object"
@@ -9920,19 +10184,19 @@
                 ]
             }
         },
-        "/api/v1/learning/lessons/{id}/quiz/draft": {
+        "/api/v1/learning/courses/{id}/quiz/draft": {
             "post": {
                 "tags": [
                     "Learning"
                 ],
                 "summary": "Lưu tạm bài làm quiz (lưu bản nháp) (UC-059)",
                 "description": "Cho phép nhân viên lưu nháp tiến trình làm bài kiểm tra để tiếp tục hoàn thiện sau.",
-                "operationId": "da760b76e206b85dab841f6248180446",
+                "operationId": "ddb0acd93ebf4443c5e3f3cdfcde1c32",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "ID của bài học (UUID) có bài quiz cần lưu nháp",
+                        "description": "ID của khóa học (UUID) có bài quiz cần lưu nháp",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -9946,6 +10210,15 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
+                                    "attempt_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0"
+                                    },
+                                    "remaining_seconds": {
+                                        "type": "integer",
+                                        "example": 2700
+                                    },
                                     "answers": {
                                         "type": "array",
                                         "items": {
@@ -9958,6 +10231,11 @@
                                                 "selected_option": {
                                                     "type": "integer",
                                                     "example": 1,
+                                                    "nullable": true
+                                                },
+                                                "essay_answer": {
+                                                    "type": "string",
+                                                    "example": "Câu trả lời tự luận",
                                                     "nullable": true
                                                 }
                                             },
@@ -9984,6 +10262,29 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Lưu bản nháp thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "attempt_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "draft"
+                                                },
+                                                "remaining_seconds": {
+                                                    "type": "integer",
+                                                    "example": 2700
+                                                },
+                                                "last_saved_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-06-03T02:46:00Z"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -10053,6 +10354,164 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/learning/courses/{id}/quiz/result": {
+            "get": {
+                "tags": [
+                    "Learning"
+                ],
+                "summary": "Xem lại kết quả bài làm quiz sau khi nộp",
+                "description": "Lấy thông tin chi tiết kết quả bài kiểm tra sau khi đã nộp bài thành công (Task 4).",
+                "operationId": "7c30449fe096c7092375a3b3fe794f0a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của khóa học (UUID)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải kết quả bài làm thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tải kết quả bài làm thành công."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "passed"
+                                                },
+                                                "score": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 8
+                                                },
+                                                "correct_count": {
+                                                    "type": "integer",
+                                                    "example": 4
+                                                },
+                                                "total_questions": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "is_passed": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "passing_score": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 8
+                                                },
+                                                "details": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "quiz_id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0"
+                                                            },
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "multiple_choice"
+                                                            },
+                                                            "order": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "title": {
+                                                                "type": "string",
+                                                                "example": "Câu 1",
+                                                                "nullable": true
+                                                            },
+                                                            "question": {
+                                                                "type": "string",
+                                                                "example": "Câu hỏi chi tiết..."
+                                                            },
+                                                            "options": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "properties": {
+                                                                        "value": {
+                                                                            "type": "integer",
+                                                                            "example": 0
+                                                                        },
+                                                                        "label": {
+                                                                            "type": "string",
+                                                                            "example": "Lựa chọn A"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            },
+                                                            "selected_option": {
+                                                                "type": "integer",
+                                                                "example": 1,
+                                                                "nullable": true
+                                                            },
+                                                            "essay_answer": {
+                                                                "type": "string",
+                                                                "example": null,
+                                                                "nullable": true
+                                                            },
+                                                            "correct_option": {
+                                                                "type": "integer",
+                                                                "example": 1,
+                                                                "nullable": true
+                                                            },
+                                                            "is_correct": {
+                                                                "type": "boolean",
+                                                                "example": true,
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "403": {
+                        "description": "Tài khoản nhân viên bị khóa, hoặc chưa tham gia khóa học"
+                    },
+                    "404": {
+                        "description": "Chưa nộp bài kiểm tra hoặc bài quiz không khả dụng"
+                    },
+                    "500": {
+                        "description": "Lỗi tải kết quả bài làm"
                     }
                 },
                 "security": [
@@ -14062,13 +14521,13 @@
                 }
             }
         },
-        "/api/recruitment/posts": {
+        "/api/v1/recruitment/posts": {
             "get": {
                 "tags": [
                     "Recruitment Management"
                 ],
                 "summary": "Lấy danh sách bài tuyển dụng (UC-126)",
-                "operationId": "6c2080549fa0839abe2237bf6c91e815",
+                "operationId": "46dadc412ccf1572071c82623a482156",
                 "parameters": [
                     {
                         "name": "search",
@@ -14129,7 +14588,7 @@
                     "Recruitment Management"
                 ],
                 "summary": "Tạo bài tuyển dụng mới (UC-126)",
-                "operationId": "175039d120a87fd1381d49a3ed85140f",
+                "operationId": "96e25921c7d5f7a155fee37b60b8ae68",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -14212,13 +14671,13 @@
                 ]
             }
         },
-        "/api/recruitment/posts/{id}": {
+        "/api/v1/recruitment/posts/{id}": {
             "get": {
                 "tags": [
                     "Recruitment Management"
                 ],
                 "summary": "Xem chi tiết bài tuyển dụng (UC-126)",
-                "operationId": "9c172302f416f4686ecbfbc322f2d00e",
+                "operationId": "ff8406151948dce938be86666ff4eb1e",
                 "parameters": [
                     {
                         "name": "id",
@@ -14250,7 +14709,7 @@
                     "Recruitment Management"
                 ],
                 "summary": "Cập nhật bài tuyển dụng (UC-126)",
-                "operationId": "f0b5d51b89334aff61f7e98a15662716",
+                "operationId": "d634f83a879fc8ab2c43d9580e56bb7d",
                 "parameters": [
                     {
                         "name": "id",
@@ -14334,7 +14793,7 @@
                     "Recruitment Management"
                 ],
                 "summary": "Ẩn bài tuyển dụng (UC-129)",
-                "operationId": "bc9498ad7e8fc47d6c620a112af0d42a",
+                "operationId": "ce2d510fe741cd126c6146012367c228",
                 "parameters": [
                     {
                         "name": "id",
@@ -15912,28 +16371,79 @@
                         "format": "uuid",
                         "example": "f87a8b9c-d0e1-4f2a-b3c4-d5e6f7a8b9c0"
                     },
+                    "type": {
+                        "description": "Loại câu hỏi (multiple_choice, essay)",
+                        "type": "string",
+                        "example": "multiple_choice"
+                    },
+                    "order": {
+                        "description": "Thứ tự câu hỏi",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "description": "Tiêu đề câu hỏi",
+                        "type": "string",
+                        "example": "Câu 1: Quy hoạch phân khu",
+                        "nullable": true
+                    },
                     "question": {
                         "description": "Nội dung câu hỏi",
                         "type": "string",
                         "example": "Giá trị cốt lõi đầu tiên của công ty là gì?"
                     },
+                    "image_url": {
+                        "description": "Ảnh minh họa câu hỏi",
+                        "type": "string",
+                        "example": "https://example.com/image.jpg",
+                        "nullable": true
+                    },
+                    "placeholder": {
+                        "description": "Gợi ý nhập cho câu tự luận",
+                        "type": "string",
+                        "example": "Nhập câu trả lời của bạn...",
+                        "nullable": true
+                    },
                     "options": {
                         "description": "Các phương án lựa chọn",
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "properties": {
+                                "value": {
+                                    "type": "integer",
+                                    "example": 0
+                                },
+                                "label": {
+                                    "type": "string",
+                                    "example": "Hà Nội và TP.HCM"
+                                }
+                            },
+                            "type": "object"
                         },
                         "example": [
-                            "Trung thực",
-                            "Tận tâm",
-                            "Tốc độ",
-                            "Đột phá"
+                            {
+                                "value": 0,
+                                "label": "Hà Nội và TP.HCM"
+                            },
+                            {
+                                "value": 1,
+                                "label": "Đà Nẵng"
+                            },
+                            {
+                                "value": 2,
+                                "label": "Cần Thơ"
+                            },
+                            {
+                                "value": 3,
+                                "label": "Hải Phòng"
+                            }
                         ]
                     },
                     "correct_option": {
                         "description": "Chỉ mục phương án đúng (0-based)",
                         "type": "integer",
-                        "example": 0
+                        "example": 0,
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -15998,6 +16508,11 @@
                     "selected_option": {
                         "type": "integer",
                         "example": 1,
+                        "nullable": true
+                    },
+                    "essay_answer": {
+                        "type": "string",
+                        "example": "Câu trả lời tự luận của tôi",
                         "nullable": true
                     },
                     "is_correct": {
