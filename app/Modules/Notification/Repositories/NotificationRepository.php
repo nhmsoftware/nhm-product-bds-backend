@@ -113,7 +113,7 @@ final class NotificationRepository implements NotificationRepositoryInterface
      */
     public function createForUser(string $userId, array $data): DatabaseNotification
     {
-        return Notification::create([
+        $notification = Notification::create([
             'id' => (string) \Illuminate\Support\Str::uuid(),
             'type' => 'internal_post_created',
             'notifiable_type' => \App\Modules\Auth\Models\User::class,
@@ -121,5 +121,9 @@ final class NotificationRepository implements NotificationRepositoryInterface
             'data' => $data,
             'read_at' => null,
         ]);
+
+        event(new \App\Modules\Notification\Events\NotificationCreatedEvent($notification));
+
+        return $notification;
     }
 }
