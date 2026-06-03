@@ -30,7 +30,8 @@ final class NotificationRepository implements NotificationRepositoryInterface
      */
     public function getNotifications(string $userId, int $perPage, int $page, ?bool $isRead): LengthAwarePaginator
     {
-        $query = Notification::where('notifiable_type', \App\Modules\Auth\Models\User::class)
+        $userClass = \App\Modules\Auth\Models\User::class;
+        $query = Notification::where('notifiable_type', $userClass)
             ->where('notifiable_id', $userId);
 
         // A5: Lọc theo trạng thái đọc/chưa đọc nếu có
