@@ -56,4 +56,13 @@ interface NotificationRepositoryInterface
      * @return int Số thông báo chưa đọc
      */
     public function countUnread(string $userId): int;
+
+    /**
+     * Tạo thông báo database cho một người dùng.
+     *
+     * @param string $userId UUID của người nhận thông báo
+     * @param array<string, mixed> $data Payload thông báo
+     * @return DatabaseNotification Thông báo vừa tạo
+     */
+    public function createForUser(string $userId, array $data): DatabaseNotification;
 }

@@ -49,6 +49,32 @@ use OpenApi\Attributes as OA;
 class Notification extends DatabaseNotification
 {
     /**
+     * Các trường được phép ghi khi tạo thông báo database.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'id',
+        'type',
+        'notifiable_type',
+        'notifiable_id',
+        'data',
+        'read_at',
+    ];
+
+    /**
+     * Kiểu dữ liệu cần ép khi đọc/ghi thông báo.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'data' => 'array',
+        'read_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    /**
      * Ghi đè toArray để thêm trường is_read để Frontend dễ sử dụng
      * và chuẩn hóa cấu trúc response theo chuẩn dự án.
      *
@@ -60,6 +86,12 @@ class Notification extends DatabaseNotification
             'id'          => (string) $this->id,
             'type'        => $this->type,
             'data'        => $this->data,
+            'title'       => $this->data['title'] ?? null,
+            'body'        => $this->data['body'] ?? null,
+            'user_id'     => (string) $this->notifiable_id,
+            'notifiable_id' => (string) $this->notifiable_id,
+            'action_type' => $this->data['action_type'] ?? null,
+            'action_id'   => $this->data['action_id'] ?? null,
             'is_read'     => $this->read_at !== null,
             'read_at'     => $this->read_at?->toIso8601String(),
             'created_at'  => $this->created_at->toIso8601String(),

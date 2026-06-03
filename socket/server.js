@@ -40,28 +40,18 @@ redis.on('pmessage', (pattern, channel, message) => {
   try {
     const parsedMessage = JSON.parse(message);
     console.log('Payload:', parsedMessage);
-    
-    // Cấu trúc event từ Laravel thường có dạng { event: 'TênEvent', data: { ... } }
-    if (parsedMessage.event && parsedMessage.data) {
-      const eventName = parsedMessage.event;
-      const data = parsedMessage.data;
-      
-      // Nếu có user_id hoặc notifiable_id, emit vào user-specific room
-      // FE phải join room trước với format: user.{id}
-      if (data.user_id || data.notifiable_id) {
-        const userId = data.user_id || data.notifiable_id;
-        const roomName = `user.${userId}`;
-        console.log(`[Emit] Event: ${eventName} -> Room: ${roomName}`);
-        io.to(roomName).emit(eventName, data);
-      } else {
-        // Nếu không có user_id, broadcast tới toàn bộ clients
-        console.log(`[Emit] Event: ${eventName} -> All clients`);
-        io.emit(eventName, data);
-      }
-    } else if (parsedMessage.event) {
-       io.emit(parsedMessage.event, parsedMessage.data || {});
+    const eventName = (parsedMessage.event || channel).replace(/^\./, '');
+    const eventData = parsedMessage.data || parsedMessage;
+    const normalizedChannel = channel.match(/user\.[A-Za-z0-9-]+/)?.[0] || channel.replace(/^.*?:/, '');
+    const targetRoom = eventData.room || normalizedChannel;
+
+    // Laravel Redis broadcast gửi channel dạng user.{id}; Socket.IO chỉ emit một lần vào đúng room đó.
+    if (targetRoom && targetRoom !== channel && targetRoom !== 'notification_channel') {
+      io.to(targetRoom).emit(eventName, eventData);
+    } else if (eventData.notifiable_id || eventData.user_id) {
+      io.to(`user.${eventData.notifiable_id || eventData.user_id}`).emit(eventName, eventData);
     } else {
-       io.emit(channel, parsedMessage);
+      io.emit(eventName, eventData);
     }
   } catch (error) {
     console.error('Lỗi khi xử lý message từ Redis:', error);

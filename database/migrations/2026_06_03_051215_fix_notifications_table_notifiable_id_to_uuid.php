@@ -12,7 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // For PostgreSQL, we need to use raw SQL to convert the type
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
+        // PostgreSQL cần raw SQL để chuyển kiểu cột đang tồn tại sang uuid.
         DB::statement('ALTER TABLE notifications ALTER COLUMN notifiable_id TYPE uuid USING notifiable_id::text::uuid');
     }
 
@@ -21,6 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('ALTER TABLE notifications ALTER COLUMN notifiable_id TYPE bigint USING notifiable_id::text::bigint');
     }
 };

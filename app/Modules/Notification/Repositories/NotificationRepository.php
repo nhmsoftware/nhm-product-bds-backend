@@ -103,4 +103,23 @@ final class NotificationRepository implements NotificationRepositoryInterface
             ->whereNull('read_at')
             ->count();
     }
+
+    /**
+     * Tạo thông báo database cho một người dùng.
+     *
+     * @param string $userId UUID của người nhận thông báo
+     * @param array<string, mixed> $data Payload thông báo
+     * @return DatabaseNotification Thông báo vừa tạo
+     */
+    public function createForUser(string $userId, array $data): DatabaseNotification
+    {
+        return Notification::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'type' => 'internal_post_created',
+            'notifiable_type' => \App\Modules\Auth\Models\User::class,
+            'notifiable_id' => $userId,
+            'data' => $data,
+            'read_at' => null,
+        ]);
+    }
 }
