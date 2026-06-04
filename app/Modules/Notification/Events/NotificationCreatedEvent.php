@@ -24,7 +24,7 @@ final class NotificationCreatedEvent implements ShouldBroadcastNow
 
     public function broadcastOn(): Channel
     {
-        return new Channel('user.' . $this->notification->notifiable_id);
+        return new Channel('bds.communication.events');
     }
 
     public function broadcastAs(): string
