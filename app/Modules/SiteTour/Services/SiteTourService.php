@@ -62,9 +62,9 @@ final class SiteTourService extends BaseService implements SiteTourServiceInterf
             );
 
             // 3. Kiểm tra tọa độ GPS hợp lệ (A5)
-            // Giả lập mỗi dự án có tọa độ chính xác là 10.7769 (vĩ độ), 106.7009 (kinh độ)
-            $projectLat = 10.7769;
-            $projectLng = 106.7009;
+            // Lấy tọa độ từ .env, mặc định là Khu 25 Thửa phú cát nếu không có
+            $projectLat = (float) env('DEFAULT_PROJECT_LAT', 21.04039963677646);
+            $projectLng = (float) env('DEFAULT_PROJECT_LNG', 105.77333406318525);
 
             $distance = $this->calculateDistance($dto->latitude, $dto->longitude, $projectLat, $projectLng);
             $this->validate(

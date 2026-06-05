@@ -36,6 +36,7 @@ class CheckInMeetCustomerRequest extends FormRequest
             'project_id.exists' => 'Dự án quan tâm không hợp lệ.',
             'image.required' => 'Vui lòng chụp ảnh thực tế.',
             'image.image' => 'File tải lên phải là hình ảnh.',
+            'image.uploaded' => 'Dung lượng ảnh quá lớn (vượt giới hạn server) hoặc lỗi mạng khi tải lên.',
             'latitude.required' => 'Không thể xác định vị trí hiện tại.',
             'latitude.not_in' => 'Không thể xác định vị trí hiện tại.',
             'longitude.required' => 'Không thể xác định vị trí hiện tại.',

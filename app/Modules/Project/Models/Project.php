@@ -124,6 +124,7 @@ class Project extends Model
         $array = parent::toArray();
         if (isset($array['status']) && $this->status instanceof ProjectStatus) {
             $array['status'] = $this->status->serialize();
+            $array['lable_status'] = $this->status->label();
         }
         return $array;
     }

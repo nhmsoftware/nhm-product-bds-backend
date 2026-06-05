@@ -46,6 +46,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'longitude', type: 'number', format: 'float', example: 106.7009),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
         new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'lable_status', type: 'string', example: 'Hoàn thành'),
     ]
 )]
 class CustomerMeeting extends Model
@@ -70,6 +71,15 @@ class CustomerMeeting extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    protected $appends = [
+        'lable_status'
+    ];
+
+    public function getLableStatusAttribute(): string
+    {
+        return 'Hoàn thành';
+    }
 
    // ─── Relationships ───────────────────────────────────────────
 
