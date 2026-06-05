@@ -29,3 +29,4 @@ Dockerfile
 docker-compose.yml
 tests/Feature
 storage/api-docs/api-docs.json
+storage/api-docs/api-docs.json

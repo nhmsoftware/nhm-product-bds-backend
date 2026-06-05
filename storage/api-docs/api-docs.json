@@ -638,6 +638,26 @@
                             "type": "string",
                             "format": "uuid"
                         }
+                    },
+                    {
+                        "name": "comments_per_page",
+                        "in": "query",
+                        "description": "Số lượng bình luận trên mỗi trang (mặc định: 10)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại cho danh sách bình luận (mặc định: 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     }
                 ],
                 "responses": {
@@ -15219,6 +15239,11 @@
                         "example": 1,
                         "nullable": true
                     },
+                    "label_status": {
+                        "type": "string",
+                        "example": "Đang mở bán",
+                        "nullable": true
+                    },
                     "total_lots": {
                         "type": "integer",
                         "example": 100
@@ -15945,6 +15970,10 @@
                     "updated_at": {
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "lable_status": {
+                        "type": "string",
+                        "example": "Hoàn thành"
                     }
                 },
                 "type": "object"
