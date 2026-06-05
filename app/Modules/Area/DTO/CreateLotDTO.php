@@ -20,6 +20,7 @@ final class CreateLotDTO
         public readonly ?int $coordinate_y = null,
         public readonly ?int $width = null,
         public readonly ?int $height = null,
+        public readonly ?array $images = null,
         public readonly ?string $planning_id = null,
     ) {}
 
@@ -39,6 +40,7 @@ final class CreateLotDTO
             coordinate_y: isset($data['coordinate_y']) ? (int) $data['coordinate_y'] : null,
             width: isset($data['width']) ? (int) $data['width'] : null,
             height: isset($data['height']) ? (int) $data['height'] : null,
+            images: $data['images'] ?? null,
             planning_id: $data['planning_id'] ?? null,
         );
     }
@@ -59,6 +61,7 @@ final class CreateLotDTO
             'coordinate_y' => $this->coordinate_y,
             'width' => $this->width,
             'height' => $this->height,
+            'images' => $this->images,
             'planning_id' => $this->planning_id,
         ];
     }

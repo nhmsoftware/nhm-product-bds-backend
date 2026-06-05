@@ -123,6 +123,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // 4. Kiểm tra khu đất có tồn tại
             $area = $this->areaRepository->findById($areaId);
             $this->validate($area !== null, 'Khu đất không tồn tại.', 404);
+            $area->load('project');
 
             // 5. Kiểm tra A1: Quyền truy cập khu đất (phải được cấp quyền hoặc là admin)
             $this->validate(
@@ -145,8 +146,17 @@ final class AreaService extends BaseService implements AreaServiceInterface
             return $this->success([
                 'area_id' => $area->id,
                 'area_name' => $area->name,
+                'google_maps_url' => $area->project ? $area->project->google_maps_url : null,
                 'sales_board_image' => $area->sales_board_image,
                 'sales_board_iframe' => $area->sales_board_iframe,
+                'planning_check_url' => $area->planning_check_url,
+                'summary' => [
+                    'area_size' => $area->area_size,
+                    'direction' => $area->direction,
+                    'price' => $area->price,
+                    'unit_price' => $area->unit_price,
+                    'status' => $area->status,
+                ],
                 'lots' => $lots->toArray(),
             ], 'Tải sơ đồ bảng hàng thành công.');
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
@@ -210,6 +220,23 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // 6. Trả về thông tin lô đất kèm tên khu đất
             $data = $lot->toArray();
             $data['area_name'] = $lot->area ? $lot->area->name : null;
+            
+            // Xử lý mảng ảnh cho Lot gallery
+            $lotImages = $lot->images ?? [];
+            if (empty($lotImages) && $lot->image_url) {
+                $lotImages = [$lot->image_url];
+            }
+            $data['images'] = $lotImages;
+
+            if ($lot->area) {
+                $areaImages = $lot->area->sales_board_images ?? [];
+                if (empty($areaImages) && $lot->area->sales_board_image) {
+                    $areaImages = [$lot->area->sales_board_image];
+                }
+                $data['area'] = $lot->area->toArray();
+                $data['area']['sales_board_images'] = $areaImages;
+            }
+
             $data['planning'] = $lot->planning ? $lot->planning->toArray() : null;
             $data['comments'] = $comments->toArray();
 
@@ -449,6 +476,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                     'name' => $area->name,
                     'sales_board_image' => $area->sales_board_image,
                     'sales_board_iframe' => $area->sales_board_iframe,
+                    'planning_check_url' => $area->planning_check_url,
                     'total_lots' => (int) $area->total_lots,
                     'remaining_lots' => (int) $area->remaining_lots,
                     'status' => $area->remaining_lots > 0 ? 'Đang mở bán' : 'Hết hàng',
@@ -465,6 +493,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                     'name' => $lot->area ? $lot->area->name : '',
                     'sales_board_image' => $lot->area ? $lot->area->sales_board_image : null,
                     'sales_board_iframe' => $lot->area ? $lot->area->sales_board_iframe : null,
+                    'planning_check_url' => $lot->area ? $lot->area->planning_check_url : null,
                     'total_lots' => $lot->area ? (int) $lot->area->total_lots : 0,
                     'remaining_lots' => $lot->area ? (int) $lot->area->remaining_lots : 0,
                     'status' => $lot->status instanceof LotStatus ? $lot->status->label() : LotStatus::deserialize($lot->status)->label(),

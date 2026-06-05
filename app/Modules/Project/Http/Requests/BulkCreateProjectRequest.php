@@ -46,6 +46,14 @@ class BulkCreateProjectRequest extends FormRequest
             'area.name' => 'required_with:area|string|max:255',
             'area.sales_board_image' => 'nullable|string|url',
             'area.sales_board_iframe' => 'nullable|string|url',
+            'area.planning_check_url' => 'nullable|string|url',
+            'area.sales_board_images' => 'nullable|array',
+            'area.sales_board_images.*' => 'string|url',
+            'area.area_size' => 'nullable|numeric|min:0',
+            'area.direction' => 'nullable|string|max:100',
+            'area.price' => 'nullable|integer|min:0',
+            'area.unit_price' => 'nullable|integer|min:0',
+            'area.status' => 'nullable|integer',
             'area.total_lots' => 'nullable|integer|min:0',
 
             // Lots validation
@@ -63,6 +71,8 @@ class BulkCreateProjectRequest extends FormRequest
             'lots.*.coordinate_y' => 'nullable|integer',
             'lots.*.width' => 'nullable|integer',
             'lots.*.height' => 'nullable|integer',
+            'lots.*.images' => 'nullable|array',
+            'lots.*.images.*' => 'string|url',
             'lots.*.planning_id' => 'nullable|string|uuid',
         ];
     }

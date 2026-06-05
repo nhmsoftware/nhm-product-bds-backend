@@ -177,8 +177,21 @@ class AreaController extends BaseController
                             properties: [
                                 new OA\Property(property: 'area_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
                                 new OA\Property(property: 'area_name', type: 'string', example: 'Phân khu A'),
+                                new OA\Property(property: 'google_maps_url', type: 'string', nullable: true, example: 'https://maps.google.com/?q=10.762622,106.660172'),
                                 new OA\Property(property: 'sales_board_image', type: 'string', nullable: true, example: 'https://example.com/board.jpg'),
                                 new OA\Property(property: 'sales_board_iframe', type: 'string', nullable: true, example: 'https://quyhoach24h.vn?ref=C5WA63ND'),
+                                new OA\Property(property: 'planning_check_url', type: 'string', nullable: true, example: 'https://quyhoach24h.vn?ref=C5WA63ND'),
+                                new OA\Property(
+                                    property: 'summary',
+                                    type: 'object',
+                                    properties: [
+                                        new OA\Property(property: 'area_size', type: 'number', format: 'float', nullable: true, example: 120.5),
+                                        new OA\Property(property: 'direction', type: 'string', nullable: true, example: 'Đông Nam'),
+                                        new OA\Property(property: 'price', type: 'integer', nullable: true, example: 5000000000),
+                                        new OA\Property(property: 'unit_price', type: 'integer', nullable: true, example: 45000000),
+                                        new OA\Property(property: 'status', type: 'integer', nullable: true, example: 1),
+                                    ]
+                                ),
                                 new OA\Property(
                                     property: 'lots',
                                     type: 'array',
@@ -613,6 +626,7 @@ class AreaController extends BaseController
                                     new OA\Property(property: 'name', type: 'string', example: 'Phân khu A'),
                                     new OA\Property(property: 'sales_board_image', type: 'string', nullable: true, example: 'https://example.com/board.jpg'),
                                     new OA\Property(property: 'sales_board_iframe', type: 'string', nullable: true, example: 'https://quyhoach24h.vn?ref=C5WA63ND'),
+                                    new OA\Property(property: 'planning_check_url', type: 'string', nullable: true, example: 'https://quyhoach24h.vn?ref=C5WA63ND'),
                                     new OA\Property(property: 'total_lots', type: 'integer', example: 100),
                                     new OA\Property(property: 'remaining_lots', type: 'integer', example: 45),
                                     new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Project\Models\Enums\ProjectStatus::OPENING->value),

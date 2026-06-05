@@ -26,6 +26,7 @@ use App\Modules\Area\Models\Enums\LotStatus;
  * @property int|null $coordinate_y
  * @property int|null $width
  * @property int|null $height
+ * @property array|null $images
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -48,6 +49,7 @@ use App\Modules\Area\Models\Enums\LotStatus;
         new OA\Property(property: 'coordinate_y', type: 'integer', nullable: true, example: 320),
         new OA\Property(property: 'width', type: 'integer', nullable: true, example: 60),
         new OA\Property(property: 'height', type: 'integer', nullable: true, example: 60),
+        new OA\Property(property: 'images', type: 'array', items: new OA\Items(type: 'string'), nullable: true, example: ['https://example.com/lot_1.jpg']),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
         new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
     ]
@@ -71,6 +73,7 @@ class Lot extends Model
         'width',
         'height',
         'image_url',
+        'images',
         'frontage',
         'legal',
         'description',
@@ -91,6 +94,7 @@ class Lot extends Model
         'height' => 'integer',
         'frontage' => 'float',
         'planning_id' => 'string',
+        'images' => 'array',
         'is_locked' => 'boolean',
     ];
 
