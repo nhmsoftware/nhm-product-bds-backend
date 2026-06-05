@@ -161,6 +161,20 @@ class AreaController extends BaseController
                 required: true,
                 description: 'ID của khu đất',
                 schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+            new OA\Parameter(
+                name: 'comments_per_page',
+                in: 'query',
+                required: false,
+                description: 'Số lượng bình luận trên mỗi trang (mặc định: 10)',
+                schema: new OA\Schema(type: 'integer', default: 10)
+            ),
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                required: false,
+                description: 'Trang hiện tại cho danh sách bình luận (mặc định: 1)',
+                schema: new OA\Schema(type: 'integer', default: 1)
             )
         ],
         responses: [
@@ -235,7 +249,8 @@ class AreaController extends BaseController
     public function inventoryMap(string $id, \Illuminate\Http\Request $request): JsonResponse
     {
         $userId = (string) $request->user()->id;
-        $result = $this->areaService->getInventoryMap($userId, $id);
+        $perPage = (int) $request->query('comments_per_page', 10);
+        $result = $this->areaService->getInventoryMap($userId, $id, $perPage);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());

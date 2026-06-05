@@ -102,11 +102,12 @@ final class AreaService extends BaseService implements AreaServiceInterface
      *
      * @param string $userId
      * @param string $areaId
+     * @param int $perPage
      * @return ServiceReturn
      */
-    public function getInventoryMap(string $userId, string $areaId): ServiceReturn
+    public function getInventoryMap(string $userId, string $areaId, int $perPage = 10): ServiceReturn
     {
-        return $this->execute(function () use ($userId, $areaId) {
+        return $this->execute(function () use ($userId, $areaId, $perPage) {
             // 1. Kiểm tra Preconditions: Tài khoản người dùng tồn tại
             $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
@@ -137,8 +138,8 @@ final class AreaService extends BaseService implements AreaServiceInterface
             $lots = $this->lotRepository->getLotsByAreaId($areaId);
 
             // 7. Tải bình luận
-            $commentsRaw = $this->areaCommentRepository->getCommentsByAreaId($areaId);
-            $comments = $commentsRaw->map(function ($comment) {
+            $commentsPaginator = $this->areaCommentRepository->getCommentsByAreaId($areaId, $perPage);
+            $commentsPaginator->getCollection()->transform(function ($comment) {
                 return [
                     'id' => (string) $comment->id,
                     'area_id' => (string) $comment->area_id,
@@ -172,7 +173,20 @@ final class AreaService extends BaseService implements AreaServiceInterface
                     'status' => $area->status,
                 ],
                 'lots' => $lots->toArray(),
-                'comments' => $comments->toArray(),
+                'comments' => [
+                    'current_page' => $commentsPaginator->currentPage(),
+                    'data' => $commentsPaginator->items(),
+                    'first_page_url' => $commentsPaginator->url(1),
+                    'from' => $commentsPaginator->firstItem(),
+                    'last_page' => $commentsPaginator->lastPage(),
+                    'last_page_url' => $commentsPaginator->url($commentsPaginator->lastPage()),
+                    'next_page_url' => $commentsPaginator->nextPageUrl(),
+                    'path' => $commentsPaginator->path(),
+                    'per_page' => $commentsPaginator->perPage(),
+                    'prev_page_url' => $commentsPaginator->previousPageUrl(),
+                    'to' => $commentsPaginator->lastItem(),
+                    'total' => $commentsPaginator->total(),
+                ],
             ], 'Tải sơ đồ bảng hàng thành công.');
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
             return ServiceReturn::error(

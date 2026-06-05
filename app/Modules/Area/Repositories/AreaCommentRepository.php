@@ -24,13 +24,14 @@ final class AreaCommentRepository extends BaseRepository implements AreaCommentR
      * Lấy danh sách bình luận của một khu đất kèm thông tin người dùng.
      *
      * @param string $areaId
-     * @return \Illuminate\Support\Collection
+     * @param int $perPage
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getCommentsByAreaId(string $areaId)
+    public function getCommentsByAreaId(string $areaId, int $perPage = 10)
     {
         return $this->model->where('area_id', $areaId)
             ->with('user')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
     }
 }

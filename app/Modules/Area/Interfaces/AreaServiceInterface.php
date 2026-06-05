@@ -24,9 +24,10 @@ interface AreaServiceInterface
      *
      * @param string $userId
      * @param string $areaId
+     * @param int $perPage
      * @return ServiceReturn
      */
-    public function getInventoryMap(string $userId, string $areaId): ServiceReturn;
+    public function getInventoryMap(string $userId, string $areaId, int $perPage = 10): ServiceReturn;
 
     /**
      * Xem thông tin chi tiết lô đất.
