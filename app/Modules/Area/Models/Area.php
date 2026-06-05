@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Area\Models;
 
+use App\Modules\Area\Models\Enums\AreaStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -26,7 +27,8 @@ use OpenApi\Attributes as OA;
  * @property string|null $direction
  * @property int|null $price
  * @property int|null $unit_price
- * @property int|null $status
+ * @property AreaStatus|null $status
+ * @property string|null $label_status
  * @property bool $is_featured
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -50,6 +52,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'price', type: 'integer', nullable: true, example: 5000000000),
         new OA\Property(property: 'unit_price', type: 'integer', nullable: true, example: 45000000),
         new OA\Property(property: 'status', type: 'integer', nullable: true, example: 1),
+        new OA\Property(property: 'label_status', type: 'string', nullable: true, example: 'Đang mở bán'),
         new OA\Property(property: 'total_lots', type: 'integer', example: 100),
         new OA\Property(property: 'remaining_lots', type: 'integer', example: 45),
         new OA\Property(property: 'is_featured', type: 'boolean', example: true),
@@ -87,10 +90,51 @@ class Area extends Model
         'area_size' => 'float',
         'price' => 'integer',
         'unit_price' => 'integer',
-        'status' => 'integer',
+        'status' => AreaStatus::class,
         'is_featured' => 'boolean',
         'sales_board_images' => 'array',
     ];
+
+    /**
+     * Accessor: trả về nhãn tiếng Việt của trạng thái khu đất.
+     *
+     * @return string|null
+     */
+    public function getLabelStatusAttribute(): ?string
+    {
+        if ($this->status instanceof AreaStatus) {
+            return $this->status->label();
+        }
+        if ($this->status !== null) {
+            $enum = AreaStatus::tryFrom((int) $this->status);
+            return $enum?->label();
+        }
+        return null;
+    }
+
+    /**
+     * Mutator: chấp nhận cả int lẫn AreaStatus instance.
+     */
+    public function setStatusAttribute(mixed $value): void
+    {
+        if ($value === null) {
+            $this->attributes['status'] = null;
+            return;
+        }
+        $this->attributes['status'] = $value instanceof AreaStatus
+            ? $value->value
+            : (int) $value;
+    }
+
+    /**
+     * Override toArray để luôn include label_status trong response.
+     */
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+        $array['label_status'] = $this->label_status;
+        return $array;
+    }
 
     /**
      * Danh sách người dùng được cấp quyền truy cập khu đất này.

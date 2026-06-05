@@ -666,9 +666,56 @@
                                                     "type": "string",
                                                     "example": "Phân khu A"
                                                 },
+                                                "google_maps_url": {
+                                                    "type": "string",
+                                                    "example": "https://maps.google.com/?q=10.762622,106.660172",
+                                                    "nullable": true
+                                                },
                                                 "sales_board_image": {
                                                     "type": "string",
-                                                    "example": "https://example.com/board.jpg"
+                                                    "example": "https://example.com/board.jpg",
+                                                    "nullable": true
+                                                },
+                                                "sales_board_iframe": {
+                                                    "type": "string",
+                                                    "example": "https://quyhoach24h.vn?ref=C5WA63ND",
+                                                    "nullable": true
+                                                },
+                                                "planning_check_url": {
+                                                    "type": "string",
+                                                    "example": "https://quyhoach24h.vn?ref=C5WA63ND",
+                                                    "nullable": true
+                                                },
+                                                "summary": {
+                                                    "properties": {
+                                                        "area_size": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 120.5,
+                                                            "nullable": true
+                                                        },
+                                                        "direction": {
+                                                            "type": "string",
+                                                            "example": "Đông Nam",
+                                                            "nullable": true
+                                                        },
+                                                        "price": {
+                                                            "type": "integer",
+                                                            "example": 5000000000,
+                                                            "nullable": true
+                                                        },
+                                                        "unit_price": {
+                                                            "type": "integer",
+                                                            "example": 45000000,
+                                                            "nullable": true
+                                                        },
+                                                        "status": {
+                                                            "type": "integer",
+                                                            "example": 1,
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 },
                                                 "lots": {
                                                     "type": "array",
@@ -868,36 +915,6 @@
                                                     ],
                                                     "nullable": true,
                                                     "type": "object"
-                                                },
-                                                "comments": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "properties": {
-                                                            "id": {
-                                                                "type": "string",
-                                                                "format": "uuid",
-                                                                "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
-                                                            },
-                                                            "user_id": {
-                                                                "type": "string",
-                                                                "format": "uuid",
-                                                                "example": "d3b07384-d113-4ec2-a5d6-c734b3234567"
-                                                            },
-                                                            "user_name": {
-                                                                "type": "string",
-                                                                "example": "Nguyen Van A"
-                                                            },
-                                                            "content": {
-                                                                "type": "string",
-                                                                "example": "Bình luận nội bộ..."
-                                                            },
-                                                            "created_at": {
-                                                                "type": "string",
-                                                                "format": "date-time"
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    }
                                                 }
                                             },
                                             "type": "object"
@@ -962,19 +979,19 @@
                 ]
             }
         },
-        "/api/v1/lots/{id}/comments": {
+        "/api/v1/areas/{id}/comments": {
             "post": {
                 "tags": [
                     "Area"
                 ],
-                "summary": "Thêm bình luận nội bộ mới cho lô đất (UC-080)",
-                "description": "Cho phép người dùng gửi bình luận nội bộ mới về lô đất.",
-                "operationId": "35da4a334907043efed452c0c0b1bdb6",
+                "summary": "Thêm bình luận nội bộ mới cho khu đất (UC-080)",
+                "description": "Cho phép người dùng gửi bình luận nội bộ mới về khu đất.",
+                "operationId": "0f56fc5b2431856490cbb40eaeafff3b",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "ID của lô đất",
+                        "description": "ID của khu đất",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -1023,7 +1040,7 @@
                                                     "format": "uuid",
                                                     "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
                                                 },
-                                                "lot_id": {
+                                                "area_id": {
                                                     "type": "string",
                                                     "format": "uuid",
                                                     "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
@@ -1078,7 +1095,7 @@
                         }
                     },
                     "404": {
-                        "description": "Lô đất không tồn tại.",
+                        "description": "Khu đất không tồn tại.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1089,7 +1106,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "Lô đất không tồn tại."
+                                            "example": "Khu đất không tồn tại."
                                         }
                                     },
                                     "type": "object"
@@ -1400,6 +1417,16 @@
                                                     "sales_board_image": {
                                                         "type": "string",
                                                         "example": "https://example.com/board.jpg",
+                                                        "nullable": true
+                                                    },
+                                                    "sales_board_iframe": {
+                                                        "type": "string",
+                                                        "example": "https://quyhoach24h.vn?ref=C5WA63ND",
+                                                        "nullable": true
+                                                    },
+                                                    "planning_check_url": {
+                                                        "type": "string",
+                                                        "example": "https://quyhoach24h.vn?ref=C5WA63ND",
                                                         "nullable": true
                                                     },
                                                     "total_lots": {
@@ -15146,6 +15173,52 @@
                         "example": "https://example.com/images/sales_board.jpg",
                         "nullable": true
                     },
+                    "sales_board_iframe": {
+                        "type": "string",
+                        "example": "https://quyhoach24h.vn?ref=C5WA63ND",
+                        "nullable": true
+                    },
+                    "planning_check_url": {
+                        "type": "string",
+                        "example": "https://quyhoach24h.vn?ref=C5WA63ND",
+                        "nullable": true
+                    },
+                    "sales_board_images": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "https://example.com/images/sales_board_1.jpg"
+                        ],
+                        "nullable": true
+                    },
+                    "area_size": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 120.5,
+                        "nullable": true
+                    },
+                    "direction": {
+                        "type": "string",
+                        "example": "Đông Nam",
+                        "nullable": true
+                    },
+                    "price": {
+                        "type": "integer",
+                        "example": 5000000000,
+                        "nullable": true
+                    },
+                    "unit_price": {
+                        "type": "integer",
+                        "example": 45000000,
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
                     "total_lots": {
                         "type": "integer",
                         "example": 100
@@ -15188,6 +15261,41 @@
                         "type": "string",
                         "format": "uuid",
                         "example": "uuid-string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "AreaComment": {
+                "title": "AreaComment Model",
+                "description": "Thông tin bình luận khu đất/bảng hàng",
+                "properties": {
+                    "id": {
+                        "description": "Class AreaComment",
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
+                    },
+                    "area_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d3b07384-d113-4ec2-a5d6-c734b3234567"
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "Khu đất này rất đẹp."
                     },
                     "created_at": {
                         "type": "string",
@@ -15264,40 +15372,15 @@
                         "example": 60,
                         "nullable": true
                     },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "updated_at": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                },
-                "type": "object"
-            },
-            "LotComment": {
-                "title": "LotComment Model",
-                "description": "Thông tin bình luận lô đất",
-                "properties": {
-                    "id": {
-                        "description": "Class LotComment",
-                        "type": "string",
-                        "format": "uuid",
-                        "example": "d3b07384-d113-4ec2-a5d6-c734b1234567"
-                    },
-                    "lot_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "example": "d3b07384-d113-4ec2-a5d6-c734b2234567"
-                    },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "example": "d3b07384-d113-4ec2-a5d6-c734b3234567"
-                    },
-                    "content": {
-                        "type": "string",
-                        "example": "Lô đất này có vị trí rất đẹp."
+                    "images": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "https://example.com/lot_1.jpg"
+                        ],
+                        "nullable": true
                     },
                     "created_at": {
                         "type": "string",

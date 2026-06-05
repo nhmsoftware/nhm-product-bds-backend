@@ -28,3 +28,4 @@ Thumbs.db
 Dockerfile
 docker-compose.yml
 tests/Feature
+storage/api-docs/api-docs.json
