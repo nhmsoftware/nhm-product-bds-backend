@@ -6,6 +6,7 @@ namespace App\Modules\Area\Interfaces;
 
 use App\Core\DTOs\FilterDTO;
 use App\Core\Services\ServiceReturn;
+use App\Modules\Area\DTO\CreateAreaCommentDTO;
 
 interface AreaServiceInterface
 {
@@ -37,12 +38,12 @@ interface AreaServiceInterface
     public function getLotDetail(string $userId, string $lotId): ServiceReturn;
 
     /**
-     * Thêm bình luận nội bộ mới cho lô đất.
+     * Thêm bình luận nội bộ mới cho khu đất.
      *
-     * @param \App\Modules\Area\DTO\CreateLotCommentDTO $dto
+     * @param CreateAreaCommentDTO $dto
      * @return ServiceReturn
      */
-    public function addLotComment(\App\Modules\Area\DTO\CreateLotCommentDTO $dto): ServiceReturn;
+    public function addAreaComment(CreateAreaCommentDTO $dto): ServiceReturn;
 
     /**
      * Yêu cầu giữ chỗ (lock) lô đất.
@@ -72,7 +73,7 @@ interface AreaServiceInterface
     public function createAreaWithLots(\App\Modules\Area\DTO\CreateAreaDTO $areaDto, array $lotDtos): \App\Modules\Area\Models\Area;
     /**
      * [Admin] Khóa/Mở khóa lô đất.
-     * 
+     *
      * @param string $userId
      * @param string $id
      * @param bool $isLocked

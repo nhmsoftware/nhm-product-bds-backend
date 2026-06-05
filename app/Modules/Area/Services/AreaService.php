@@ -6,16 +6,17 @@ namespace App\Modules\Area\Services;
 
 use App\Core\DTOs\FilterDTO;
 use App\Core\Services\BaseService;
+use App\Core\Services\ServiceException;
 use App\Core\Services\ServiceReturn;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Area\Interfaces\AreaRepositoryInterface;
 use App\Modules\Area\Interfaces\AreaServiceInterface;
 use App\Modules\Area\Interfaces\LotRepositoryInterface;
-use App\Modules\Area\Interfaces\LotCommentRepositoryInterface;
+use App\Modules\Area\Interfaces\AreaCommentRepositoryInterface;
 use App\Modules\Area\Interfaces\LotLockRequestRepositoryInterface;
 use App\Modules\Area\DTO\SearchInventoryDTO;
-use App\Modules\Area\DTO\CreateLotCommentDTO;
+use App\Modules\Area\DTO\CreateAreaCommentDTO;
 use App\Modules\Area\DTO\RequestLockLotDTO;
 use App\Modules\Area\Models\Enums\LotStatus;
 use App\Modules\Area\Events\LotLocked;
@@ -31,7 +32,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
     public function __construct(
         private readonly AreaRepositoryInterface $areaRepository,
         private readonly LotRepositoryInterface $lotRepository,
-        private readonly LotCommentRepositoryInterface $lotCommentRepository,
+        private readonly AreaCommentRepositoryInterface $areaCommentRepository,
         private readonly LotLockRequestRepositoryInterface $lotLockRequestRepository,
         private readonly AuthRepositoryInterface $authRepository
     ) {}
@@ -135,7 +136,20 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // 6. Tải sơ đồ/danh sách các lô đất
             $lots = $this->lotRepository->getLotsByAreaId($areaId);
 
-            // 7. Kiểm tra A2: Không có dữ liệu sơ đồ bảng hàng
+            // 7. Tải bình luận
+            $commentsRaw = $this->areaCommentRepository->getCommentsByAreaId($areaId);
+            $comments = $commentsRaw->map(function ($comment) {
+                return [
+                    'id' => (string) $comment->id,
+                    'area_id' => (string) $comment->area_id,
+                    'user_id' => (string) $comment->user_id,
+                    'user_name' => $comment->user ? $comment->user->name : 'Nhân viên hệ thống',
+                    'content' => $comment->content,
+                    'created_at' => $comment->created_at ? $comment->created_at->toIso8601String() : null,
+                ];
+            });
+
+            // 8. Kiểm tra A2: Không có dữ liệu sơ đồ bảng hàng
             $this->validate(
                 !$lots->isEmpty(),
                 'Chưa có dữ liệu bảng hàng.',
@@ -158,6 +172,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                     'status' => $area->status,
                 ],
                 'lots' => $lots->toArray(),
+                'comments' => $comments->toArray(),
             ], 'Tải sơ đồ bảng hàng thành công.');
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
             return ServiceReturn::error(
@@ -205,22 +220,10 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // Eager load the planning relation
             $lot->load(['planning']);
 
-            // Get comments via LotCommentRepository
-            $commentsRaw = $this->lotCommentRepository->getCommentsByLotId($lotId);
-            $comments = $commentsRaw->map(function ($comment) {
-                return [
-                    'id' => (string) $comment->id,
-                    'user_id' => (string) $comment->user_id,
-                    'user_name' => $comment->user ? $comment->user->name : 'Nhân viên hệ thống',
-                    'content' => $comment->content,
-                    'created_at' => $comment->created_at ? $comment->created_at->toIso8601String() : null,
-                ];
-            });
-
             // 6. Trả về thông tin lô đất kèm tên khu đất
             $data = $lot->toArray();
             $data['area_name'] = $lot->area ? $lot->area->name : null;
-            
+
             // Xử lý mảng ảnh cho Lot gallery
             $lotImages = $lot->images ?? [];
             if (empty($lotImages) && $lot->image_url) {
@@ -238,11 +241,10 @@ final class AreaService extends BaseService implements AreaServiceInterface
             }
 
             $data['planning'] = $lot->planning ? $lot->planning->toArray() : null;
-            $data['comments'] = $comments->toArray();
 
             return $this->success($data, 'Tải chi tiết lô đất thành công.');
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
-            if ($e instanceof \App\Core\Services\ServiceException) {
+            if ($e instanceof ServiceException) {
                 return ServiceReturn::error(
                     message: $e->getMessage(),
                     code: $e->getCode()
@@ -256,12 +258,12 @@ final class AreaService extends BaseService implements AreaServiceInterface
     }
 
     /**
-     * Thêm bình luận nội bộ mới cho lô đất.
+     * Thêm bình luận nội bộ mới cho khu đất.
      *
-     * @param CreateLotCommentDTO $dto
+     * @param CreateAreaCommentDTO $dto
      * @return ServiceReturn
      */
-    public function addLotComment(CreateLotCommentDTO $dto): ServiceReturn
+    public function addAreaComment(CreateAreaCommentDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
             // 1. Kiểm tra Preconditions: Tài khoản người dùng tồn tại
@@ -278,31 +280,26 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 403
             );
 
-            // 4. Kiểm tra Lô đất tồn tại
-            $lot = $this->lotRepository->findById($dto->lotId);
-            $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
-            $lot->load('area.project');
+            // 4. Kiểm tra Khu đất tồn tại
+            $area = $this->areaRepository->findById($dto->areaId);
+            $this->validate($area !== null, 'Khu đất không tồn tại.', 404);
+            $area->load('project');
 
             // 4.5. Kiểm tra dự án có bị khoá không
-            if ($lot->area && $lot->area->project && $lot->area->project->is_locked) {
+            if ($area->project && $area->project->is_locked) {
                 $this->throw('Dự án đã bị khóa. Không thể thực hiện thao tác trên bảng hàng.', 403);
             }
 
-            // Kiểm tra lô đất có bị khóa không
-            if ($lot->is_locked) {
-                $this->throw('Lô đất đã bị khóa.', 403);
-            }
-
-            // 5. Kiểm tra Quyền truy cập khu đất của lô đất này
+            // 5. Kiểm tra Quyền truy cập khu đất này
             $this->validate(
-                in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true) || $this->areaRepository->hasAssignment($dto->userId, $lot->area_id),
+                in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true) || $this->areaRepository->hasAssignment($dto->userId, $area->id),
                 'Bạn không có quyền truy cập khu đất này.',
                 403
             );
 
             // 6. Tạo bình luận mới
-            $comment = $this->lotCommentRepository->create([
-                'lot_id' => $dto->lotId,
+            $comment = $this->areaCommentRepository->create([
+                'area_id' => $dto->areaId,
                 'user_id' => $dto->userId,
                 'content' => $dto->content,
             ]);
@@ -311,7 +308,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             $data = [
                 'id' => (string) $comment->id,
-                'lot_id' => (string) $comment->lot_id,
+                'area_id' => (string) $comment->area_id,
                 'user_id' => (string) $comment->user_id,
                 'user_name' => $comment->user ? $comment->user->name : 'Nhân viên hệ thống',
                 'content' => $comment->content,
@@ -319,11 +316,11 @@ final class AreaService extends BaseService implements AreaServiceInterface
             ];
 
             // 7. Fire Realtime Event
-            event(new \App\Modules\Area\Events\LotCommentAdded($comment, (string) $lot->area_id));
+            event(new \App\Modules\Area\Events\AreaCommentAdded($comment));
 
             return $this->success($data, 'Thêm bình luận thành công.');
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
-            if ($e instanceof \App\Core\Services\ServiceException) {
+            if ($e instanceof ServiceException) {
                 return ServiceReturn::error(
                     message: $e->getMessage(),
                     code: $e->getCode()
@@ -422,7 +419,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             return $this->success($data, 'Yêu cầu lock lô thành công.');
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
-            if ($e instanceof \App\Core\Services\ServiceException) {
+            if ($e instanceof ServiceException) {
                 return ServiceReturn::error(
                     message: $e->getMessage(),
                     code: $e->getCode()
@@ -513,7 +510,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 message: 'Tìm kiếm dữ liệu bảng hàng thành công.'
             );
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
-            if ($e instanceof \App\Core\Services\ServiceException) {
+            if ($e instanceof ServiceException) {
                 return ServiceReturn::error(
                     message: $e->getMessage(),
                     code: $e->getCode()
@@ -587,7 +584,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 $message
             );
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
-            if ($e instanceof \App\Core\Services\ServiceException) {
+            if ($e instanceof ServiceException) {
                 return ServiceReturn::error($e->getMessage(), $e->getCode());
             }
             return ServiceReturn::error('Không thể cập nhật trạng thái lô đất.', 500);

@@ -120,5 +120,13 @@ class Area extends Model
     {
         return $this->belongsTo(\App\Modules\Project\Models\Project::class, 'project_id');
     }
+
+    /**
+     * Danh sách bình luận của khu đất.
+     */
+    public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AreaComment::class, 'area_id');
+    }
 }
 

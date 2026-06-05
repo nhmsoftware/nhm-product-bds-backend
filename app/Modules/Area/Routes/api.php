@@ -20,7 +20,7 @@ Route::middleware('auth:api')->prefix('v1')->group(function () {
     Route::get('/areas/search', [AreaController::class, 'search'])->name('areas.search');
     Route::get('/areas/{id}/inventory-map', [AreaController::class, 'inventoryMap'])->name('areas.inventory_map');
     Route::get('/lots/{id}', [AreaController::class, 'lotDetail'])->name('lots.detail');
-    Route::post('/lots/{id}/comments', [AreaController::class, 'addLotComment'])->name('lots.comment');
+    Route::post('/areas/{id}/comments', [AreaController::class, 'addAreaComment'])->name('areas.comment');
     Route::post('/lots/{id}/lock', [AreaController::class, 'requestLockLot'])->name('lots.lock');
     Route::post('/lots/{lot}/deposit-requests', [LotDepositRequestController::class, 'store'])->name('lots.deposit-requests.store');
 });

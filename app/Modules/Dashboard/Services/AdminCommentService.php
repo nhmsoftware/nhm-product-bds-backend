@@ -9,7 +9,7 @@ use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Dashboard\DTO\GetCommentsDTO;
 use App\Modules\Dashboard\Interfaces\AdminCommentServiceInterface;
 use App\Modules\Dashboard\Interfaces\SystemCommentRepositoryInterface;
-use App\Modules\Area\Interfaces\LotCommentRepositoryInterface;
+use App\Modules\Area\Interfaces\AreaCommentRepositoryInterface;
 use App\Modules\News\Interfaces\NewsCommentRepositoryInterface;
 
 final class AdminCommentService extends BaseService implements AdminCommentServiceInterface
@@ -17,7 +17,7 @@ final class AdminCommentService extends BaseService implements AdminCommentServi
     public function __construct(
         private readonly AuthRepositoryInterface $authRepository,
         private readonly SystemCommentRepositoryInterface $systemCommentRepository,
-        private readonly LotCommentRepositoryInterface $lotCommentRepository,
+        private readonly AreaCommentRepositoryInterface $areaCommentRepository,
         private readonly NewsCommentRepositoryInterface $newsCommentRepository
     ) {}
 
@@ -88,10 +88,10 @@ final class AdminCommentService extends BaseService implements AdminCommentServi
             $this->validate(in_array($user->role, $allowedRoles, true), 'Bạn không có quyền truy cập chức năng này.', 403);
 
             // Delete based on source type
-            if ($sourceType === 'lot_internal') {
-                $comment = $this->lotCommentRepository->findById($commentId);
+            if ($sourceType === 'area_internal') {
+                $comment = $this->areaCommentRepository->findById($commentId);
                 $this->validate($comment, 'Bình luận không tồn tại.', 404);
-                $this->lotCommentRepository->deleteById($commentId);
+                $this->areaCommentRepository->deleteById($commentId);
             } elseif (in_array($sourceType, ['news_public', 'news_internal'], true)) {
                 $comment = $this->newsCommentRepository->findById($commentId);
                 $this->validate($comment, 'Bình luận không tồn tại.', 404);

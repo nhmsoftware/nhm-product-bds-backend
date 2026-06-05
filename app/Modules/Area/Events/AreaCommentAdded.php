@@ -9,15 +9,14 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Modules\Area\Models\LotComment;
+use App\Modules\Area\Models\AreaComment;
 
-final class LotCommentAdded implements ShouldBroadcastNow
+final class AreaCommentAdded implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public readonly LotComment $comment,
-        public readonly string $areaId
+        public readonly AreaComment $comment
     ) {
     }
 
@@ -28,14 +27,13 @@ final class LotCommentAdded implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'lot.comment.created';
+        return 'area.comment.created';
     }
 
     public function broadcastWith(): array
     {
         return [
-            'lot_id' => (string) $this->comment->lot_id,
-            'area_id' => $this->areaId,
+            'area_id' => (string) $this->comment->area_id,
             'comment' => [
                 'id' => (string) $this->comment->id,
                 'user_id' => (string) $this->comment->user_id,

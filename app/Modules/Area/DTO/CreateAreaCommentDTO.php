@@ -6,19 +6,19 @@ namespace App\Modules\Area\DTO;
 
 use Illuminate\Http\Request;
 
-final class CreateLotCommentDTO
+final class CreateAreaCommentDTO
 {
     public function __construct(
-        public readonly string $lotId,
+        public readonly string $areaId,
         public readonly string $userId,
         public readonly string $content,
     ) {
     }
 
-    public static function fromRequest(Request $request, string $lotId, string $userId): self
+    public static function fromRequest(Request $request, string $areaId, string $userId): self
     {
         return new self(
-            lotId: $lotId,
+            areaId: $areaId,
             userId: $userId,
             content: $request->input('content', ''),
         );

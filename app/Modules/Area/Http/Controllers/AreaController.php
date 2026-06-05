@@ -7,10 +7,10 @@ namespace App\Modules\Area\Http\Controllers;
 use App\Core\Controller\BaseController;
 use App\Modules\Area\Http\Requests\ListAreaRequest;
 use App\Modules\Area\Http\Requests\SearchInventoryRequest;
-use App\Modules\Area\Http\Requests\CreateLotCommentRequest;
+use App\Modules\Area\Http\Requests\CreateAreaCommentRequest;
 use App\Modules\Area\Http\Requests\RequestLockLotRequest;
 use App\Modules\Area\DTO\SearchInventoryDTO;
-use App\Modules\Area\DTO\CreateLotCommentDTO;
+use App\Modules\Area\DTO\CreateAreaCommentDTO;
 use App\Modules\Area\DTO\RequestLockLotDTO;
 use App\Modules\Area\Interfaces\AreaServiceInterface;
 use Illuminate\Http\JsonResponse;
@@ -355,9 +355,9 @@ class AreaController extends BaseController
     }
 
     #[OA\Post(
-        path: '/api/v1/lots/{id}/comments',
-        summary: 'Thêm bình luận nội bộ mới cho lô đất (UC-080)',
-        description: 'Cho phép người dùng gửi bình luận nội bộ mới về lô đất.',
+        path: '/api/v1/areas/{id}/comments',
+        summary: 'Thêm bình luận nội bộ mới cho khu đất (UC-080)',
+        description: 'Cho phép người dùng gửi bình luận nội bộ mới về khu đất.',
         security: [['bearerAuth' => []]],
         tags: ['Area'],
         parameters: [
@@ -365,7 +365,7 @@ class AreaController extends BaseController
                 name: 'id',
                 in: 'path',
                 required: true,
-                description: 'ID của lô đất',
+                description: 'ID của khu đất',
                 schema: new OA\Schema(type: 'string', format: 'uuid')
             )
         ],
@@ -391,7 +391,7 @@ class AreaController extends BaseController
                             type: 'object',
                             properties: [
                                 new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
-                                new OA\Property(property: 'lot_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b2234567'),
+                                new OA\Property(property: 'area_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b2234567'),
                                 new OA\Property(property: 'user_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b3234567'),
                                 new OA\Property(property: 'user_name', type: 'string', example: 'Nguyen Van A'),
                                 new OA\Property(property: 'content', type: 'string', example: 'Vị trí này rất tiềm năng.'),
@@ -417,11 +417,11 @@ class AreaController extends BaseController
             ),
             new OA\Response(
                 response: 404,
-                description: 'Lô đất không tồn tại.',
+                description: 'Khu đất không tồn tại.',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: false),
-                        new OA\Property(property: 'message', type: 'string', example: 'Lô đất không tồn tại.')
+                        new OA\Property(property: 'message', type: 'string', example: 'Khu đất không tồn tại.')
                     ]
                 )
             ),
@@ -452,12 +452,12 @@ class AreaController extends BaseController
             )
         ]
     )]
-    public function addLotComment(CreateLotCommentRequest $request, string $id): JsonResponse
+    public function addAreaComment(CreateAreaCommentRequest $request, string $id): JsonResponse
     {
         $userId = (string) $request->user()->id;
-        $dto = CreateLotCommentDTO::fromRequest($request, $id, $userId);
+        $dto = CreateAreaCommentDTO::fromRequest($request, $id, $userId);
 
-        $result = $this->areaService->addLotComment($dto);
+        $result = $this->areaService->addAreaComment($dto);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());

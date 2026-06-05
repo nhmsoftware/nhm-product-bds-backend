@@ -114,13 +114,6 @@ class Lot extends Model
         return $this->belongsTo(\App\Modules\Planning\Models\Planning::class, 'planning_id');
     }
 
-    /**
-     * Relationship to Lot comments
-     */
-    public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(LotComment::class, 'lot_id');
-    }
 
     /**
      * Relationship to Lot lock requests

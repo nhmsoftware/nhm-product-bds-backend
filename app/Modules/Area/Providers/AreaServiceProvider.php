@@ -31,7 +31,7 @@ class AreaServiceProvider extends BaseModuleServiceProvider
 
         $this->app->singleton(AreaRepositoryInterface::class, AreaRepository::class);
         $this->app->singleton(\App\Modules\Area\Interfaces\LotRepositoryInterface::class, \App\Modules\Area\Repositories\LotRepository::class);
-        $this->app->singleton(\App\Modules\Area\Interfaces\LotCommentRepositoryInterface::class, \App\Modules\Area\Repositories\LotCommentRepository::class);
+        $this->app->singleton(\App\Modules\Area\Interfaces\AreaCommentRepositoryInterface::class, \App\Modules\Area\Repositories\AreaCommentRepository::class);
         $this->app->singleton(\App\Modules\Area\Interfaces\LotLockRequestRepositoryInterface::class, \App\Modules\Area\Repositories\LotLockRequestRepository::class);
         $this->app->singleton(\App\Modules\Area\Interfaces\LotDepositRequestRepositoryInterface::class, \App\Modules\Area\Repositories\LotDepositRequestRepository::class);
         $this->app->singleton(AreaServiceInterface::class, AreaService::class);

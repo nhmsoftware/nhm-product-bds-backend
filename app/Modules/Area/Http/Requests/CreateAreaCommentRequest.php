@@ -7,7 +7,7 @@ namespace App\Modules\Area\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Core\Traits\HandleApi;
 
-class CreateLotCommentRequest extends FormRequest
+class CreateAreaCommentRequest extends FormRequest
 {
     use HandleApi;
 
