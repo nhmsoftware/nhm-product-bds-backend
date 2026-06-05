@@ -177,7 +177,8 @@ class AreaController extends BaseController
                             properties: [
                                 new OA\Property(property: 'area_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
                                 new OA\Property(property: 'area_name', type: 'string', example: 'Phân khu A'),
-                                new OA\Property(property: 'sales_board_image', type: 'string', example: 'https://example.com/board.jpg'),
+                                new OA\Property(property: 'sales_board_image', type: 'string', nullable: true, example: 'https://example.com/board.jpg'),
+                                new OA\Property(property: 'sales_board_iframe', type: 'string', nullable: true, example: 'https://quyhoach24h.vn?ref=C5WA63ND'),
                                 new OA\Property(
                                     property: 'lots',
                                     type: 'array',
@@ -611,6 +612,7 @@ class AreaController extends BaseController
                                     new OA\Property(property: 'code', type: 'string', nullable: true, example: 'A-01'),
                                     new OA\Property(property: 'name', type: 'string', example: 'Phân khu A'),
                                     new OA\Property(property: 'sales_board_image', type: 'string', nullable: true, example: 'https://example.com/board.jpg'),
+                                    new OA\Property(property: 'sales_board_iframe', type: 'string', nullable: true, example: 'https://quyhoach24h.vn?ref=C5WA63ND'),
                                     new OA\Property(property: 'total_lots', type: 'integer', example: 100),
                                     new OA\Property(property: 'remaining_lots', type: 'integer', example: 45),
                                     new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Project\Models\Enums\ProjectStatus::OPENING->value),

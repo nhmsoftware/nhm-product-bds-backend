@@ -17,6 +17,7 @@ use OpenApi\Attributes as OA;
  * @property string|null $project_id
  * @property string $name
  * @property string|null $sales_board_image
+ * @property string|null $sales_board_iframe
  * @property int $total_lots
  * @property int $remaining_lots
  * @property bool $is_featured
@@ -34,6 +35,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'project_id', type: 'string', format: 'uuid', nullable: true, example: 'd3b07384-d113-4ec2-a5d6-c734b1234568'),
         new OA\Property(property: 'name', type: 'string', example: 'Phân khu A - Golden Land'),
         new OA\Property(property: 'sales_board_image', type: 'string', nullable: true, example: 'https://example.com/images/sales_board.jpg'),
+        new OA\Property(property: 'sales_board_iframe', type: 'string', nullable: true, example: 'https://quyhoach24h.vn?ref=C5WA63ND'),
         new OA\Property(property: 'total_lots', type: 'integer', example: 100),
         new OA\Property(property: 'remaining_lots', type: 'integer', example: 45),
         new OA\Property(property: 'is_featured', type: 'boolean', example: true),
@@ -51,6 +53,7 @@ class Area extends Model
         'project_id',
         'name',
         'sales_board_image',
+        'sales_board_iframe',
         'total_lots',
         'remaining_lots',
         'is_featured',

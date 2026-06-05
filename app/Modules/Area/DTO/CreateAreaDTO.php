@@ -9,6 +9,7 @@ final class CreateAreaDTO
     public function __construct(
         public readonly string $name,
         public readonly ?string $sales_board_image = null,
+        public readonly ?string $sales_board_iframe = null,
         public readonly int $total_lots = 0,
         public readonly ?string $project_id = null,
     ) {}
@@ -18,6 +19,7 @@ final class CreateAreaDTO
         return new self(
             name: $data['name'],
             sales_board_image: $data['sales_board_image'] ?? null,
+            sales_board_iframe: $data['sales_board_iframe'] ?? null,
             total_lots: isset($data['total_lots']) ? (int) $data['total_lots'] : 0,
             project_id: $data['project_id'] ?? null,
         );
@@ -28,6 +30,7 @@ final class CreateAreaDTO
         return [
             'name' => $this->name,
             'sales_board_image' => $this->sales_board_image,
+            'sales_board_iframe' => $this->sales_board_iframe,
             'total_lots' => $this->total_lots,
             'project_id' => $this->project_id,
         ];

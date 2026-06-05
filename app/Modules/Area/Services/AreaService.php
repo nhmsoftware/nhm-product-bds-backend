@@ -146,6 +146,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 'area_id' => $area->id,
                 'area_name' => $area->name,
                 'sales_board_image' => $area->sales_board_image,
+                'sales_board_iframe' => $area->sales_board_iframe,
                 'lots' => $lots->toArray(),
             ], 'Tải sơ đồ bảng hàng thành công.');
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
@@ -447,6 +448,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                     'id' => $area->id,
                     'name' => $area->name,
                     'sales_board_image' => $area->sales_board_image,
+                    'sales_board_iframe' => $area->sales_board_iframe,
                     'total_lots' => (int) $area->total_lots,
                     'remaining_lots' => (int) $area->remaining_lots,
                     'status' => $area->remaining_lots > 0 ? 'Đang mở bán' : 'Hết hàng',
@@ -462,6 +464,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                     'code' => $lot->code,
                     'name' => $lot->area ? $lot->area->name : '',
                     'sales_board_image' => $lot->area ? $lot->area->sales_board_image : null,
+                    'sales_board_iframe' => $lot->area ? $lot->area->sales_board_iframe : null,
                     'total_lots' => $lot->area ? (int) $lot->area->total_lots : 0,
                     'remaining_lots' => $lot->area ? (int) $lot->area->remaining_lots : 0,
                     'status' => $lot->status instanceof LotStatus ? $lot->status->label() : LotStatus::deserialize($lot->status)->label(),

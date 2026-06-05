@@ -45,6 +45,7 @@ class BulkCreateProjectRequest extends FormRequest
             'area' => 'nullable|array',
             'area.name' => 'required_with:area|string|max:255',
             'area.sales_board_image' => 'nullable|string|url',
+            'area.sales_board_iframe' => 'nullable|string|url',
             'area.total_lots' => 'nullable|integer|min:0',
 
             // Lots validation
