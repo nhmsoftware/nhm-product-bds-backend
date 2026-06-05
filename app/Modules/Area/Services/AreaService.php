@@ -291,7 +291,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             ];
 
             // 7. Fire Realtime Event
-            event(new \App\Modules\Area\Events\LotCommentAdded($comment));
+            event(new \App\Modules\Area\Events\LotCommentAdded($comment, (string) $lot->area_id));
 
             return $this->success($data, 'Thêm bình luận thành công.');
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
