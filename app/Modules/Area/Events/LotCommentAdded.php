@@ -21,12 +21,9 @@ final class LotCommentAdded implements ShouldBroadcastNow
     ) {
     }
 
-    public function broadcastOn(): array
+    public function broadcastOn(): Channel
     {
-        return [
-            new Channel('lot.' . $this->comment->lot_id),
-            new Channel('area.' . $this->areaId),
-        ];
+        return new Channel('bds.communication.events');
     }
 
     public function broadcastAs(): string
