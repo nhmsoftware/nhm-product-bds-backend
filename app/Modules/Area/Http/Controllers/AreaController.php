@@ -293,19 +293,6 @@ class AreaController extends BaseController
                                     type: 'object',
                                     nullable: true,
                                     ref: '#/components/schemas/Planning'
-                                ),
-                                new OA\Property(
-                                    property: 'comments',
-                                    type: 'array',
-                                    items: new OA\Items(
-                                        properties: [
-                                            new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
-                                            new OA\Property(property: 'user_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b3234567'),
-                                            new OA\Property(property: 'user_name', type: 'string', example: 'Nguyen Van A'),
-                                            new OA\Property(property: 'content', type: 'string', example: 'Bình luận nội bộ...'),
-                                            new OA\Property(property: 'created_at', type: 'string', format: 'date-time')
-                                        ]
-                                    )
                                 )
                             ]
                         )
