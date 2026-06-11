@@ -38,6 +38,8 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
 
     public function getActiveEmployeesWithDepartment(?string $area = null): Collection;
 
+    public function getActiveDepartmentNames(): array;
+
     /**
      * Lấy danh sách người dùng đang hoạt động cần nhận thông báo khi có bài viết nội bộ mới.
      *

@@ -11,6 +11,7 @@ use App\Modules\Auth\DTO\RegisterDTO;
 use App\Modules\Auth\DTO\ResetPasswordDTO;
 use App\Modules\Auth\DTO\UpdateEmployeeProfileDTO;
 use App\Modules\Auth\DTO\UpdateProfileDTO;
+use App\Modules\Auth\DTO\UploadEmployeeAvatarDTO;
 use App\Modules\Auth\DTO\UploadEmployeeDocumentDTO;
 use App\Modules\Auth\DTO\VerifyOtpDTO;
 
@@ -78,6 +79,14 @@ interface AuthServiceInterface
     public function getProfile(string $userId): ServiceReturn;
 
     /**
+     * Lấy danh sách phòng ban đang hoạt động để chọn khi gửi yêu cầu nhân sự.
+     *
+     * @param string $userId
+     * @return ServiceReturn
+     */
+    public function getDepartments(string $userId): ServiceReturn;
+
+    /**
      * Cập nhật thông tin hồ sơ cá nhân của người dùng (UC-031).
      *
      * @param UpdateProfileDTO $dto
@@ -112,6 +121,14 @@ interface AuthServiceInterface
      * @throws \Throwable
      */
     public function updateEmployeeProfile(UpdateEmployeeProfileDTO $dto): ServiceReturn;
+
+    /**
+     * Cập nhật ảnh đại diện hồ sơ nhân sự.
+     *
+     * @param UploadEmployeeAvatarDTO $dto
+     * @return ServiceReturn
+     */
+    public function uploadEmployeeAvatar(UploadEmployeeAvatarDTO $dto): ServiceReturn;
 
     /**
      * Lấy thông tin tổng quan điểm thưởng của nhân viên.
@@ -203,5 +220,3 @@ interface AuthServiceInterface
      */
     public function updateFcmToken(UpdateFcmTokenDTO $dto): ServiceReturn;
 }
-
-

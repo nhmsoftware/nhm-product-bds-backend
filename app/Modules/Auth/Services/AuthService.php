@@ -338,6 +338,37 @@ final class AuthService extends BaseService implements AuthServiceInterface
         });
     }
 
+    public function getDepartments(string $userId): ServiceReturn
+    {
+        return $this->execute(function () use ($userId) {
+            $user = $this->authRepository->findById($userId);
+
+            $this->validate(
+                $user !== null,
+                'Không tìm thấy thông tin người dùng.',
+                404
+            );
+
+            $this->validate(
+                (bool) $user->is_active,
+                'Tài khoản của bạn đã bị khóa.',
+                403
+            );
+
+            $departments = collect($this->authRepository->getActiveDepartmentNames())
+                ->map(fn (string $department) => [
+                    'label' => $department,
+                    'value' => $department,
+                ])
+                ->values()
+                ->all();
+
+            return $this->success([
+                'departments' => $departments,
+            ], 'Tải danh sách phòng ban thành công.');
+        });
+    }
+
     /**
      * Cập nhật thông tin hồ sơ cá nhân của người dùng (UC-031).
      *
@@ -484,12 +515,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
             // Kiểm tra tài liệu đính kèm (A4)
             $hasAttachments = $ep && !empty($ep->attachments);
             $attachmentsMessage = $hasAttachments ? null : 'Chưa có tài liệu đính kèm.';
+            $identityCard = $user->cccd ?: ($ep?->identity_card ?: null);
 
             $profileData = [
                 'user' => [
                     'id'             => (string) $user->id,
                     'name'           => $user->name,
-                    'cccd'           => $user->cccd ?: 'Chưa cập nhật.',
+                    'cccd'           => $identityCard ?: 'Chưa cập nhật.',
                     'phone'          => $user->phone ?: 'Chưa cập nhật.',
                     'email'          => $user->email,
                     'avatar'         => $user->avatar,
@@ -498,7 +530,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 ],
                 'employee_details' => [
                     'employee_title'  => $ep?->employee_title ?: 'Chưa cập nhật.',
-                    'identity_card'   => $ep?->identity_card ?: 'Chưa cập nhật.',
+                    'identity_card'   => $identityCard ?: 'Chưa cập nhật.',
                     'dob'             => $ep?->dob ? $ep->dob->toDateString() : 'Chưa cập nhật.',
                 ],
                 'bank_info' => [
@@ -551,14 +583,19 @@ final class AuthService extends BaseService implements AuthServiceInterface
             );
 
             // 2. Cập nhật thông tin cơ bản trên bảng users
-            $userUpdated = $this->authRepository->updateById($dto->userId, [
+            $userData = [
                 'name'    => $dto->name,
-                'cccd'    => $dto->cccd,
                 'phone'   => $dto->phone,
                 'email'   => $dto->email,
                 'avatar'  => $dto->avatar,
                 'address' => $dto->address,
-            ]);
+            ];
+
+            if ($dto->hasCccd) {
+                $userData['cccd'] = $dto->cccd;
+            }
+
+            $userUpdated = $this->authRepository->updateById($dto->userId, $userData);
 
             // A5 – Lỗi cập nhật hồ sơ
             $this->validate(
@@ -578,6 +615,10 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'major'               => $dto->major,
                 'experience'          => $dto->experience,
             ];
+
+            if ($dto->hasCccd) {
+                $epData['identity_card'] = $dto->cccd;
+            }
 
             if ($user->employeeProfile) {
                 $epUpdated = $user->employeeProfile->update($epData);
@@ -604,12 +645,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             $hasAttachments = $ep && !empty($ep->attachments);
             $attachmentsMessage = $hasAttachments ? null : 'Chưa có tài liệu đính kèm.';
+            $identityCard = $freshUser->cccd ?: ($ep?->identity_card ?: null);
 
             $profileData = [
                 'user' => [
                     'id'             => (string) $freshUser->id,
                     'name'           => $freshUser->name,
-                    'cccd'           => $freshUser->cccd ?: 'Chưa cập nhật.',
+                    'cccd'           => $identityCard ?: 'Chưa cập nhật.',
                     'phone'          => $freshUser->phone ?: 'Chưa cập nhật.',
                     'email'          => $freshUser->email,
                     'avatar'         => $freshUser->avatar,
@@ -618,7 +660,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 ],
                 'employee_details' => [
                     'employee_title'  => $ep?->employee_title ?: 'Chưa cập nhật.',
-                    'identity_card'   => $ep?->identity_card ?: 'Chưa cập nhật.',
+                    'identity_card'   => $identityCard ?: 'Chưa cập nhật.',
                     'dob'             => $ep?->dob ? $ep->dob->toDateString() : 'Chưa cập nhật.',
                 ],
                 'bank_info' => [
@@ -640,6 +682,61 @@ final class AuthService extends BaseService implements AuthServiceInterface
             ];
 
             return $this->success($profileData, 'Cập nhật hồ sơ thành công.');
+        }, useTransaction: true);
+    }
+
+    public function uploadEmployeeAvatar(\App\Modules\Auth\DTO\UploadEmployeeAvatarDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            $user = $this->authRepository->findById($dto->userId);
+
+            $this->validate(
+                $user !== null,
+                'Không thể cập nhật ảnh đại diện. Vui lòng thử lại.',
+                404
+            );
+
+            $this->validate(
+                (bool) $user->is_active,
+                'Tài khoản của bạn đã bị khóa.',
+                403
+            );
+
+            $path = $dto->avatar->store('avatars', 'public');
+            $this->validate(
+                $path !== false && $path !== null,
+                'Không thể tải ảnh đại diện lên. Vui lòng thử lại.',
+                500
+            );
+
+            $avatarUrl = \Illuminate\Support\Facades\Storage::url($path);
+            $oldAvatar = is_string($user->avatar) ? $user->avatar : '';
+
+            $updated = $this->authRepository->updateById($dto->userId, [
+                'avatar' => $avatarUrl,
+            ]);
+
+            $this->validate(
+                $updated !== false && $updated !== null,
+                'Không thể cập nhật ảnh đại diện. Vui lòng thử lại.',
+                500
+            );
+
+            $oldAvatarPath = parse_url($oldAvatar, PHP_URL_PATH);
+            if (is_string($oldAvatarPath) && str_starts_with($oldAvatarPath, '/storage/avatars/')) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete(str_replace('/storage/', '', $oldAvatarPath));
+            }
+
+            return $this->success([
+                'avatar' => $avatarUrl,
+                'user' => [
+                    'id' => (string) $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'avatar' => $avatarUrl,
+                ],
+            ], 'Cập nhật ảnh đại diện thành công.');
         }, useTransaction: true);
     }
 
@@ -741,6 +838,8 @@ final class AuthService extends BaseService implements AuthServiceInterface
             );
 
             $ep = $user->employeeProfile;
+            $totalPoints = (int) ($ep?->reward_points ?? 0);
+            $rank = $this->resolveRewardRank($totalPoints);
 
             // Lấy điểm thưởng trong tháng
             $currentMonthPoints = $this->rewardPointHistoryRepository->calculateCurrentMonthPoints($userId);
@@ -753,8 +852,9 @@ final class AuthService extends BaseService implements AuthServiceInterface
             if ($quarterProgress > 100) $quarterProgress = 100;
 
             $overview = [
-                'total_points' => $ep?->reward_points ?? 0,
+                'total_points' => $totalPoints,
                 'kpi_stars' => $ep?->kpi_stars ?? 0,
+                'rank' => $rank,
                 'current_month_points' => $currentMonthPoints,
                 'quarter_progress_percent' => $quarterProgress,
                 'quarter_points' => $quarterPoints,
@@ -763,6 +863,23 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             return $this->success($overview, 'Tải dữ liệu tổng quan thành công.');
         });
+    }
+
+    private function resolveRewardRank(int $totalPoints): array
+    {
+        if ($totalPoints >= 1500) {
+            return ['id' => 4, 'label' => 'Bạch kim'];
+        }
+
+        if ($totalPoints >= 800) {
+            return ['id' => 3, 'label' => 'Vàng'];
+        }
+
+        if ($totalPoints >= 500) {
+            return ['id' => 2, 'label' => 'Bạc'];
+        }
+
+        return ['id' => 1, 'label' => 'Đồng'];
     }
 
     /**

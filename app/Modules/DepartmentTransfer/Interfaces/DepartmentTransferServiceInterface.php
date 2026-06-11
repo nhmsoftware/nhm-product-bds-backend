@@ -26,6 +26,15 @@ interface DepartmentTransferServiceInterface
     public function getDepartmentTransferRequests(string $userId, FilterDTO $filter): ServiceReturn;
 
     /**
+     * Lấy lịch sử yêu cầu chuyển phòng ban của nhân viên đang đăng nhập.
+     *
+     * @param string $userId
+     * @param FilterDTO $filter
+     * @return ServiceReturn
+     */
+    public function getEmployeeDepartmentTransferHistory(string $userId, FilterDTO $filter): ServiceReturn;
+
+    /**
      * Phê duyệt yêu cầu chuyển phòng ban của nhân viên (UC-051).
      *
      * @param string $userId ID của Director thực hiện duyệt
@@ -44,4 +53,3 @@ interface DepartmentTransferServiceInterface
      */
     public function rejectDepartmentTransferRequest(string $userId, string $requestId, string $reason): ServiceReturn;
 }
-

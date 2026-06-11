@@ -59,7 +59,7 @@ final class LotRepository extends BaseRepository implements LotRepositoryInterfa
      */
     public function findLotWithArea(string $lotId): ?Lot
     {
-        return $this->model->where('id', $lotId)->with('area')->first();
+        return $this->model->where('id', $lotId)->with('area.project')->first();
     }
 
     /**

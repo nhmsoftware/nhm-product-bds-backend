@@ -21,4 +21,13 @@ interface DepartmentTransferRequestRepositoryInterface extends BaseRepositoryInt
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getTransferRequests(\App\Core\DTOs\FilterDTO $filter): \Illuminate\Pagination\LengthAwarePaginator;
+
+    /**
+     * Lấy lịch sử yêu cầu chuyển phòng ban của một nhân viên.
+     *
+     * @param string $userId
+     * @param \App\Core\DTOs\FilterDTO $filter
+     * @return \Illuminate\Pagination\LengthAwarePaginator
+     */
+    public function getUserTransferRequests(string $userId, \App\Core\DTOs\FilterDTO $filter): \Illuminate\Pagination\LengthAwarePaginator;
 }

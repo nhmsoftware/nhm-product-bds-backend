@@ -13,6 +13,8 @@ final class CreateInternalPostDTO
         public readonly string $content,
         public readonly ?UploadedFile $thumbnailFile,
         public readonly ?string $thumbnailUrl,
+        /** @var array<int, UploadedFile> */
+        public readonly array $attachmentFiles = [],
     ) {
     }
 
@@ -24,6 +26,7 @@ final class CreateInternalPostDTO
             content: $request->input('content', ''),
             thumbnailFile: $request->file('thumbnail'),
             thumbnailUrl: $request->input('thumbnail_url'),
+            attachmentFiles: array_values($request->file('attachments', [])),
         );
     }
 }

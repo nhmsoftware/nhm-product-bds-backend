@@ -35,6 +35,14 @@ class RewardPointController extends BaseController
                         new OA\Property(property: 'data', type: 'object', properties: [
                             new OA\Property(property: 'total_points', type: 'integer', example: 120),
                             new OA\Property(property: 'kpi_stars', type: 'integer', example: 5),
+                            new OA\Property(
+                                property: 'rank',
+                                type: 'object',
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'integer', example: 3),
+                                    new OA\Property(property: 'label', type: 'string', example: 'Vàng'),
+                                ]
+                            ),
                             new OA\Property(property: 'current_month_points', type: 'integer', example: 20),
                             new OA\Property(property: 'quarter_progress_percent', type: 'number', format: 'float', example: 80.5),
                             new OA\Property(property: 'quarter_points', type: 'integer', example: 80),

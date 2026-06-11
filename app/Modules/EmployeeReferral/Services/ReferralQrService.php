@@ -7,8 +7,9 @@ namespace App\Modules\EmployeeReferral\Services;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
 use App\Modules\Auth\Models\User;
-use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use chillerlan\QRCode\Output\QRMarkupSVG;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 
 class ReferralQrService extends BaseService
 {
@@ -24,38 +25,15 @@ class ReferralQrService extends BaseService
             $staffCode = $user->staff_code;
             $this->validate(!empty($staffCode), 'Bạn chưa có mã giới thiệu tuyển dụng.', 404);
 
-            $fileName = "qrs/recruitment_{$staffCode}.svg";
-            $disk = Storage::disk('public');
-
-            if (!$disk->exists($fileName)) {
-                // Đảm bảo thư mục tồn tại
-                if (!$disk->exists('qrs')) {
-                    $disk->makeDirectory('qrs');
-                }
-
-                $frontendUrl = config('app.frontend_url', 'https://bdsapp.vn');
-                $recruitmentCode = 'REC-' . $staffCode;
-                // Link chia sẻ để quét mã (ví dụ link tải app hoặc register kèm ref_code)
-                $qrData = "{$frontendUrl}/register?ref={$recruitmentCode}&type=recruitment";
-
-                try {
-                    $qrSvg = QrCode::size(300)->generate($qrData);
-                    $disk->put($fileName, $qrSvg);
-                } catch (\Exception $e) {
-                    $this->throw('Không thể tạo mã QR tuyển dụng: ' . $e->getMessage(), 500);
-                }
-            }
-
-            if (!$disk->exists($fileName)) {
-                $this->throw('Không thể tải mã QR tuyển dụng.', 500);
-            }
-
-            $qrUrl = $disk->url($fileName);
             $recruitmentCode = 'REC-' . $staffCode;
+            $qrValue = $this->buildAppDownloadUrl($recruitmentCode, 'recruitment');
+            $qrUrl = $this->generateQrUrl($qrValue, 'recruitment', $staffCode);
 
             return [
+                'qr_value' => $qrValue,
                 'qr_url' => $qrUrl,
                 'referral_code' => $recruitmentCode,
+                'referral_type' => 'recruitment',
                 'description' => 'Sử dụng mã này để giới thiệu nhân sự mới tham gia hệ thống.',
                 'share_text' => "Hãy tham gia mạng lưới của chúng tôi trên BDS App! Mã giới thiệu của tôi: {$recruitmentCode}",
             ];
@@ -74,41 +52,50 @@ class ReferralQrService extends BaseService
             $staffCode = $user->staff_code;
             $this->validate(!empty($staffCode), 'Bạn chưa có mã giới thiệu khách hàng.', 404);
 
-            $fileName = "qrs/customer_{$staffCode}.svg";
-            $disk = Storage::disk('public');
-
-            if (!$disk->exists($fileName)) {
-                // Đảm bảo thư mục tồn tại
-                if (!$disk->exists('qrs')) {
-                    $disk->makeDirectory('qrs');
-                }
-
-                $frontendUrl = config('app.frontend_url', 'https://bdsapp.vn');
-                $customerCode = 'CUS-' . $staffCode;
-                // Link chia sẻ để quét mã (ví dụ link tải app hoặc đăng ký khách hàng kèm ref_code)
-                $qrData = "{$frontendUrl}/register?ref={$customerCode}&type=customer";
-
-                try {
-                    $qrSvg = QrCode::size(300)->generate($qrData);
-                    $disk->put($fileName, $qrSvg);
-                } catch (\Exception $e) {
-                    $this->throw('Không thể tạo mã QR khách hàng: ' . $e->getMessage(), 500);
-                }
-            }
-
-            if (!$disk->exists($fileName)) {
-                $this->throw('Không thể tải mã QR khách hàng.', 500);
-            }
-
-            $qrUrl = $disk->url($fileName);
             $customerCode = 'CUS-' . $staffCode;
+            $qrValue = $this->buildAppDownloadUrl($customerCode, 'customer');
+            $qrUrl = $this->generateQrUrl($qrValue, 'customer', $staffCode);
 
             return [
+                'qr_value' => $qrValue,
                 'qr_url' => $qrUrl,
                 'referral_code' => $customerCode,
+                'referral_type' => 'customer',
                 'description' => 'Sử dụng mã này để giới thiệu khách hàng tham gia hệ thống.',
                 'share_text' => "Tìm hiểu các dự án hấp dẫn tại BDS App! Mã giới thiệu khách hàng của tôi: {$customerCode}",
             ];
         }, false, 'ReferralQrService::getCustomerQr');
+    }
+
+
+    private function buildAppDownloadUrl(string $referralCode, string $type): string
+    {
+        return rtrim((string) config('app.url'), '/') . '/api/v1/referrals/open?' . http_build_query([
+            'ref' => $referralCode,
+            'type' => $type,
+        ]);
+    }
+
+    private function generateQrUrl(string $qrValue, string $type, string $staffCode): string
+    {
+        $fileName = sprintf('%s_%s.svg', $type, preg_replace('/[^A-Za-z0-9_-]/', '-', $staffCode));
+        $directory = public_path('storage/qrs');
+        $filePath = $directory . DIRECTORY_SEPARATOR . $fileName;
+
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $options = new QROptions([
+            'outputInterface' => QRMarkupSVG::class,
+            'outputBase64' => false,
+            'scale' => 9,
+            'quietzoneSize' => 4,
+            'svgAddXmlHeader' => true,
+        ]);
+
+        (new QRCode($options))->render($qrValue, $filePath);
+
+        return rtrim((string) config('app.url'), '/') . '/storage/qrs/' . $fileName;
     }
 }

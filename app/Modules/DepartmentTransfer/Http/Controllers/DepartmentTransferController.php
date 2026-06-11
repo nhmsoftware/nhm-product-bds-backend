@@ -69,7 +69,7 @@ class DepartmentTransferController extends BaseController
     {
         $dto = new StoreDepartmentTransferRequestDTO(array_merge($request->validated(), [
             'user_id' => $request->user()->id,
-            'current_department' => 'Phòng ban hiện tại (Mocked)', // Giả lập phòng ban hiện tại
+            'current_department' => (string) ($request->user()->department ?? ''),
         ]));
 
         $result = $this->departmentTransferService->createDepartmentTransferRequest($dto);
@@ -149,6 +149,37 @@ class DepartmentTransferController extends BaseController
     {
         $filter = $request->getFilterOptions();
         $result = $this->departmentTransferService->getDepartmentTransferRequests($request->user()->id, $filter);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Get(
+        path: '/api/v1/department-transfers/history',
+        summary: 'Xem lịch sử xin phép chuyển phòng ban của nhân viên',
+        description: 'Cho phép nhân viên xem các yêu cầu chuyển phòng ban đã gửi.',
+        security: [['bearerAuth' => []]],
+        tags: ['Department Transfers'],
+        parameters: [
+            new OA\Parameter(name: 'page', in: 'query', required: false, description: 'Trang hiện tại (bắt đầu từ 1)', schema: new OA\Schema(type: 'integer', default: 1)),
+            new OA\Parameter(name: 'per_page', in: 'query', required: false, description: 'Số bản ghi trên mỗi trang', schema: new OA\Schema(type: 'integer', default: 10)),
+            new OA\Parameter(name: 'sort_by', in: 'query', required: false, description: 'Trường dùng để sắp xếp', schema: new OA\Schema(type: 'string', enum: ['created_at', 'desired_transfer_date'], default: 'created_at')),
+            new OA\Parameter(name: 'direction', in: 'query', required: false, description: 'Chiều sắp xếp', schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], default: 'desc')),
+            new OA\Parameter(name: 'filters[status]', in: 'query', required: false, description: 'Lọc theo trạng thái xử lý', schema: new OA\Schema(type: 'string', enum: ['pending', 'approved', 'rejected'])),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Tải lịch sử xin phép chuyển phòng ban thành công.'),
+            new OA\Response(response: 401, description: 'Chưa đăng nhập (Unauthenticated)'),
+            new OA\Response(response: 500, description: 'Không thể tải lịch sử xin phép chuyển phòng ban.'),
+        ]
+    )]
+    public function history(ViewDepartmentTransferRequestsRequest $request): JsonResponse
+    {
+        $filter = $request->getFilterOptions();
+        $result = $this->departmentTransferService->getEmployeeDepartmentTransferHistory($request->user()->id, $filter);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());
@@ -369,4 +400,3 @@ class DepartmentTransferController extends BaseController
         return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 }
-

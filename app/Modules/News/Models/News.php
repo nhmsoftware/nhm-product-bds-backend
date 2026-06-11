@@ -21,12 +21,14 @@ use OpenApi\Attributes as OA;
  * @property string $summary
  * @property string $content
  * @property string $thumbnail
+ * @property array|null $attachments
  * @property string $category
  * @property string $department
  * @property string $area
  * @property string $author_id
  * @property bool $is_published
  * @property bool $is_featured
+ * @property int $sort
  * @property bool $is_liked
  * @property int $likes_count
  * @property \Illuminate\Support\Carbon|null $published_at
@@ -47,11 +49,13 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'summary', type: 'string', nullable: true),
         new OA\Property(property: 'content', type: 'string'),
         new OA\Property(property: 'thumbnail', type: 'string', nullable: true),
+        new OA\Property(property: 'attachments', type: 'array', nullable: true, items: new OA\Items(type: 'object')),
         new OA\Property(property: 'category', type: 'string'),
         new OA\Property(property: 'department', type: 'string', nullable: true),
         new OA\Property(property: 'area', type: 'string', nullable: true),
         new OA\Property(property: 'is_liked', type: 'boolean', example: false),
         new OA\Property(property: 'likes_count', type: 'integer'),
+        new OA\Property(property: 'sort', type: 'integer'),
         new OA\Property(property: 'published_at', type: 'string', format: 'date-time'),
     ]
 )]
@@ -67,12 +71,14 @@ class News extends Model
         'summary',
         'content',
         'thumbnail',
+        'attachments',
         'category',
         'department',
         'area',
         'author_id',
         'is_published',
         'is_featured',
+        'sort',
         'likes_count',
         'published_at',
     ];
@@ -80,7 +86,9 @@ class News extends Model
     protected $casts = [
         'is_published' => 'boolean',
         'is_featured' => 'boolean',
+        'sort' => 'integer',
         'likes_count' => 'integer',
+        'attachments' => 'array',
         'published_at' => 'datetime',
     ];
 
@@ -89,5 +97,15 @@ class News extends Model
     public function author(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(\App\Modules\Auth\Models\User::class, 'author_id');
+    }
+
+    public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(NewsComment::class, 'news_id');
+    }
+
+    public function likes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(NewsLike::class, 'news_id');
     }
 }

@@ -24,7 +24,8 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
      */
     public function getPublishedNews(array $filters): LengthAwarePaginator
     {
-        $query = $this->model->where('is_published', true);
+        $query = $this->model->where('is_published', true)
+                             ->where('category', '!=', 'internal');
 
         if (!empty($filters['category'])) {
             $query->where('category', $filters['category']);
@@ -37,7 +38,8 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
             });
         }
 
-        return $query->orderBy('published_at', 'desc')
+        return $query->orderByRaw('CASE WHEN sort > 0 THEN sort ELSE 999999 END ASC')
+                     ->orderBy('published_at', 'desc')
                      ->paginate($filters['per_page'] ?? 10);
     }
 
@@ -50,7 +52,9 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
     public function getFeaturedNews(int $limit = 5)
     {
         return $this->model->where('is_published', true)
+                           ->where('category', '!=', 'internal')
                            ->where('is_featured', true)
+                           ->orderByRaw('CASE WHEN sort > 0 THEN sort ELSE 999999 END ASC')
                            ->orderBy('published_at', 'desc')
                            ->limit($limit)
                            ->get();
@@ -66,11 +70,13 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
     public function search(string $keyword, int $perPage = 10): LengthAwarePaginator
     {
         return $this->model->where('is_published', true)
+                           ->where('category', '!=', 'internal')
                            ->where(function ($q) use ($keyword) {
                                $q->where('title', 'like', '%' . $keyword . '%')
                                  ->orWhere('summary', 'like', '%' . $keyword . '%')
                                  ->orWhere('content', 'like', '%' . $keyword . '%');
                            })
+                           ->orderByRaw('CASE WHEN sort > 0 THEN sort ELSE 999999 END ASC')
                            ->orderBy('published_at', 'desc')
                            ->paginate($perPage);
     }
@@ -85,6 +91,7 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
     {
         return $this->model->where('slug', $slug)
                            ->where('is_published', true)
+                           ->where('category', '!=', 'internal')
                            ->first();
     }
 
@@ -129,6 +136,7 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
         }
 
         return $query->with('author')
+                     ->withCount('comments')
                      ->orderBy('published_at', 'desc')
                      ->paginate($perPage);
     }
@@ -192,4 +200,3 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
         return $query->exists();
     }
 }
-

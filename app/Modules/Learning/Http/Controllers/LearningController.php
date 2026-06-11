@@ -635,11 +635,13 @@ final class LearningController extends BaseController
                         new OA\Property(
                             property: 'data',
                             properties: [
-                                new OA\Property(property: 'score', type: 'number', format: 'float', example: 100.00),
+                                new OA\Property(property: 'status', type: 'string', example: 'passed'),
+                                new OA\Property(property: 'score', type: 'number', format: 'float', example: 10.0),
+                                new OA\Property(property: 'max_score', type: 'number', format: 'float', example: 10.0),
                                 new OA\Property(property: 'correct_count', type: 'integer', example: 1),
                                 new OA\Property(property: 'total_questions', type: 'integer', example: 1),
                                 new OA\Property(property: 'is_passed', type: 'boolean', example: true),
-                                new OA\Property(property: 'passing_score', type: 'number', format: 'float', example: 80.00),
+                                new OA\Property(property: 'passing_score', type: 'number', format: 'float', example: 8.0),
                                 new OA\Property(
                                     property: 'details',
                                     type: 'array',
@@ -1080,6 +1082,7 @@ final class LearningController extends BaseController
                             properties: [
                                 new OA\Property(property: 'status', type: 'string', example: 'passed'),
                                 new OA\Property(property: 'score', type: 'number', format: 'float', example: 8.0),
+                                new OA\Property(property: 'max_score', type: 'number', format: 'float', example: 10.0),
                                 new OA\Property(property: 'correct_count', type: 'integer', example: 4),
                                 new OA\Property(property: 'total_questions', type: 'integer', example: 5),
                                 new OA\Property(property: 'is_passed', type: 'boolean', example: true),

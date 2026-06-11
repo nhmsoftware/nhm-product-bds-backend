@@ -21,6 +21,8 @@ class CreateInternalPostRequest extends FormRequest
             'title' => 'nullable|string|max:255',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'thumbnail_url' => 'nullable|string',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,jpeg,jpg,png|max:10240',
         ];
     }
 
@@ -31,6 +33,8 @@ class CreateInternalPostRequest extends FormRequest
             'thumbnail.image' => 'File hình ảnh không hợp lệ.',
             'thumbnail.mimes' => 'File hình ảnh không hợp lệ.',
             'thumbnail.max' => 'File hình ảnh không hợp lệ.',
+            'attachments.*.mimes' => 'Tài liệu đính kèm không hợp lệ.',
+            'attachments.*.max' => 'Dung lượng tài liệu không được vượt quá 10MB.',
         ];
     }
 

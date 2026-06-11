@@ -108,6 +108,28 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
         return $query->get();
     }
 
+    public function getActiveDepartmentNames(): array
+    {
+        return $this->model
+            ->where('is_active', true)
+            ->whereIn('role', [
+                UserRole::EMPLOYEE->value,
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+                UserRole::CEO->value,
+                UserRole::SUPER_ADMIN->value,
+            ])
+            ->whereNotNull('department')
+            ->where('department', '<>', '')
+            ->orderBy('department', 'asc')
+            ->pluck('department')
+            ->map(fn ($department) => trim((string) $department))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     /**
      * Lấy danh sách người dùng đang hoạt động cần nhận thông báo khi có bài viết nội bộ mới.
      *
@@ -183,6 +205,9 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
 
     private function applyTeamScope(\Illuminate\Database\Eloquent\Builder $query, User $user): \Illuminate\Database\Eloquent\Builder
     {
+        $query->where('role', '<=', $user->role->value)
+            ->where('role', '!=', UserRole::BUYER->value);
+
         if ($user->role === UserRole::MANAGER) {
             return $query->where('department', $user->department);
         }

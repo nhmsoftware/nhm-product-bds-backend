@@ -232,7 +232,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             );
 
             // Eager load the planning relation
-            $lot->load(['planning']);
+            $lot->load(['planning', 'area.project']);
 
             // 6. Trả về thông tin lô đất kèm tên khu đất
             $data = $lot->toArray();
@@ -252,6 +252,9 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 }
                 $data['area'] = $lot->area->toArray();
                 $data['area']['sales_board_images'] = $areaImages;
+                $data['area']['google_maps_url'] = $lot->area->project?->google_maps_url;
+                $data['area']['location'] = $lot->area->project?->location;
+                $data['area']['project_name'] = $lot->area->project?->name;
             }
 
             $data['planning'] = $lot->planning ? $lot->planning->toArray() : null;
@@ -500,6 +503,8 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 $results->push([
                     'type' => 'lot',
                     'id' => $lot->id,
+                    'lot_id' => $lot->id,
+                    'area_id' => $lot->area_id,
                     'code' => $lot->code,
                     'name' => $lot->area ? $lot->area->name : '',
                     'sales_board_image' => $lot->area ? $lot->area->sales_board_image : null,

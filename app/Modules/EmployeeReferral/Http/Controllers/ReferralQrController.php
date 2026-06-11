@@ -7,6 +7,7 @@ namespace App\Modules\EmployeeReferral\Http\Controllers;
 use App\Core\Controller\BaseController;
 use App\Modules\EmployeeReferral\Services\ReferralQrService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
@@ -15,6 +16,22 @@ class ReferralQrController extends BaseController
     public function __construct(
         private readonly ReferralQrService $referralQrService
     ) {}
+
+
+    public function openAppDownload(Request $request): RedirectResponse
+    {
+        $userAgent = strtolower($request->userAgent() ?? '');
+
+        $targetUrl = match (true) {
+            str_contains($userAgent, 'iphone'),
+            str_contains($userAgent, 'ipad'),
+            str_contains($userAgent, 'ipod') => (string) config('services.app_download.ios_url'),
+            str_contains($userAgent, 'android') => (string) config('services.app_download.android_url'),
+            default => (string) config('services.app_download.fallback_url'),
+        };
+
+        return redirect()->away($targetUrl);
+    }
 
     #[OA\Get(
         path: '/api/v1/employee-referrals/recruitment-qr',
@@ -32,8 +49,10 @@ class ReferralQrController extends BaseController
                         new OA\Property(
                             property: 'data',
                             properties: [
-                                new OA\Property(property: 'qr_url', type: 'string', example: 'https://bdsapp.vn/storage/qrs/recruitment_ST-ABCXYZ.svg'),
-                                new OA\Property(property: 'referral_code', type: 'string', example: 'ST-ABCXYZ'),
+                                new OA\Property(property: 'qr_url', type: 'string', example: 'https://api.bdsapp.vn/storage/qrs/recruitment_ST-ABCXYZ.svg'),
+                                new OA\Property(property: 'qr_value', type: 'string', example: 'https://api.bdsapp.vn/api/v1/referrals/open?ref=REC-ST-ABCXYZ&type=recruitment'),
+                                new OA\Property(property: 'referral_code', type: 'string', example: 'REC-ST-ABCXYZ'),
+                                new OA\Property(property: 'referral_type', type: 'string', example: 'recruitment'),
                                 new OA\Property(property: 'description', type: 'string', example: 'Sử dụng mã này để giới thiệu nhân sự mới tham gia hệ thống.'),
                                 new OA\Property(property: 'share_text', type: 'string', example: 'Hãy tham gia mạng lưới của chúng tôi trên BDS App! Mã giới thiệu của tôi: ST-ABCXYZ'),
                             ],
@@ -96,8 +115,10 @@ class ReferralQrController extends BaseController
                         new OA\Property(
                             property: 'data',
                             properties: [
-                                new OA\Property(property: 'qr_url', type: 'string', example: 'https://bdsapp.vn/storage/qrs/customer_ST-ABCXYZ.svg'),
-                                new OA\Property(property: 'referral_code', type: 'string', example: 'ST-ABCXYZ'),
+                                new OA\Property(property: 'qr_url', type: 'string', example: 'https://api.bdsapp.vn/storage/qrs/customer_ST-ABCXYZ.svg'),
+                                new OA\Property(property: 'qr_value', type: 'string', example: 'https://api.bdsapp.vn/api/v1/referrals/open?ref=CUS-ST-ABCXYZ&type=customer'),
+                                new OA\Property(property: 'referral_code', type: 'string', example: 'CUS-ST-ABCXYZ'),
+                                new OA\Property(property: 'referral_type', type: 'string', example: 'customer'),
                                 new OA\Property(property: 'description', type: 'string', example: 'Sử dụng mã này để giới thiệu khách hàng tham gia hệ thống.'),
                                 new OA\Property(property: 'share_text', type: 'string', example: 'Tìm hiểu các dự án hấp dẫn tại BDS App! Mã giới thiệu khách hàng của tôi: ST-ABCXYZ'),
                             ],

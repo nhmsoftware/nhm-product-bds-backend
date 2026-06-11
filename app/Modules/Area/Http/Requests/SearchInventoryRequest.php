@@ -48,5 +48,9 @@ class SearchInventoryRequest extends FormRequest
         if (!$this->has('keyword') && $this->has('search')) {
             $this->merge(['keyword' => $this->get('search')]);
         }
+
+        if (!$this->has('keyword') && $this->has('q')) {
+            $this->merge(['keyword' => $this->get('q')]);
+        }
     }
 }

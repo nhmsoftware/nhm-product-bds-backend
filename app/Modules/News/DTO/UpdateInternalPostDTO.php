@@ -14,6 +14,9 @@ final class UpdateInternalPostDTO
         public readonly string $content,
         public readonly ?UploadedFile $thumbnailFile,
         public readonly ?string $thumbnailUrl,
+        /** @var array<int, UploadedFile> */
+        public readonly array $attachmentFiles = [],
+        public readonly ?array $keepAttachments = null,
     ) {
     }
 
@@ -26,6 +29,10 @@ final class UpdateInternalPostDTO
             content: $request->input('content', ''),
             thumbnailFile: $request->file('thumbnail'),
             thumbnailUrl: $request->input('thumbnail_url'),
+            attachmentFiles: array_values($request->file('attachments', [])),
+            keepAttachments: $request->filled('keep_attachments')
+                ? json_decode((string) $request->input('keep_attachments'), true)
+                : null,
         );
     }
 }

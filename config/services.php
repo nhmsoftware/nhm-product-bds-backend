@@ -35,6 +35,12 @@ return [
         ],
     ],
 
+    'app_download' => [
+        'ios_url' => env('IOS_APP_STORE_URL', 'https://apps.apple.com/search?term=NHM%20BDS'),
+        'android_url' => env('ANDROID_PLAY_STORE_URL', 'https://play.google.com/store/search?q=NHM%20BDS&c=apps'),
+        'fallback_url' => env('APP_DOWNLOAD_FALLBACK_URL', 'https://play.google.com/store/search?q=NHM%20BDS&c=apps'),
+    ],
+
     // hiện thị OTP trong response (mặc định: false)
     'otp_expose' => env('OTP_EXPOSE_IN_RESPONSE', false),
 ];

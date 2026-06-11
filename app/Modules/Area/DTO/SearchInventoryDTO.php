@@ -16,7 +16,7 @@ final class SearchInventoryDTO
     public static function fromRequest($request): self
     {
         return new self(
-            keyword: (string) $request->query('keyword', $request->query('search', '')),
+            keyword: (string) $request->query('keyword', $request->query('search', $request->query('q', ''))),
             perPage: (int) $request->query('per_page', 10),
             page: (int) $request->query('page', 1),
         );

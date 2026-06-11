@@ -7,12 +7,12 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "chillerlan/php-qrcode": "^6.0",
         "darkaonline/l5-swagger": "^11.0",
         "laravel/framework": "^13.7",
         "laravel/reverb": "^1.10",
         "laravel/tinker": "^3.0",
         "predis/predis": "^3.5",
-        "simplesoftwareio/simple-qrcode": "^4.2",
         "tymon/jwt-auth": "^2.3",
         "zircote/swagger-php": "^6.1"
     },

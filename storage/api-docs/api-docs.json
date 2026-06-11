@@ -3380,6 +3380,19 @@
                                                     "type": "integer",
                                                     "example": 5
                                                 },
+                                                "rank": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 3
+                                                        },
+                                                        "label": {
+                                                            "type": "string",
+                                                            "example": "Vàng"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
                                                 "current_month_points": {
                                                     "type": "integer",
                                                     "example": 20
@@ -6096,6 +6109,96 @@
                 ]
             }
         },
+        "/api/v1/department-transfers/history": {
+            "get": {
+                "tags": [
+                    "Department Transfers"
+                ],
+                "summary": "Xem lịch sử xin phép chuyển phòng ban của nhân viên",
+                "description": "Cho phép nhân viên xem các yêu cầu chuyển phòng ban đã gửi.",
+                "operationId": "5da1ec2f20cf3d5e473ab66e6d458d92",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Trang hiện tại (bắt đầu từ 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số bản ghi trên mỗi trang",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "description": "Trường dùng để sắp xếp",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "created_at",
+                            "enum": [
+                                "created_at",
+                                "desired_transfer_date"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "direction",
+                        "in": "query",
+                        "description": "Chiều sắp xếp",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "desc",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "filters[status]",
+                        "in": "query",
+                        "description": "Lọc theo trạng thái xử lý",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "approved",
+                                "rejected"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tải lịch sử xin phép chuyển phòng ban thành công."
+                    },
+                    "401": {
+                        "description": "Chưa đăng nhập (Unauthenticated)"
+                    },
+                    "500": {
+                        "description": "Không thể tải lịch sử xin phép chuyển phòng ban."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/department-transfers/{id}/approve": {
             "put": {
                 "tags": [
@@ -7221,11 +7324,19 @@
                                             "properties": {
                                                 "qr_url": {
                                                     "type": "string",
-                                                    "example": "https://bdsapp.vn/storage/qrs/recruitment_ST-ABCXYZ.svg"
+                                                    "example": "https://api.bdsapp.vn/storage/qrs/recruitment_ST-ABCXYZ.svg"
+                                                },
+                                                "qr_value": {
+                                                    "type": "string",
+                                                    "example": "https://api.bdsapp.vn/api/v1/referrals/open?ref=REC-ST-ABCXYZ&type=recruitment"
                                                 },
                                                 "referral_code": {
                                                     "type": "string",
-                                                    "example": "ST-ABCXYZ"
+                                                    "example": "REC-ST-ABCXYZ"
+                                                },
+                                                "referral_type": {
+                                                    "type": "string",
+                                                    "example": "recruitment"
                                                 },
                                                 "description": {
                                                     "type": "string",
@@ -7326,11 +7437,19 @@
                                             "properties": {
                                                 "qr_url": {
                                                     "type": "string",
-                                                    "example": "https://bdsapp.vn/storage/qrs/customer_ST-ABCXYZ.svg"
+                                                    "example": "https://api.bdsapp.vn/storage/qrs/customer_ST-ABCXYZ.svg"
+                                                },
+                                                "qr_value": {
+                                                    "type": "string",
+                                                    "example": "https://api.bdsapp.vn/api/v1/referrals/open?ref=CUS-ST-ABCXYZ&type=customer"
                                                 },
                                                 "referral_code": {
                                                     "type": "string",
-                                                    "example": "ST-ABCXYZ"
+                                                    "example": "CUS-ST-ABCXYZ"
+                                                },
+                                                "referral_type": {
+                                                    "type": "string",
+                                                    "example": "customer"
                                                 },
                                                 "description": {
                                                     "type": "string",
@@ -9767,10 +9886,19 @@
                                         },
                                         "data": {
                                             "properties": {
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "passed"
+                                                },
                                                 "score": {
                                                     "type": "number",
                                                     "format": "float",
-                                                    "example": 100
+                                                    "example": 10
+                                                },
+                                                "max_score": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 10
                                                 },
                                                 "correct_count": {
                                                     "type": "integer",
@@ -9787,7 +9915,7 @@
                                                 "passing_score": {
                                                     "type": "number",
                                                     "format": "float",
-                                                    "example": 80
+                                                    "example": 8
                                                 },
                                                 "details": {
                                                     "type": "array",
@@ -10455,6 +10583,11 @@
                                                     "type": "number",
                                                     "format": "float",
                                                     "example": 8
+                                                },
+                                                "max_score": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 10
                                                 },
                                                 "correct_count": {
                                                     "type": "integer",
@@ -16783,6 +16916,13 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "attachments": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "nullable": true
+                    },
                     "category": {
                         "type": "string"
                     },
@@ -16799,6 +16939,9 @@
                         "example": false
                     },
                     "likes_count": {
+                        "type": "integer"
+                    },
+                    "sort": {
                         "type": "integer"
                     },
                     "published_at": {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\EmployeeReferral\Http\Controllers\ReferralHistoryController;
+use App\Modules\EmployeeReferral\Http\Controllers\ReferralQrController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Route;
 
 // Public endpoint cho phép ghi nhận lượt quét QR
 Route::post('v1/referrals/scan', [ReferralHistoryController::class, 'recordScan'])->name('referrals.scan');
+
+// Public endpoint điều hướng người quét QR sang App Store hoặc CH Play theo thiết bị
+Route::get('v1/referrals/open', [ReferralQrController::class, 'openAppDownload'])->name('referrals.open');
 
 Route::middleware('auth:api')->prefix('v1/employee-referrals')->group(function () {
     // Xem mã QR tuyển dụng cá nhân (UC-098)

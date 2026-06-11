@@ -20,6 +20,7 @@ Route::prefix('v1/auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
         // UC-030: Xem hồ sơ cá nhân
         Route::get('profile', [AuthController::class, 'profile'])->name('auth.profile');
+        Route::get('departments', [AuthController::class, 'departments'])->name('auth.departments');
         // UC-031: Cập nhật hồ sơ cá nhân
         Route::put('profile', [AuthController::class, 'updateProfile'])->name('auth.updateProfile');
         // UC-032: Thay đổi mật khẩu
@@ -28,6 +29,7 @@ Route::prefix('v1/auth')->group(function () {
         Route::get('employee-profile', [AuthController::class, 'employeeProfile'])->name('auth.employeeProfile');
         // UC-034: Cập nhật hồ sơ cá nhân nhân sự
         Route::put('employee-profile', [AuthController::class, 'updateEmployeeProfile'])->name('auth.updateEmployeeProfile');
+        Route::post('employee-profile/avatar', [AuthController::class, 'uploadEmployeeAvatar'])->name('auth.uploadEmployeeAvatar');
         // UC-035: Tải lên tài liệu hồ sơ nhân sự
         Route::post('employee-profile/documents', [AuthController::class, 'uploadEmployeeDocument'])->name('auth.uploadEmployeeDocument');
         // Test case 5: Cập nhật FCM token
@@ -51,4 +53,3 @@ Route::prefix('v1/auth')->group(function () {
         Route::get('team/ranking/departments/{department}', [TeamController::class, 'departmentKpiDetails'])->name('auth.team.ranking.departments.details');
     });
 });
-

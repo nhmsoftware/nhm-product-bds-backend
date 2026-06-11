@@ -112,21 +112,7 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
             $requests = $this->departmentTransferRequestRepository->getTransferRequests($filter);
 
             // 5. Chuẩn hóa dữ liệu theo đặc tả
-            $requests->through(function ($item) {
-                return [
-                    'id' => (string) $item->id,
-                    'user_id' => (string) $item->user_id,
-                    'employee_name' => $item->user ? $item->user->name : 'N/A',
-                    'current_department' => $item->current_department,
-                    'target_department' => $item->target_department,
-                    'desired_transfer_date' => $item->desired_transfer_date instanceof \Carbon\Carbon 
-                        ? $item->desired_transfer_date->toDateString() 
-                        : ($item->desired_transfer_date ? date('Y-m-d', strtotime($item->desired_transfer_date)) : null),
-                    'reason' => $item->reason,
-                    'status' => $item->status->serialize(),
-                    'created_at' => $item->created_at ? $item->created_at->toIso8601String() : null,
-                ];
-            });
+            $requests->through(fn ($item) => $this->formatTransferRequest($item));
 
             // 6. Thiết lập thông báo phù hợp cho từng luồng kịch bản
             $message = 'Tải danh sách yêu cầu chuyển phòng ban thành công.';
@@ -149,6 +135,43 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
             // A2: Lỗi tải dữ liệu hệ thống / CSDL
             return ServiceReturn::error(
                 message: 'Không thể tải dữ liệu yêu cầu chuyển phòng ban.',
+                code: 500
+            );
+        });
+    }
+
+    /**
+     * Lấy lịch sử yêu cầu chuyển phòng ban của nhân viên đang đăng nhập.
+     *
+     * @param string $userId
+     * @param FilterDTO $filter
+     * @return ServiceReturn
+     */
+    public function getEmployeeDepartmentTransferHistory(string $userId, FilterDTO $filter): ServiceReturn
+    {
+        return $this->execute(function () use ($userId, $filter) {
+            $user = $this->authRepository->find($userId);
+            $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
+            $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
+
+            $requests = $this->departmentTransferRequestRepository->getUserTransferRequests($userId, $filter);
+            $requests->through(fn ($item) => $this->formatTransferRequest($item));
+
+            $message = 'Tải lịch sử xin phép chuyển phòng ban thành công.';
+            if ($requests->isEmpty()) {
+                $appliedFilters = $filter->getFilters();
+                $message = !empty($appliedFilters)
+                    ? 'Không có yêu cầu chuyển phòng ban phù hợp.'
+                    : 'Chưa có lịch sử xin phép chuyển phòng ban.';
+            }
+
+            return $this->success(
+                data: $requests,
+                message: $message
+            );
+        }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
+            return ServiceReturn::error(
+                message: 'Không thể tải lịch sử xin phép chuyển phòng ban.',
                 code: 500
             );
         });
@@ -273,5 +296,23 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
                 code: 500
             );
         });
+    }
+
+    private function formatTransferRequest($item): array
+    {
+        return [
+            'id' => (string) $item->id,
+            'user_id' => (string) $item->user_id,
+            'employee_name' => $item->user ? $item->user->name : 'N/A',
+            'current_department' => $item->current_department,
+            'target_department' => $item->target_department,
+            'desired_transfer_date' => $item->desired_transfer_date instanceof \Carbon\Carbon
+                ? $item->desired_transfer_date->toDateString()
+                : ($item->desired_transfer_date ? date('Y-m-d', strtotime($item->desired_transfer_date)) : null),
+            'reason' => $item->reason,
+            'rejection_reason' => $item->rejection_reason,
+            'status' => $item->status->serialize(),
+            'created_at' => $item->created_at ? $item->created_at->toIso8601String() : null,
+        ];
     }
 }

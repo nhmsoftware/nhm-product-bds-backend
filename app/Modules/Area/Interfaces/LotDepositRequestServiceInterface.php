@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Area\Interfaces;
 
-use App\Core\DTOs\ServiceReturn;
+use App\Core\Services\ServiceReturn;
 use App\Modules\Area\DTO\CreateLotDepositRequestDTO;
 
 interface LotDepositRequestServiceInterface

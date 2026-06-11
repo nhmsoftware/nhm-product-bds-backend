@@ -7,11 +7,13 @@ use App\Modules\Auth\DTO\ChangePasswordDTO;
 use App\Modules\Auth\DTO\RegisterDTO;
 use App\Modules\Auth\DTO\UpdateProfileDTO;
 use App\Modules\Auth\DTO\UpdateEmployeeProfileDTO;
+use App\Modules\Auth\DTO\UploadEmployeeAvatarDTO;
 use App\Modules\Auth\DTO\UploadEmployeeDocumentDTO;
 use App\Modules\Auth\Http\Requests\ChangePasswordRequest;
 use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Http\Requests\UpdateProfileRequest;
 use App\Modules\Auth\Http\Requests\UpdateEmployeeProfileRequest;
+use App\Modules\Auth\Http\Requests\UploadEmployeeAvatarRequest;
 use App\Modules\Auth\Http\Requests\UploadEmployeeDocumentRequest;
 use App\Modules\Auth\Http\Requests\UpdateFcmTokenRequest;
 use App\Modules\Auth\DTO\UpdateFcmTokenDTO;
@@ -362,6 +364,18 @@ final class AuthController extends BaseController
     {
         $userId = auth('api')->id();
         $result = $this->authService->getProfile($userId);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    public function departments(): JsonResponse
+    {
+        $userId = (string) auth('api')->id();
+        $result = $this->authService->getDepartments($userId);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());
@@ -750,6 +764,18 @@ final class AuthController extends BaseController
         return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 
+    public function uploadEmployeeAvatar(UploadEmployeeAvatarRequest $request): JsonResponse
+    {
+        $dto = UploadEmployeeAvatarDTO::fromRequest($request);
+        $result = $this->authService->uploadEmployeeAvatar($dto);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
     #[OA\Post(
         path: '/api/v1/auth/employee-profile/documents',
         description: 'Cho phép nhân sự tải lên các tài liệu cá nhân hoặc hồ sơ liên quan đến công việc như hợp đồng lao động, bằng cấp, chứng chỉ, CCCD/CMND và các tài liệu bổ sung khác.',
@@ -900,4 +926,3 @@ final class AuthController extends BaseController
         return $this->sendSuccess($result->getData(), $result->getMessage());
     }
 }
-

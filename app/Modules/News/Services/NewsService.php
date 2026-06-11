@@ -155,6 +155,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
 
             $this->validate($news !== null, 'Bài viết không tồn tại hoặc đã bị xóa.', 404);
             $this->validate($news->is_published === true, 'Bạn không có quyền truy cập bài viết này.', 403);
+            $this->validate($news->category !== 'internal', 'Bạn không có quyền truy cập bài viết này.', 403);
 
             $related = $this->newsRepository->getRelatedNews($news);
 
@@ -250,9 +251,13 @@ final class NewsService extends BaseService implements NewsServiceInterface
 
             // 4. Gọi Repository để tải tin tức nội bộ dựa trên quyền
             $paginated = $this->newsRepository->getInternalNewsFeed($user, $perPage);
+            $likedNewsIds = $this->newsLikeRepository->getLikedNewsIds(
+                $userId,
+                collect($paginated->items())->pluck('id')->map(fn ($id) => (string) $id)->toArray()
+            );
 
             // 5. Chuẩn hóa dữ liệu theo đặc tả
-            $paginated->through(function ($news) {
+            $paginated->through(function ($news) use ($likedNewsIds) {
                 return [
                     'id' => (string) $news->id,
                     'author_avatar' => $news->author ? $news->author->avatar : null,
@@ -263,9 +268,11 @@ final class NewsService extends BaseService implements NewsServiceInterface
                     'summary' => $news->summary,
                     'content' => $news->content,
                     'thumbnail' => $news->thumbnail,
+                    'attachments' => $this->normalizeAttachments($news->attachments),
                     'category' => $news->category,
                     'likes_count' => (int) $news->likes_count,
-                    'comments_count' => 0, // Mocked theo đặc tả yêu cầu
+                    'is_liked' => in_array((string) $news->id, $likedNewsIds, true),
+                    'comments_count' => (int) ($news->comments_count ?? 0),
                     'published_at' => $news->published_at ? $news->published_at->toIso8601String() : ($news->created_at ? $news->created_at->toIso8601String() : null),
                 ];
             });
@@ -345,11 +352,12 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $isLiked = $like !== null;
 
             // 6. Xây dựng danh sách hình ảnh đính kèm (nếu có thumbnail thì coi là ảnh đính kèm)
-            $attachments = [];
+            $attachments = $this->normalizeAttachments($news->attachments);
             if ($news->thumbnail) {
                 $attachments[] = [
                     'type' => 'image',
                     'url' => $news->thumbnail,
+                    'mime_type' => 'image/*',
                     'name' => basename($news->thumbnail)
                 ];
             }
@@ -362,6 +370,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
                 'summary' => $news->summary,
                 'content' => $news->content,
                 'thumbnail' => $news->thumbnail,
+                'attachments' => $this->normalizeAttachments($news->attachments),
                 'category' => $news->category,
                 'department' => $news->department,
                 'area' => $news->area,
@@ -425,11 +434,11 @@ final class NewsService extends BaseService implements NewsServiceInterface
                 'content' => $dto->content,
             ]);
 
-            // 5. Phát Domain Event
-            event(new NewsCommentCreated($comment));
-
             // Load user
             $comment->load('user');
+
+            // 5. Phát Domain Event
+            event(new NewsCommentCreated($comment));
 
             $data = [
                 'id' => (string) $comment->id,
@@ -465,9 +474,9 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
 
-            // Kiểm tra phân quyền: Employee, Manager, Director, CEO, Super Admin
+            // Kiểm tra phân quyền: Manager, Director, CEO, Super Admin
             $this->validate(
-                in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true),
+                $this->canManageInternalPosts($user->role),
                 'Bạn không có quyền đăng bài viết nội bộ.',
                 403
             );
@@ -506,6 +515,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
             } elseif (!empty($dto->thumbnailUrl)) {
                 $thumbnail = $dto->thumbnailUrl;
             }
+            $attachments = $this->storeInternalPostAttachments($dto->attachmentFiles);
 
             // 5. Xác định phạm vi hiển thị dựa trên vai trò
             $department = null;
@@ -531,6 +541,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
                 'summary' => Str::limit(strip_tags($dto->content), 150, '...'),
                 'content' => $dto->content,
                 'thumbnail' => $thumbnail,
+                'attachments' => $attachments,
                 'category' => 'internal',
                 'department' => $department,
                 'area' => $area,
@@ -573,6 +584,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
+            $this->validate($this->canManageInternalPosts($user->role), 'Bạn không có quyền chỉnh sửa bài viết nội bộ.', 403);
 
             // 2. Tìm bài viết nội bộ
             $news = $this->newsRepository->find($dto->id);
@@ -606,6 +618,16 @@ final class NewsService extends BaseService implements NewsServiceInterface
                 $dataToUpdate['thumbnail'] = Storage::url($path);
             } elseif ($dto->thumbnailUrl !== null) {
                 $dataToUpdate['thumbnail'] = $dto->thumbnailUrl;
+            }
+
+            if ($dto->keepAttachments !== null || !empty($dto->attachmentFiles)) {
+                $keptAttachments = is_array($dto->keepAttachments)
+                    ? $this->normalizeAttachments($dto->keepAttachments)
+                    : $this->normalizeAttachments($news->attachments);
+                $dataToUpdate['attachments'] = [
+                    ...$keptAttachments,
+                    ...$this->storeInternalPostAttachments($dto->attachmentFiles),
+                ];
             }
 
             // 7. Thực thi cập nhật bài viết
@@ -667,6 +689,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
 
                 return $this->success([
                     'liked' => false,
+                    'is_liked' => false,
                     'likes_count' => (int) $news->likes_count
                 ], 'Đã bỏ thích bài viết.');
             }
@@ -682,6 +705,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
 
             return $this->success([
                 'liked' => true,
+                'is_liked' => true,
                 'likes_count' => (int) $news->likes_count
             ], 'Đã thích bài viết.');
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
@@ -706,6 +730,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $user = $this->authRepository->find($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
             $this->validate($user->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
+            $this->validate($this->canManageInternalPosts($user->role), 'Bạn không có quyền xóa bài viết nội bộ.', 403);
 
             // 2. Tìm bài viết nội bộ
             $news = $this->newsRepository->find($dto->id);
@@ -728,5 +753,56 @@ final class NewsService extends BaseService implements NewsServiceInterface
             }
             return ServiceReturn::error('Không thể xóa bài viết.', $e, null, 500);
         });
+    }
+
+    private function canManageInternalPosts(UserRole $role): bool
+    {
+        return in_array($role, [UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true);
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile> $files
+     * @return array<int, array<string, mixed>>
+     */
+    private function storeInternalPostAttachments(array $files): array
+    {
+        return collect($files)
+            ->filter()
+            ->map(function ($file) {
+                $path = $file->store('news/attachments', 'public');
+
+                $this->validate(
+                    $path !== false && $path !== null,
+                    'Không thể tải tài liệu đính kèm lên.',
+                    500
+                );
+
+                return [
+                    'name' => $file->getClientOriginalName(),
+                    'url' => Storage::url($path),
+                    'mime_type' => $file->getClientMimeType(),
+                    'size' => $file->getSize(),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function normalizeAttachments(mixed $attachments): array
+    {
+        if (!is_array($attachments)) {
+            return [];
+        }
+
+        return collect($attachments)
+            ->filter(fn ($attachment) => is_array($attachment))
+            ->map(fn (array $attachment) => [
+                'name' => (string) ($attachment['name'] ?? 'Tài liệu đính kèm'),
+                'url' => (string) ($attachment['url'] ?? $attachment['file_url'] ?? ''),
+                'mime_type' => (string) ($attachment['mime_type'] ?? $attachment['mimeType'] ?? 'application/octet-stream'),
+                'size' => $attachment['size'] ?? null,
+            ])
+            ->values()
+            ->all();
     }
 }

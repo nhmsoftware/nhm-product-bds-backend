@@ -56,6 +56,7 @@ final class CreateLeaveRequest extends FormRequest
             'start_date.required' => 'Vui lòng nhập đầy đủ thông tin nghỉ phép.',
             'end_date.required' => 'Vui lòng nhập đầy đủ thông tin nghỉ phép.',
             'reason.required' => 'Vui lòng nhập đầy đủ thông tin nghỉ phép.',
+            'reason.min' => 'Lý do nghỉ phép phải có ít nhất 5 ký tự.',
             
             // A2: Ngày nghỉ không hợp lệ
             'start_date.date_format' => 'Ngày nghỉ không hợp lệ.',

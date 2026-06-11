@@ -110,129 +110,119 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 return $this->success(data: null, message: 'Hiện chưa có khóa học bắt buộc.');
             }
 
-            // 4. Lấy khóa học đầu tiên và load các bài học
-            $course     = $courses->first();
-            $course->load('lessons');
-            $enrollment = $course->enrollments->first();
+            $mapCourse = function ($course) use ($dto): array {
+                $course->load('lessons');
+                $enrollment = $course->enrollments->first();
 
-            // 5. Tải map tiến độ bài học của enrollment hiện tại (nếu đã đăng ký)
-            $lessonProgressMap  = collect();
-            $completedLessonIds = [];
+                $lessonProgressMap  = collect();
+                $completedLessonIds = [];
 
-            if ($enrollment) {
-                $lessonProgressRecords = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id);
-                $lessonProgressMap     = $lessonProgressRecords->keyBy(fn ($lp) => (string) $lp->lesson_id);
-                $completedLessonIds    = $this->courseEnrollmentRepository->getCompletedLessonIds($enrollment->id);
-            }
-
-            // 6. Tính toán trạng thái từng bài học và xác định bài đang học hiện tại
-            $mappedLessons           = [];
-            $hasUncompletedPreceding = false;
-            $completedCount          = 0;
-            $currentLessonId         = null;
-
-            foreach ($course->lessons as $lesson) {
-                $lessonId       = (string) $lesson->id;
-                $isCompleted    = in_array($lessonId, $completedLessonIds);
-                $progressRecord = $lessonProgressMap->get($lessonId);
-
-                if ($isCompleted) {
-                    $lessonStatus          = LessonStatus::COMPLETED;
-                    $lessonProgressPercent = 100;
-                    $completedCount++;
-                } elseif (!$hasUncompletedPreceding) {
-                    // Bài học đầu tiên chưa hoàn thành → đang học
-                    $lessonStatus            = LessonStatus::LEARNING;
-                    $hasUncompletedPreceding = true;
-
-                    if ($currentLessonId === null) {
-                        $currentLessonId = $lessonId;
-                    }
-
-                    // Tính % tiến độ xem video của bài đang học
-                    $durationSeconds       = $lesson->duration_seconds ?? 0;
-                    $watchedSeconds        = $progressRecord ? (int) $progressRecord->current_watch_seconds : 0;
-                    $lessonProgressPercent = $durationSeconds > 0
-                        ? (int) round(($watchedSeconds / $durationSeconds) * 100)
-                        : 0;
-                } else {
-                    // Các bài sau bài đang học → bị khóa
-                    $lessonStatus          = LessonStatus::LOCKED;
-                    $lessonProgressPercent = 0;
+                if ($enrollment) {
+                    $lessonProgressRecords = $this->courseEnrollmentRepository->getLessonProgress($enrollment->id);
+                    $lessonProgressMap     = $lessonProgressRecords->keyBy(fn ($lp) => (string) $lp->lesson_id);
+                    $completedLessonIds    = $this->courseEnrollmentRepository->getCompletedLessonIds($enrollment->id);
                 }
 
-                $actionText = match ($lessonStatus) {
-                    LessonStatus::COMPLETED => 'Xem lại',
-                    LessonStatus::LEARNING  => ($lessonProgressPercent > 0 ? 'Tiếp tục' : 'Bắt đầu'),
-                    LessonStatus::LOCKED    => 'Khóa',
-                };
+                $mappedLessons           = [];
+                $hasUncompletedPreceding = false;
+                $completedCount          = 0;
+                $currentLessonId         = null;
 
-                $mappedLessons[] = [
-                    'id'              => $lessonId,
-                    'order'           => $lesson->order,
-                    'title'           => $lesson->title,
-                    'durationSeconds' => $lesson->duration_seconds ?? 0,
-                    'status'          => strtolower($lessonStatus->name),
-                    'progressPercent' => $lessonProgressPercent,
-                    'isLocked'        => $lessonStatus === LessonStatus::LOCKED,
-                    'canContinue'     => $lessonStatus !== LessonStatus::LOCKED,
-                    'actionText'      => $actionText,
-                ];
-            }
+                foreach ($course->lessons as $lesson) {
+                    $lessonId       = (string) $lesson->id;
+                    $isCompleted    = in_array($lessonId, $completedLessonIds);
+                    $progressRecord = $lessonProgressMap->get($lessonId);
 
-            // 7. Tính % tiến độ tổng quan và trạng thái enrollment
-            $totalLessons        = $course->lessons->count();
-            $overallPercent      = $enrollment ? (float) $enrollment->progress_percent : 0.00;
+                    if ($isCompleted) {
+                        $lessonStatus          = LessonStatus::COMPLETED;
+                        $lessonProgressPercent = 100;
+                        $completedCount++;
+                    } elseif (!$hasUncompletedPreceding) {
+                        $lessonStatus            = LessonStatus::LEARNING;
+                        $hasUncompletedPreceding = true;
 
-            // Xử lý quiz và cập nhật trạng thái
-            $lessonIds = $course->lessons->pluck('id')->toArray();
-            $quizQuestions = $this->quizRepository->getByLessonIds($lessonIds);
-            
-            $hasQuiz = $quizQuestions->isNotEmpty();
-            $isPassed = false;
-            $lastScore = null;
-            $passingScore = 8;
-            $canStart = false;
-            $quizStatus = 'not_started';
-            $quizActionText = 'Làm bài kiểm tra';
+                        if ($currentLessonId === null) {
+                            $currentLessonId = $lessonId;
+                        }
 
-            if ($hasQuiz) {
-                $questionIds = $quizQuestions->pluck('id')->toArray();
-                $totalQuestionsCount = $quizQuestions->count();
-                $canStart = ($completedCount === $totalLessons);
-
-                $attemptsCount = $this->quizAttemptRepository->countAttemptsByUserAndQuizIds($dto->userId, $questionIds);
-                if ($attemptsCount > 0 && $totalQuestionsCount > 0) {
-                    $hasUngraded = $this->quizAttemptRepository->hasUngradedAttempts($dto->userId, $questionIds);
-                    if ($hasUngraded) {
-                        $quizStatus = 'grading';
-                        $quizActionText = 'Đang chấm bài';
+                        $durationSeconds       = $lesson->duration_seconds ?? 0;
+                        $watchedSeconds        = $progressRecord ? (int) $progressRecord->current_watch_seconds : 0;
+                        $lessonProgressPercent = $durationSeconds > 0
+                            ? (int) round(($watchedSeconds / $durationSeconds) * 100)
+                            : 0;
                     } else {
-                        $correctAttemptsCount = $this->quizAttemptRepository->countCorrectByUserAndQuizIds($dto->userId, $questionIds);
-                        $lastScore = round(($correctAttemptsCount / $totalQuestionsCount) * 10, 1);
-                        $isPassed = $lastScore >= $passingScore;
-                        
-                        if ($isPassed) {
-                            $quizStatus = 'passed';
-                            $quizActionText = 'Xem lại';
+                        $lessonStatus          = LessonStatus::LOCKED;
+                        $lessonProgressPercent = 0;
+                    }
+
+                    $actionText = match ($lessonStatus) {
+                        LessonStatus::COMPLETED => 'Xem lại',
+                        LessonStatus::LEARNING  => ($lessonProgressPercent > 0 ? 'Tiếp tục' : 'Bắt đầu'),
+                        LessonStatus::LOCKED    => 'Khóa',
+                    };
+
+                    $mappedLessons[] = [
+                        'id'              => $lessonId,
+                        'order'           => $lesson->order,
+                        'title'           => $lesson->title,
+                        'durationSeconds' => $lesson->duration_seconds ?? 0,
+                        'status'          => strtolower($lessonStatus->name),
+                        'progressPercent' => $lessonProgressPercent,
+                        'isLocked'        => $lessonStatus === LessonStatus::LOCKED,
+                        'canContinue'     => $lessonStatus !== LessonStatus::LOCKED,
+                        'actionText'      => $actionText,
+                    ];
+                }
+
+                $totalLessons   = $course->lessons->count();
+                $overallPercent = $enrollment ? (float) $enrollment->progress_percent : 0.00;
+
+                $lessonIds      = $course->lessons->pluck('id')->toArray();
+                $quizQuestions  = $this->quizRepository->getByLessonIds($lessonIds);
+
+                $hasQuiz        = $quizQuestions->isNotEmpty();
+                $isPassed       = false;
+                $lastScore      = null;
+                $passingScore   = 8;
+                $canStart       = false;
+                $quizStatus     = 'not_started';
+                $quizActionText = 'Làm bài kiểm tra';
+
+                if ($hasQuiz) {
+                    $questionIds         = $quizQuestions->pluck('id')->toArray();
+                    $totalQuestionsCount = $quizQuestions->count();
+                    $canStart            = ($completedCount === $totalLessons);
+
+                    $attemptsCount = $this->quizAttemptRepository->countAttemptsByUserAndQuizIds($dto->userId, $questionIds);
+                    if ($attemptsCount > 0 && $totalQuestionsCount > 0) {
+                        $hasUngraded = $this->quizAttemptRepository->hasUngradedAttempts($dto->userId, $questionIds);
+                        if ($hasUngraded) {
+                            $quizStatus = 'grading';
+                            $quizActionText = 'Đang chấm bài';
                         } else {
-                            $quizStatus = 'failed';
-                            $quizActionText = 'Chưa đạt';
+                            $correctAttemptsCount = $this->quizAttemptRepository->countCorrectByUserAndQuizIds($dto->userId, $questionIds);
+                            $lastScore = round(($correctAttemptsCount / $totalQuestionsCount) * 10, 1);
+                            $isPassed = $lastScore >= $passingScore;
+
+                            if ($isPassed) {
+                                $quizStatus = 'passed';
+                                $quizActionText = 'Xem lại';
+                            } else {
+                                $quizStatus = 'failed';
+                                $quizActionText = 'Chưa đạt';
+                            }
                         }
                     }
                 }
-            }
 
-            $enrollmentStatusStr = match (true) {
-                $enrollment === null                                           => 'not_started',
-                $enrollment->status === CourseEnrollmentStatus::COMPLETED     => 'completed',
-                $enrollment->status === CourseEnrollmentStatus::IN_PROGRESS   => 'in_progress',
-                default                                                        => 'not_started',
-            };
+                $enrollmentStatusStr = match (true) {
+                    $enrollment === null                                           => 'not_started',
+                    $enrollment->status === CourseEnrollmentStatus::COMPLETED     => 'completed',
+                    $enrollment->status === CourseEnrollmentStatus::IN_PROGRESS   => 'in_progress',
+                    default                                                        => 'not_started',
+                };
 
-            // 8. Chuẩn hóa cấu trúc trả về theo format mới
-            $result = [
-                'course' => [
+                return [
                     'id'           => (string) $course->id,
                     'title'        => $course->title,
                     'label'        => 'QUY TRÌNH HỌC TỰ CNTR',
@@ -242,7 +232,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'learningRule' => [
                         'type'                  => 'sequential',
                         'canSkipLesson'         => false,
-                        'requireWatchFullVideo'  => true,
+                        'requireWatchFullVideo' => true,
                         'autoTrackProgress'     => true,
                     ],
                     'progress' => [
@@ -267,7 +257,15 @@ final class LearningService extends BaseService implements LearningServiceInterf
                         'message' => 'Bạn cần xem hết thời lượng video trước khi chuyển sang bài tiếp theo. Hệ thống sẽ tự động ghi nhận tiến độ.',
                     ],
                     'lessons' => $mappedLessons,
-                ],
+                ];
+            };
+
+            $mappedCourses = $courses->map($mapCourse)->values();
+            $coursePayload = $mappedCourses->first();
+
+            $result = [
+                'course' => $coursePayload,
+                'courses' => $mappedCourses->all(),
             ];
 
             return $this->success(
@@ -497,6 +495,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'attachment_message' => $attachmentMessage,
                 'current_watch_seconds' => $currentWatchSeconds,
                 'unlock_condition' => $unlockCondition,
+                'next_lesson_id' => $nextLesson ? (string) $nextLesson->id : null,
             ];
 
             return $this->success(
@@ -879,13 +878,14 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 ];
             }
 
-            // Tính điểm số (%)
+            // Tính điểm số theo thang 10.
+            $maxScore = 10.0;
             if ($multipleChoiceCount > 0) {
-                $score = round(($correctCount / $multipleChoiceCount) * 100, 2);
+                $score = round(($correctCount / $multipleChoiceCount) * $maxScore, 2);
             } else {
-                $score = 100.00; // Mặc định 100% nếu toàn câu tự luận
+                $score = $maxScore;
             }
-            $passingScore = 80.00; // Tiêu chuẩn đạt là 80% câu đúng
+            $passingScore = 8.0;
             $isPassed = $score >= $passingScore;
 
             $message = $isPassed ? 'Chúc mừng! Bạn đã hoàn thành bài quiz đạt yêu cầu.' : 'Rất tiếc! Bạn chưa đạt điểm yêu cầu của bài quiz.';
@@ -900,7 +900,9 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $enrollment->save();
 
             $responsePayload = [
+                'status' => $isPassed ? 'passed' : 'failed',
                 'score' => $score,
+                'max_score' => $maxScore,
                 'correct_count' => $correctCount,
                 'total_questions' => $totalCount,
                 'is_passed' => $isPassed,
@@ -1010,10 +1012,11 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 ];
             }
 
+            $maxScore = 10.0;
             if ($multipleChoiceCount > 0) {
-                $score = round(($correctCount / $multipleChoiceCount) * 10, 2); // Hệ số 10
+                $score = round(($correctCount / $multipleChoiceCount) * $maxScore, 2);
             } else {
-                $score = 10.0;
+                $score = $maxScore;
             }
             $passingScore = 8.0;
             $isPassed = $score >= $passingScore;
@@ -1022,6 +1025,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $responsePayload = [
                 'status' => $status,
                 'score' => $score,
+                'max_score' => $maxScore,
                 'correct_count' => $correctCount,
                 'total_questions' => $totalCount,
                 'is_passed' => $isPassed,
@@ -2313,5 +2317,4 @@ final class LearningService extends BaseService implements LearningServiceInterf
         });
     }
 }
-
 
