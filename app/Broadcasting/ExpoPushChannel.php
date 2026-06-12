@@ -42,6 +42,10 @@ class ExpoPushChannel
             'to' => $notifiable->fcm_token,
             'title' => $title,
             'body' => $body,
+            // sound + priority + channelId giúp thông báo hiển thị khi app chạy nền/đóng.
+            'sound' => 'default',
+            'priority' => 'high',
+            'channelId' => 'default',
             'data' => [
                 'action_type' => $actionType,
                 'action_id' => $actionId,
@@ -49,8 +53,17 @@ class ExpoPushChannel
         ];
 
         // 3. Gửi request tới Expo Push Service
+        // Nếu bật "Enhanced Security for Push" trên Expo thì cần Access Token.
+        $accessToken = config('services.expo.access_token');
+        $pushUrl = config('services.expo.push_url', 'https://exp.host/--/api/v2/push/send');
+
         try {
-            $response = Http::post('https://exp.host/--/api/v2/push/send', $payload);
+            $request = Http::acceptJson();
+            if (!empty($accessToken)) {
+                $request = $request->withToken($accessToken);
+            }
+
+            $response = $request->post($pushUrl, $payload);
 
             if (!$response->successful()) {
                 Log::error('Lỗi khi gửi Expo Push Notification:', [
