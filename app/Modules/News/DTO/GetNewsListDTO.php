@@ -14,16 +14,16 @@ final class GetNewsListDTO
 
     public static function fromRequest($request): self
     {
-        $category = $request->query('category');
+        $category = $request->input('category');
         if ($category === 'all' || $category === 'Tất cả') {
             $category = null;
         }
 
         return new self(
             category: $category,
-            search: $request->query('search'),
-            perPage: (int) $request->query('per_page', 10),
-            page: (int) $request->query('page', 1),
+            search: $request->input('search'),
+            perPage: (int) $request->input('per_page', 10),
+            page: (int) $request->input('page', 1),
         );
     }
 

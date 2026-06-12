@@ -14,9 +14,9 @@ final class SearchNewsDTO
     public static function fromRequest($request): self
     {
         return new self(
-            keyword: $request->query('keyword', $request->query('search', '')),
-            perPage: (int) $request->query('per_page', 10),
-            page: (int) $request->query('page', 1),
+            keyword: $request->input('keyword', $request->input('search', '')),
+            perPage: (int) $request->input('per_page', 10),
+            page: (int) $request->input('page', 1),
         );
     }
 }
