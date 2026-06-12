@@ -62,6 +62,7 @@ final class AdminNewsService extends BaseService implements AdminNewsServiceInte
                     'slug' => $slug,
                     'summary' => $dto->summary,
                     'content' => $dto->content,
+                    'content_blocks' => $dto->contentBlocks,
                     'thumbnail' => $dto->thumbnail,
                     'category' => $dto->category,
                     'department' => $dto->department,
@@ -93,6 +94,7 @@ final class AdminNewsService extends BaseService implements AdminNewsServiceInte
             }
             if ($dto->summary !== null) $updateData['summary'] = $dto->summary;
             if ($dto->content !== null) $updateData['content'] = $dto->content;
+            if ($dto->hasContentBlocks) $updateData['content_blocks'] = $dto->contentBlocks;
             if ($dto->thumbnail !== null) $updateData['thumbnail'] = $dto->thumbnail;
             if ($dto->category !== null) $updateData['category'] = $dto->category;
 

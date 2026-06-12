@@ -111,11 +111,11 @@ class AreaAndLotSeeder extends Seeder
             ],
             [
                 'email'        => 'employee2@test.com',
-                'name'         => 'Võ Thị Nhân Viên Mới (Chưa Assign)',
+                'name'         => 'Võ Thị Nhân Viên Mới',
                 'staff_code'   => 'TEST-EMP-002',
                 'role'         => UserRole::EMPLOYEE->value,
                 'department'   => 'HCM',
-                'job_position' => 'Nhân viên kinh doanh test',
+                'job_position' => 'Nhân viên kinh doanh',
                 'area'         => 'Hồ Chí Minh',
             ],
             [
@@ -149,7 +149,7 @@ class AreaAndLotSeeder extends Seeder
                 'password'     => Hash::make('password123'),
                 'role'         => $data['role'],
                 'department'   => $data['department'],
-                'job_position' => $data['job_position'] ?? 'Nhân viên kinh doanh test',
+                'job_position' => $data['job_position'] ?? 'Nhân viên kinh doanh',
                 'area'         => $data['area'] ?? 'Hà Nội',
                 'is_active'    => true,
                 'created_at'   => Carbon::now(),
@@ -238,33 +238,37 @@ class AreaAndLotSeeder extends Seeder
 
         $createdAreas = [];
         foreach ($areasData as $data) {
-            // Kiểm tra area trùng tên
+            $payload = [
+                'project_id'         => null,
+                'name'               => $data['name'],
+                'total_lots'         => $data['total_lots'],
+                'remaining_lots'     => $data['remaining_lots'],
+                'area_size'          => $data['area_size'],
+                'direction'          => $data['direction'],
+                'price'              => $data['price'],
+                'unit_price'         => $data['unit_price'],
+                'status'             => $data['status'],
+                'is_featured'        => $data['is_featured'],
+                'sales_board_image'  => $data['sales_board_image'],
+                'sales_board_iframe' => null,
+                'sales_board_images' => null,
+                'planning_check_url' => $data['planning_check_url'],
+                'updated_at'         => Carbon::now(),
+            ];
+
             $existing = DB::table('areas')->where('name', $data['name'])->whereNull('deleted_at')->first();
             if ($existing) {
-                $this->command->warn("  ⚠️  Area '{$data['name']}' đã tồn tại, bỏ qua.");
-                $createdAreas[] = $existing;
+                DB::table('areas')->where('id', $existing->id)->update($payload);
+                $createdAreas[] = DB::table('areas')->where('id', $existing->id)->first();
+                $this->command->line("  ✔ Cập nhật area: {$data['name']}");
                 continue;
             }
 
             $id = Str::uuid()->toString();
             DB::table('areas')->insert([
-                'id'                => $id,
-                'project_id'        => null,
-                'name'              => $data['name'],
-                'total_lots'        => $data['total_lots'],
-                'remaining_lots'    => $data['remaining_lots'],
-                'area_size'         => $data['area_size'],
-                'direction'         => $data['direction'],
-                'price'             => $data['price'],
-                'unit_price'        => $data['unit_price'],
-                'status'            => $data['status'],
-                'is_featured'       => $data['is_featured'],
-                'sales_board_image' => $data['sales_board_image'],
-                'sales_board_iframe'=> null,
-                'sales_board_images'=> null,
-                'planning_check_url'=> $data['planning_check_url'],
-                'created_at'        => Carbon::now()->subDays(rand(1, 90)),
-                'updated_at'        => Carbon::now(),
+                ...$payload,
+                'id'         => $id,
+                'created_at' => Carbon::now()->subDays(rand(1, 90)),
             ]);
 
             $createdAreas[] = DB::table('areas')->where('id', $id)->first();
@@ -280,43 +284,56 @@ class AreaAndLotSeeder extends Seeder
     private function createLots(array $areas): void
     {
         $directions  = ['Đông', 'Tây', 'Nam', 'Bắc', 'Đông Nam', 'Tây Bắc', 'Đông Bắc', 'Tây Nam'];
-        $statuses    = [
-            LotStatus::AVAILABLE->value,
-            LotStatus::AVAILABLE->value,
-            LotStatus::AVAILABLE->value,
-            LotStatus::SOLD->value,
-            LotStatus::RESERVED->value,
-        ];
 
         foreach ($areas as $area) {
-            // Kiểm tra xem area này đã có lots chưa
+            $lotsToCreate = (int) $area->total_lots;
+            $remainingLots = min((int) $area->remaining_lots, $lotsToCreate);
             $existingLots = DB::table('lots')->where('area_id', $area->id)->whereNull('deleted_at')->count();
-            if ($existingLots > 0) {
-                $this->command->warn("  ⚠️  Area '{$area->name}' đã có {$existingLots} lots, bỏ qua.");
+            $existingAvailableLots = DB::table('lots')
+                ->where('area_id', $area->id)
+                ->where('status', LotStatus::AVAILABLE->value)
+                ->whereNull('deleted_at')
+                ->count();
+
+            if ($existingLots === $lotsToCreate && $existingAvailableLots === $remainingLots) {
+                $this->command->line("  ✔ Lots của area '{$area->name}' đã đúng: {$remainingLots}/{$lotsToCreate} còn hàng.");
                 continue;
             }
 
-            $lotsToCreate = min((int) $area->total_lots, 10); // Tối đa 10 lots mỗi area
+            DB::table('lots')->where('area_id', $area->id)->delete();
+
             $lotsData = [];
+            $unavailableLots = $lotsToCreate - $remainingLots;
+            $reservedLots = (int) floor($unavailableLots * 0.25);
+            $notForSaleLots = (int) floor($unavailableLots * 0.1);
+            $soldLots = $unavailableLots - $reservedLots - $notForSaleLots;
+            $statuses = [
+                ...array_fill(0, $remainingLots, LotStatus::AVAILABLE->value),
+                ...array_fill(0, $reservedLots, LotStatus::RESERVED->value),
+                ...array_fill(0, $soldLots, LotStatus::SOLD->value),
+                ...array_fill(0, $notForSaleLots, LotStatus::UNAVAILABLE->value),
+            ];
 
             for ($i = 1; $i <= $lotsToCreate; $i++) {
                 $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $area->name), 0, 1));
+                $column = ($i - 1) % 10;
+                $row = intdiv($i - 1, 10);
                 $lotsData[] = [
                     'id'           => Str::uuid()->toString(),
                     'area_id'      => $area->id,
                     'code'         => "{$prefix}-" . str_pad($i, 2, '0', STR_PAD_LEFT),
-                    'status'       => $statuses[array_rand($statuses)],
-                    'area_size'    => round(rand(80, 250) + rand(0, 9) / 10, 1),
-                    'direction'    => $directions[array_rand($directions)],
-                    'price'        => rand(2, 15) * 1000000000,
-                    'unit_price'   => rand(30, 100) * 1000000,
-                    'coordinate_x' => rand(50, 500),
-                    'coordinate_y' => rand(50, 500),
-                    'width'        => rand(40, 80),
-                    'height'       => rand(40, 80),
+                    'status'       => $statuses[$i - 1] ?? LotStatus::SOLD->value,
+                    'area_size'    => 82 + (($i * 7) % 140),
+                    'direction'    => $directions[($i - 1) % count($directions)],
+                    'price'        => (2 + ($i % 14)) * 1000000000,
+                    'unit_price'   => (30 + ($i % 70)) * 1000000,
+                    'coordinate_x' => 48 + ($column * 72),
+                    'coordinate_y' => 48 + ($row * 64),
+                    'width'        => 58,
+                    'height'       => 48,
                     'image_url'    => "https://picsum.photos/seed/lot{$i}/400/300",
-                    'frontage'     => round(rand(4, 10) + rand(0, 9) / 10, 1),
-                    'legal'        => rand(0, 1) ? 'Sổ hồng riêng' : 'Sổ đỏ',
+                    'frontage'     => 4 + (($i % 7) * 0.6),
+                    'legal'        => $i % 2 === 0 ? 'Sổ hồng riêng' : 'Sổ đỏ',
                     'description'  => "Lô đất số {$i} thuộc {$area->name}. Vị trí đẹp, thoáng mát.",
                     'is_locked'    => false,
                     'created_at'   => Carbon::now()->subDays(rand(1, 60)),
@@ -325,7 +342,7 @@ class AreaAndLotSeeder extends Seeder
             }
 
             DB::table('lots')->insert($lotsData);
-            $this->command->line("  ✔ Tạo {$lotsToCreate} lots cho area: {$area->name}");
+            $this->command->line("  ✔ Đồng bộ {$lotsToCreate} lots cho area: {$area->name} ({$remainingLots} lô còn hàng)");
         }
     }
 

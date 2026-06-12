@@ -5,6 +5,7 @@ namespace App\Modules\Consultation\Services;
 use App\Core\Logs\Logging;
 use App\Core\Services\BaseService;
 use App\Core\Services\ServiceReturn;
+use App\Modules\Consultation\DTO\RequestCallbackDTO;
 use App\Modules\Consultation\DTO\SubmitConsultationDTO;
 use App\Modules\Consultation\Events\ConsultationMessageSubmitted;
 use App\Modules\Consultation\Interfaces\ConsultationMessageRepositoryInterface;
@@ -49,6 +50,27 @@ final class ConsultationMessageService extends BaseService implements Consultati
             Logging::debug("[UC-026] Yêu cầu tư vấn mới đã được gửi. ID: {$message->id}. Số điện thoại: {$message->phone}. Đã gửi thông báo cho bộ phận Sale.");
 
             return $this->success($message, 'Gửi yêu cầu tư vấn thành công.');
+        }, useTransaction: true);
+    }
+
+    /**
+     * Gửi yêu cầu gọi lại từ phía người dùng.
+     *
+     * @param RequestCallbackDTO $dto
+     * @return ServiceReturn
+     */
+    public function requestCallback(RequestCallbackDTO $dto): ServiceReturn
+    {
+        return $this->execute(function () use ($dto) {
+            $message = $this->consultationMessageRepository->saveMessage($dto->toArray());
+
+            $this->validate($message !== null, 'Không thể đặt lịch hẹn. Vui lòng thử lại.', 500);
+
+            event(new ConsultationMessageSubmitted($message));
+
+            Logging::debug("[UC-025] Yêu cầu gọi lại mới đã được gửi. ID: {$message->id}. Số điện thoại: {$message->phone}. Thời gian mong muốn: {$message->preferred_callback_time}.");
+
+            return $this->success($message, 'Đặt lịch hẹn thành công.');
         }, useTransaction: true);
     }
 }

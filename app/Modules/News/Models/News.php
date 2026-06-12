@@ -20,8 +20,10 @@ use OpenApi\Attributes as OA;
  * @property string $slug
  * @property string $summary
  * @property string $content
+ * @property array|null $content_blocks
  * @property string $thumbnail
  * @property array|null $attachments
+ * @property array|null $quote
  * @property string $category
  * @property string $department
  * @property string $area
@@ -48,8 +50,13 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'slug', type: 'string'),
         new OA\Property(property: 'summary', type: 'string', nullable: true),
         new OA\Property(property: 'content', type: 'string'),
+        new OA\Property(property: 'content_blocks', type: 'array', nullable: true, items: new OA\Items(type: 'object')),
         new OA\Property(property: 'thumbnail', type: 'string', nullable: true),
         new OA\Property(property: 'attachments', type: 'array', nullable: true, items: new OA\Items(type: 'object')),
+        new OA\Property(property: 'quote', type: 'object', nullable: true, properties: [
+            new OA\Property(property: 'text', type: 'string'),
+            new OA\Property(property: 'author', type: 'string', nullable: true),
+        ]),
         new OA\Property(property: 'category', type: 'string'),
         new OA\Property(property: 'department', type: 'string', nullable: true),
         new OA\Property(property: 'area', type: 'string', nullable: true),
@@ -70,8 +77,10 @@ class News extends Model
         'slug',
         'summary',
         'content',
+        'content_blocks',
         'thumbnail',
         'attachments',
+        'quote',
         'category',
         'department',
         'area',
@@ -88,7 +97,9 @@ class News extends Model
         'is_featured' => 'boolean',
         'sort' => 'integer',
         'likes_count' => 'integer',
+        'content_blocks' => 'array',
         'attachments' => 'array',
+        'quote' => 'array',
         'published_at' => 'datetime',
     ];
 

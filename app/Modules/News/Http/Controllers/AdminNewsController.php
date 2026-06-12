@@ -81,11 +81,12 @@ final class AdminNewsController extends BaseController
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['title', 'content', 'category', 'type', 'status'],
+                required: ['title', 'category', 'type', 'status'],
                 properties: [
                     new OA\Property(property: 'title', type: 'string'),
                     new OA\Property(property: 'summary', type: 'string', nullable: true),
-                    new OA\Property(property: 'content', type: 'string'),
+                    new OA\Property(property: 'content', type: 'string', description: 'Nội dung plain text, có thể bỏ trống nếu gửi content_blocks.'),
+                    new OA\Property(property: 'content_blocks', type: 'array', nullable: true, items: new OA\Items(type: 'object'), description: 'Mảng block nội dung: heading, paragraph, image, quote.'),
                     new OA\Property(property: 'thumbnail', type: 'string', nullable: true),
                     new OA\Property(property: 'category', type: 'string'),
                     new OA\Property(property: 'type', type: 'string', enum: ['public', 'internal'], description: 'Loại bài viết: Công khai hoặc Nội bộ'),
@@ -129,6 +130,7 @@ final class AdminNewsController extends BaseController
                     new OA\Property(property: 'title', type: 'string'),
                     new OA\Property(property: 'summary', type: 'string', nullable: true),
                     new OA\Property(property: 'content', type: 'string'),
+                    new OA\Property(property: 'content_blocks', type: 'array', nullable: true, items: new OA\Items(type: 'object'), description: 'Mảng block nội dung: heading, paragraph, image, quote.'),
                     new OA\Property(property: 'thumbnail', type: 'string', nullable: true),
                     new OA\Property(property: 'category', type: 'string'),
                     new OA\Property(property: 'type', type: 'string', enum: ['public', 'internal'], description: 'Loại bài viết'),

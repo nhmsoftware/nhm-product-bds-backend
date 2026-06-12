@@ -21,6 +21,8 @@ use OpenApi\Attributes as OA;
  * @property string $project_id
  * @property string $project_name
  * @property string $content
+ * @property string $request_type
+ * @property string|null $preferred_callback_time
  * @property ConsultationStatus $status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -39,6 +41,8 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'project_id', type: 'string', format: 'uuid', nullable: true, example: 'd3b07384-d113-49c2-a558-e244247a88ca'),
         new OA\Property(property: 'project_name', type: 'string', nullable: true, example: 'Quy hoạch khu đô thị Thủ Thiêm'),
         new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Tôi cần tư vấn thông tin chi tiết và chính sách bán hàng của dự án này.'),
+        new OA\Property(property: 'request_type', type: 'string', example: 'consultation'),
+        new OA\Property(property: 'preferred_callback_time', type: 'string', nullable: true, example: 'Thứ 7 tuần này, 09:00'),
         new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Consultation\Models\Enums\ConsultationStatus::PENDING->value),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
         new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
@@ -57,6 +61,8 @@ class ConsultationMessage extends Model
         'project_id',
         'project_name',
         'content',
+        'request_type',
+        'preferred_callback_time',
         'status',
     ];
 

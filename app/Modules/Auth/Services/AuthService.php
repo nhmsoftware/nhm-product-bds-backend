@@ -950,10 +950,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 404
             );
 
-            // A3 - Người dùng không có quyền xem danh sách nhân viên
+            // A3 - Người dùng không có quyền xem thông tin tổng quan
             $allowedRoles = [
                 UserRole::MANAGER->value,
                 UserRole::DIRECTOR->value,
+                UserRole::CEO->value,
+                UserRole::SUPER_ADMIN->value,
             ];
             $this->validate(
                 in_array($user->role->value, $allowedRoles),
@@ -967,6 +969,10 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 $teamName = $user->department;
             } elseif ($user->role === UserRole::DIRECTOR) {
                 $teamName = $user->area;
+            } elseif ($user->role === UserRole::CEO) {
+                $teamName = 'Toàn công ty';
+            } elseif ($user->role === UserRole::SUPER_ADMIN) {
+                $teamName = 'Toàn hệ thống';
             }
 
             $memberCount = $this->authRepository->countActiveTeamMembers($user);
@@ -1004,6 +1010,8 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $allowedRoles = [
                 UserRole::MANAGER->value,
                 UserRole::DIRECTOR->value,
+                UserRole::CEO->value,
+                UserRole::SUPER_ADMIN->value,
             ];
             $this->validate(
                 in_array($user->role->value, $allowedRoles),

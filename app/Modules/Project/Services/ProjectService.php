@@ -13,6 +13,7 @@ use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Project\Interfaces\ProjectRepositoryInterface;
 use App\Modules\Project\Interfaces\ProjectServiceInterface;
+use App\Modules\Project\Models\Project;
 use App\Modules\Area\Interfaces\AreaServiceInterface;
 
 /**
@@ -43,6 +44,9 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     {
         return $this->execute(function () use ($dto) {
             $projects = $this->projectRepository->listPublic($dto);
+            $projects->setCollection(
+                $projects->getCollection()->map(fn (Project $project) => $this->publicProjectPayload($project))
+            );
 
             $message = $projects->total() > 0 
                 ? 'Tải danh sách dự án thành công.' 
@@ -69,7 +73,7 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
             $this->validate($project !== null, 'Dự án không tồn tại hoặc đã bị xóa.', 404);
 
             return $this->success(
-                $project,
+                $this->publicProjectPayload($project),
                 'Tải chi tiết dự án thành công.'
             );
         }, useTransaction: false);
@@ -87,6 +91,9 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     {
         return $this->execute(function () use ($keyword, $perPage, $page) {
             $projects = $this->projectRepository->searchPublic($keyword, $perPage, $page);
+            $projects->setCollection(
+                $projects->getCollection()->map(fn (Project $project) => $this->publicProjectPayload($project))
+            );
 
             $message = $projects->total() > 0 
                 ? 'Tìm thấy ' . $projects->total() . ' dự án phù hợp.' 
@@ -97,6 +104,30 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
                 $message
             );
         }, useTransaction: false);
+    }
+
+    private function publicProjectPayload(Project $project): array
+    {
+        $payload = $project->toArray();
+        $payload['banner'] = $this->bannerList($payload['banner'] ?? null);
+
+        return $payload;
+    }
+
+    private function bannerList(mixed $banner): array
+    {
+        if (is_array($banner)) {
+            return array_values(array_filter(array_map(
+                fn (mixed $item) => is_string($item) ? trim($item) : '',
+                $banner
+            )));
+        }
+
+        if (is_string($banner) && trim($banner) !== '') {
+            return [trim($banner)];
+        }
+
+        return [];
     }
 
     /**

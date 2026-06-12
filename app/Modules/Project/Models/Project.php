@@ -19,7 +19,7 @@ use OpenApi\Attributes as OA;
  * @property array|null $keywords
  * @property string $location
  * @property string $image
- * @property string $banner
+ * @property array|null $banner
  * @property string $price
  * @property ProjectStatus $status
  * @property string $type
@@ -31,6 +31,7 @@ use OpenApi\Attributes as OA;
  * @property string $brochure
  * @property array|null $contact_info
  * @property string $google_maps_url
+ * @property string|null $location_image
  * @property string|null $branch
  * @property int $total_lots
  * @property int $remaining_lots
@@ -52,7 +53,12 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'keywords', type: 'object', example: ['căn hộ', 'quận 9']),
         new OA\Property(property: 'location', type: 'string', example: 'Quận 9, TP. HCM'),
         new OA\Property(property: 'image', type: 'string', example: 'https://example.com/image.jpg'),
-        new OA\Property(property: 'banner', type: 'string', example: 'https://example.com/banner.jpg'),
+        new OA\Property(
+            property: 'banner',
+            type: 'array',
+            items: new OA\Items(type: 'string'),
+            example: ['https://example.com/banner.jpg']
+        ),
         new OA\Property(property: 'price', type: 'string', example: '3500000000'),
         new OA\Property(property: 'status', type: 'integer', example: \App\Modules\Project\Models\Enums\ProjectStatus::OPENING->value),
         new OA\Property(property: 'type', type: 'string', example: 'apartment'),
@@ -64,6 +70,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'brochure', type: 'string', example: 'https://example.com/brochure.pdf'),
         new OA\Property(property: 'contact_info', type: 'object', example: ['hotline: 1900xxxx', 'email: contact@example.com']),
         new OA\Property(property: 'google_maps_url', type: 'string', example: 'https://maps.google.com/...'),
+        new OA\Property(property: 'location_image', type: 'string', nullable: true, example: 'https://example.com/location-map.jpg'),
         new OA\Property(property: 'planning_info', type: 'object', example: ['quy hoạch 1/500']),
         new OA\Property(property: 'branch', type: 'string', nullable: true, example: 'Hà Nội'),
         new OA\Property(property: 'total_lots', type: 'integer', example: 100),
@@ -95,6 +102,7 @@ class Project extends Model
         'brochure',
         'contact_info',
         'google_maps_url',
+        'location_image',
         'planning_info',
         'branch',
         'total_lots',
@@ -111,6 +119,7 @@ class Project extends Model
         'total_lots' => 'integer',
         'remaining_lots' => 'integer',
         'keywords' => 'array',
+        'banner' => 'array',
         'amenities' => 'array',
         'floor_plans' => 'array',
         'legal_info' => 'array',

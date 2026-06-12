@@ -3,7 +3,9 @@
 namespace App\Modules\Consultation\Http\Controllers;
 
 use App\Core\Controller\BaseController;
+use App\Modules\Consultation\DTO\RequestCallbackDTO;
 use App\Modules\Consultation\DTO\SubmitConsultationDTO;
+use App\Modules\Consultation\Http\Requests\RequestCallbackRequest;
 use App\Modules\Consultation\Http\Requests\SubmitConsultationRequest;
 use App\Modules\Consultation\Interfaces\ConsultationMessageServiceInterface;
 use App\Modules\Consultation\Interfaces\ConsultationSettingServiceInterface;
@@ -132,6 +134,72 @@ final class ConsultationController extends BaseController
     {
         $dto = SubmitConsultationDTO::fromRequest($request);
         $result = $this->consultationMessageService->submitMessage($dto);
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
+
+    #[OA\Post(
+        path: '/api/v1/public/consultation/callback',
+        description: 'Người dùng gửi yêu cầu để bộ phận tư vấn gọi lại vào thời gian phù hợp.',
+        summary: 'Đặt lịch hẹn gọi lại (UC-025)',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['full_name', 'phone', 'preferred_callback_time'],
+                properties: [
+                    new OA\Property(property: 'full_name', type: 'string', example: 'Nguyễn Văn A'),
+                    new OA\Property(property: 'phone', type: 'string', example: '0912345678'),
+                    new OA\Property(property: 'preferred_callback_time', type: 'string', example: 'Thứ 7 tuần này, 09:00'),
+                    new OA\Property(property: 'email', type: 'string', format: 'email', nullable: true, example: 'customer@example.com'),
+                    new OA\Property(property: 'project_id', type: 'string', format: 'uuid', nullable: true, example: 'd3b07384-d113-49c2-a558-e244247a88ca'),
+                    new OA\Property(property: 'project_name', type: 'string', nullable: true, example: 'Dự án Thủ Thiêm'),
+                ]
+            )
+        ),
+        tags: ['Public Consultation'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Thành công',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Đặt lịch hẹn thành công.'),
+                        new OA\Property(property: 'data', ref: '#/components/schemas/ConsultationMessage'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Dữ liệu không hợp lệ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Dữ liệu không hợp lệ.'),
+                        new OA\Property(property: 'errors', type: 'object'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Lỗi gửi yêu cầu gọi lại',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Không thể đặt lịch hẹn. Vui lòng thử lại.'),
+                    ]
+                )
+            )
+        ]
+    )]
+    public function callback(RequestCallbackRequest $request): JsonResponse
+    {
+        $dto = RequestCallbackDTO::fromRequest($request);
+        $result = $this->consultationMessageService->requestCallback($dto);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());

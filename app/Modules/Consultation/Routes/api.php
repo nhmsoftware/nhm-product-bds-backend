@@ -12,5 +12,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/public/consultation')->group(function () {
     Route::get('/setting', [ConsultationController::class, 'show'])->name('public.consultation.setting');
+    Route::post('/callback', [ConsultationController::class, 'callback'])->name('public.consultation.callback');
     Route::post('/submit', [ConsultationController::class, 'submit'])->name('public.consultation.submit');
 });

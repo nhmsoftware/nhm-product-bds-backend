@@ -15,6 +15,7 @@ final class AdminCreateNewsDTO
         public readonly string $slug,
         public readonly ?string $summary,
         public readonly string $content,
+        public readonly ?array $contentBlocks,
         public readonly ?string $thumbnail,
         public readonly string $category,
         public readonly ?string $department,
@@ -31,6 +32,7 @@ final class AdminCreateNewsDTO
         $status = $request->input('status');
 
         $isPublished = $status === 'published';
+        $contentBlocks = self::contentBlocksFromRequest($request);
         
         $department = null;
         if ($type === 'internal' && $scope === 'department') {
@@ -42,7 +44,8 @@ final class AdminCreateNewsDTO
             title: $request->input('title'),
             slug: Str::slug($request->input('title')),
             summary: $request->input('summary'),
-            content: $request->input('content'),
+            content: (string) ($request->input('content') ?: self::plainTextFromBlocks($contentBlocks)),
+            contentBlocks: $contentBlocks,
             thumbnail: $request->input('thumbnail'),
             category: $request->input('category'),
             department: $department,
@@ -50,5 +53,74 @@ final class AdminCreateNewsDTO
             isPublished: $isPublished,
             isFeatured: (bool) $request->input('is_featured', false)
         );
+    }
+
+    private static function contentBlocksFromRequest(Request $request): ?array
+    {
+        if (!$request->has('content_blocks')) {
+            return null;
+        }
+
+        $value = $request->input('content_blocks');
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            $value = is_array($decoded) ? $decoded : null;
+        }
+
+        if (!is_array($value)) {
+            return null;
+        }
+
+        return collect($value)
+            ->filter(fn ($block) => is_array($block))
+            ->map(fn (array $block) => self::normalizeBlock($block))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private static function normalizeBlock(array $block): ?array
+    {
+        $type = strtolower((string) ($block['type'] ?? 'paragraph'));
+        if (!in_array($type, ['heading', 'paragraph', 'image', 'quote'], true)) {
+            return null;
+        }
+
+        $normalized = ['type' => $type];
+
+        if ($type === 'image') {
+            $url = trim((string) ($block['url'] ?? ''));
+            if ($url === '') {
+                return null;
+            }
+            $normalized['url'] = $url;
+            if (!empty($block['caption'])) {
+                $normalized['caption'] = trim((string) $block['caption']);
+            }
+            return $normalized;
+        }
+
+        $text = trim((string) ($block['text'] ?? ''));
+        if ($text === '') {
+            return null;
+        }
+        $normalized['text'] = $text;
+        if ($type === 'quote' && !empty($block['author'])) {
+            $normalized['author'] = trim((string) $block['author']);
+        }
+
+        return $normalized;
+    }
+
+    private static function plainTextFromBlocks(?array $blocks): string
+    {
+        if (empty($blocks)) {
+            return '';
+        }
+
+        return collect($blocks)
+            ->map(fn (array $block) => $block['text'] ?? $block['caption'] ?? '')
+            ->filter()
+            ->implode("\n\n");
     }
 }

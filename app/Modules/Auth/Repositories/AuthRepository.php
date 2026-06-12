@@ -205,7 +205,8 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
 
     private function applyTeamScope(\Illuminate\Database\Eloquent\Builder $query, User $user): \Illuminate\Database\Eloquent\Builder
     {
-        $query->where('role', '<=', $user->role->value)
+        $query->where('id', '!=', $user->id)
+            ->where('role', '<', $user->role->value)
             ->where('role', '!=', UserRole::BUYER->value);
 
         if ($user->role === UserRole::MANAGER) {

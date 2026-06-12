@@ -17,7 +17,8 @@ final class CreateNewsRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
+            'content' => 'required_without:content_blocks|string',
+            'content_blocks' => 'nullable',
             'category' => 'required|string|max:100',
             'type' => 'required|in:public,internal',
             'scope' => 'required_if:type,internal|in:company,department',
@@ -43,6 +44,7 @@ final class CreateNewsRequest extends FormRequest
             'title.string' => 'Nội dung bài viết không hợp lệ.',
             'title.max' => 'Nội dung bài viết không hợp lệ.',
             'content.string' => 'Nội dung bài viết không hợp lệ.',
+            'content.required_without' => 'Vui lòng nhập đầy đủ thông tin bài viết.',
             'category.string' => 'Nội dung bài viết không hợp lệ.',
             'category.max' => 'Nội dung bài viết không hợp lệ.',
             'type.in' => 'Nội dung bài viết không hợp lệ.',
