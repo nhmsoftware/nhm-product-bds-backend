@@ -57,7 +57,7 @@ class AreaAndLotSeeder extends Seeder
         $this->command->table(
             ['Email', 'Password', 'Role', 'Ghi chú'],
             [
-                ['employee@test.com',  'password123', 'EMPLOYEE (1)',    'Được assign 2 area đầu'],
+                ['employee@test.com',  'password123', 'EMPLOYEE (1)',    'Được assign tất cả khu demo'],
                 ['manager@test.com',   'password123', 'MANAGER (2)',     'Được assign 3 area đầu'],
                 ['director@test.com',  'password123', 'DIRECTOR (3)',    'Xem tất cả area (không cần assign)'],
                 ['ceo@test.com',       'password123', 'CEO (4)',         'Xem tất cả area (không cần assign)'],
@@ -477,7 +477,7 @@ class AreaAndLotSeeder extends Seeder
 
     /**
      * Gán areas cho users:
-     * - employee@test.com  → 2 areas đầu
+     * - employee@test.com  → tất cả khu demo
      * - manager@test.com   → 3 areas đầu
      * - director/ceo/superadmin → không cần assign (code tự bypass)
      * - employee2@test.com → Phân khu B - Ecopark Grand
@@ -485,7 +485,7 @@ class AreaAndLotSeeder extends Seeder
     private function createAreaAssignments(array $users, array $areas): void
     {
         $assignmentMap = [
-            'employee@test.com' => array_slice($areas, 0, 2),   // 2 area đầu
+            'employee@test.com' => $areas,                    // tất cả khu demo
             'employee2@test.com' => array_values(array_filter(
                 $areas,
                 fn ($area) => $area->name === 'Phân khu B - Ecopark Grand'

@@ -20,6 +20,7 @@ class InventoryAreaSeeder extends Seeder
 
     public function run(): void
     {
+        // Seeder chính cho danh sách 6 khu đất/bảng hàng demo trên app nhân viên.
         DB::transaction(function () {
             $now = Carbon::now();
             $users = $this->ensureDemoUsers($now);
@@ -784,7 +785,7 @@ DESC,
     {
         $areaList = array_values($areas);
         $assignmentPlan = [
-            'employee@test.com' => array_slice($areaList, 0, 4),
+            'employee@test.com' => $areaList,
             'manager@test.com' => array_slice($areaList, 0, 5),
             'director@test.com' => $areaList,
             'ceo@test.com' => $areaList,
