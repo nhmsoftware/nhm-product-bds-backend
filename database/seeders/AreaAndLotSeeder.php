@@ -13,8 +13,15 @@ use Illuminate\Support\Str;
 class AreaAndLotSeeder extends Seeder
 {
     /**
-     * Tạo fake data cho: Users (các role), Areas, Lots, AreaAssignments
-     * để test API GET /api/v1/areas
+     * LEGACY SEEDER.
+     *
+     * Không chạy seeder này cùng InventoryAreaSeeder trên staging/production.
+     * Seeder này tạo bộ 5 khu demo cũ và sẽ làm dữ liệu bảng hàng bị lẫn
+     * với bộ 6 khu chính của app nhân viên.
+     *
+     * Seeder chính hiện tại: InventoryAreaSeeder.
+     * Mục đích cũ: tạo fake data cho Users, Areas, Lots, AreaAssignments
+     * để test API GET /api/v1/areas.
      */
     public function run(): void
     {

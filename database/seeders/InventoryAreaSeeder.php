@@ -786,6 +786,7 @@ DESC,
         $areaList = array_values($areas);
         $assignmentPlan = [
             'employee@test.com' => $areaList,
+            'employee2@test.com' => $areaList,
             'manager@test.com' => array_slice($areaList, 0, 5),
             'director@test.com' => $areaList,
             'ceo@test.com' => $areaList,

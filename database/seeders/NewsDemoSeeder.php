@@ -49,7 +49,7 @@ class NewsDemoSeeder extends Seeder
                     'email' => 'manager.hcm@test.com',
                     'name' => 'Nguyễn Thị Trưởng Nhóm HCM',
                     'staff_code' => 'TEST-MGR-002',
-                    'phone' => '0900000007',
+                    'phone' => '0900000017',
                     'role' => UserRole::MANAGER->value,
                     'department' => 'HCM',
                     'job_position' => 'Trưởng nhóm kinh doanh',
