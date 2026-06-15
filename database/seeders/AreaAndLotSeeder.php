@@ -28,11 +28,15 @@ class AreaAndLotSeeder extends Seeder
         $this->command->info('🏘️  Tạo areas...');
         $areas = $this->createAreas();
 
-        // ─── 3. Tạo Lots cho từng Area ────────────────────────────────
+        // ─── 3. Dọn trạng thái giao dịch demo cũ ─────────────────────
+        $this->command->info('🧹 Dọn lock/cọc cũ của các khu demo...');
+        $this->clearLotRequests($areas);
+
+        // ─── 4. Tạo Lots cho từng Area ────────────────────────────────
         $this->command->info('🏠 Tạo lots...');
         $this->createLots($areas);
 
-        // ─── 4. Gán Area cho Users (AreaAssignment) ───────────────────
+        // ─── 5. Gán Area cho Users (AreaAssignment) ───────────────────
         $this->command->info('🔗 Gán area cho users...');
         $this->createAreaAssignments($users, $areas);
 
@@ -58,7 +62,7 @@ class AreaAndLotSeeder extends Seeder
                 ['director@test.com',  'password123', 'DIRECTOR (3)',    'Xem tất cả area (không cần assign)'],
                 ['ceo@test.com',       'password123', 'CEO (4)',         'Xem tất cả area (không cần assign)'],
                 ['superadmin@test.com','password123', 'SUPER_ADMIN (5)', 'Xem tất cả area (không cần assign)'],
-                ['employee2@test.com', 'password123', 'EMPLOYEE (1)',    'CHƯA được assign area nào'],
+                ['employee2@test.com', 'password123', 'EMPLOYEE (1)',    'Được assign Phân khu B - Ecopark Grand'],
                 ['customer@test.com',  'password123', 'BUYER (6)',       'Khách hàng demo mobile app'],
             ]
         );
@@ -181,6 +185,13 @@ class AreaAndLotSeeder extends Seeder
                 'is_featured'       => true,
                 'sales_board_image' => 'https://picsum.photos/seed/area1/800/600',
                 'planning_check_url'=> 'https://quyhoach24h.vn?ref=TEST001',
+                'project'           => [
+                    'name'            => 'Vinhomes Ocean Park',
+                    'location'        => 'Gia Lâm, Hà Nội',
+                    'google_maps_url' => 'https://www.google.com/maps/search/?api=1&query=20.993682,105.943281',
+                    'branch'          => 'HN',
+                    'type'            => 'Đất nền khu đô thị',
+                ],
             ],
             [
                 'name'              => 'Phân khu B - Ecopark Grand',
@@ -194,6 +205,13 @@ class AreaAndLotSeeder extends Seeder
                 'is_featured'       => true,
                 'sales_board_image' => 'https://picsum.photos/seed/area2/800/600',
                 'planning_check_url'=> 'https://quyhoach24h.vn?ref=TEST002',
+                'project'           => [
+                    'name'            => 'Ecopark Grand',
+                    'location'        => 'Văn Giang, Hưng Yên',
+                    'google_maps_url' => 'https://www.google.com/maps/search/?api=1&query=20.951817,105.932836',
+                    'branch'          => 'HN',
+                    'type'            => 'Đất nền sinh thái',
+                ],
             ],
             [
                 'name'              => 'Khu đô thị C - Gamuda Gardens',
@@ -207,6 +225,13 @@ class AreaAndLotSeeder extends Seeder
                 'is_featured'       => false,
                 'sales_board_image' => 'https://picsum.photos/seed/area3/800/600',
                 'planning_check_url'=> 'https://quyhoach24h.vn?ref=TEST003',
+                'project'           => [
+                    'name'            => 'Gamuda Gardens',
+                    'location'        => 'Hoàng Mai, Hà Nội',
+                    'google_maps_url' => 'https://www.google.com/maps/search/?api=1&query=20.975865,105.859772',
+                    'branch'          => 'HN',
+                    'type'            => 'Khu đô thị',
+                ],
             ],
             [
                 'name'              => 'Phân khu D - Times City Park',
@@ -220,6 +245,13 @@ class AreaAndLotSeeder extends Seeder
                 'is_featured'       => false,
                 'sales_board_image' => 'https://picsum.photos/seed/area4/800/600',
                 'planning_check_url'=> null,
+                'project'           => [
+                    'name'            => 'Times City Park',
+                    'location'        => 'Hai Bà Trưng, Hà Nội',
+                    'google_maps_url' => 'https://www.google.com/maps/search/?api=1&query=20.995031,105.868985',
+                    'branch'          => 'HN',
+                    'type'            => 'Khu đô thị',
+                ],
             ],
             [
                 'name'              => 'Khu E - Ciputra Hà Nội',
@@ -233,13 +265,22 @@ class AreaAndLotSeeder extends Seeder
                 'is_featured'       => true,
                 'sales_board_image' => 'https://picsum.photos/seed/area5/800/600',
                 'planning_check_url'=> 'https://quyhoach24h.vn?ref=TEST005',
+                'project'           => [
+                    'name'            => 'Ciputra Hà Nội',
+                    'location'        => 'Tây Hồ, Hà Nội',
+                    'google_maps_url' => 'https://www.google.com/maps/search/?api=1&query=21.071389,105.799186',
+                    'branch'          => 'HN',
+                    'type'            => 'Đất nền khu đô thị',
+                ],
             ],
         ];
 
         $createdAreas = [];
         foreach ($areasData as $data) {
+            $project = $this->upsertProjectForArea($data);
+
             $payload = [
-                'project_id'         => null,
+                'project_id'         => $project->id,
                 'name'               => $data['name'],
                 'total_lots'         => $data['total_lots'],
                 'remaining_lots'     => $data['remaining_lots'],
@@ -276,6 +317,66 @@ class AreaAndLotSeeder extends Seeder
         }
 
         return $createdAreas;
+    }
+
+    private function upsertProjectForArea(array $areaData): object
+    {
+        $projectData = $areaData['project'];
+        $existing = DB::table('projects')->where('name', $projectData['name'])->whereNull('deleted_at')->first();
+        $projectId = $existing->id ?? Str::uuid()->toString();
+        $now = Carbon::now();
+        $payload = [
+            'name' => $projectData['name'],
+            'location' => $projectData['location'],
+            'google_maps_url' => $projectData['google_maps_url'],
+            'price' => $areaData['price'],
+            'status' => $areaData['status'],
+            'type' => $projectData['type'],
+            'branch' => $projectData['branch'],
+            'total_lots' => $areaData['total_lots'],
+            'remaining_lots' => $areaData['remaining_lots'],
+            'is_featured' => $areaData['is_featured'],
+            'is_public' => true,
+            'description' => "Dự án {$projectData['name']} tại {$projectData['location']} được seed để kiểm thử bảng hàng, chỉ đường và dữ liệu chi tiết lô đất.",
+            'image' => $areaData['sales_board_image'],
+            'updated_at' => $now,
+        ];
+
+        if ($existing) {
+            DB::table('projects')->where('id', $projectId)->update($payload);
+            return DB::table('projects')->where('id', $projectId)->first();
+        }
+
+        DB::table('projects')->insert([
+            ...$payload,
+            'id' => $projectId,
+            'created_at' => $now,
+        ]);
+
+        return DB::table('projects')->where('id', $projectId)->first();
+    }
+
+    private function clearLotRequests(array $areas): void
+    {
+        $areaIds = array_map(fn ($area) => $area->id, $areas);
+        $lotIds = DB::table('lots')
+            ->whereIn('area_id', $areaIds)
+            ->pluck('id')
+            ->all();
+
+        if (empty($lotIds)) {
+            $this->command->line('  ℹ️  Chưa có lot demo nào cần dọn lock/cọc.');
+            return;
+        }
+
+        $depositCount = DB::table('lot_deposit_requests')
+            ->whereIn('lot_id', $lotIds)
+            ->delete();
+        $lockCount = DB::table('lot_lock_requests')
+            ->whereIn('lot_id', $lotIds)
+            ->delete();
+
+        $this->command->line("  ✔ Đã dọn {$lockCount} lock request và {$depositCount} yêu cầu đặt cọc cũ.");
     }
 
     /**
@@ -379,15 +480,18 @@ class AreaAndLotSeeder extends Seeder
      * - employee@test.com  → 2 areas đầu
      * - manager@test.com   → 3 areas đầu
      * - director/ceo/superadmin → không cần assign (code tự bypass)
-     * - employee2@test.com → không assign (để test case rỗng)
+     * - employee2@test.com → Phân khu B - Ecopark Grand
      */
     private function createAreaAssignments(array $users, array $areas): void
     {
         $assignmentMap = [
             'employee@test.com' => array_slice($areas, 0, 2),   // 2 area đầu
+            'employee2@test.com' => array_values(array_filter(
+                $areas,
+                fn ($area) => $area->name === 'Phân khu B - Ecopark Grand'
+            )),
             'manager@test.com'  => array_slice($areas, 0, 3),   // 3 area đầu
             // director/ceo/superadmin không cần assign
-            // employee2@test.com không assign (test trường hợp rỗng)
         ];
 
         foreach ($assignmentMap as $email => $assignedAreas) {
