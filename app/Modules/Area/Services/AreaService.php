@@ -165,6 +165,8 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 'sales_board_image' => $area->sales_board_image,
                 'sales_board_iframe' => $area->sales_board_iframe,
                 'planning_check_url' => $area->planning_check_url,
+                'intro_article' => $this->areaIntroArticle($area),
+                'info_tabs' => $this->areaInfoTabs($area),
                 'summary' => [
                     'area_size' => $area->area_size,
                     'direction' => $area->direction,
@@ -257,7 +259,36 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 $data['area']['project_name'] = $lot->area->project?->name;
             }
 
+            $activeLockRequest = $this->lotLockRequestRepository->findActiveByLotId($lotId);
+            $activeDepositRequest = $lot->depositRequests()
+                ->whereIn('status', [1, 2])
+                ->latest('created_at')
+                ->first();
+            $isLockedByMe = $activeLockRequest !== null && (string) $activeLockRequest->user_id === (string) $userId;
+            $isDepositedByMe = $activeDepositRequest !== null && (string) $activeDepositRequest->user_id === (string) $userId;
+            $isLockedByOther = $activeLockRequest !== null && !$isLockedByMe;
+            $isDepositedByOther = $activeDepositRequest !== null && !$isDepositedByMe;
+
             $data['planning'] = $lot->planning ? $lot->planning->toArray() : null;
+            $data['active_lock_request'] = $activeLockRequest ? [
+                'id' => (string) $activeLockRequest->id,
+                'user_id' => (string) $activeLockRequest->user_id,
+                'is_mine' => $isLockedByMe,
+                'created_at' => $activeLockRequest->created_at?->toIso8601String(),
+            ] : null;
+            $data['active_deposit_request'] = $activeDepositRequest ? [
+                'id' => (string) $activeDepositRequest->id,
+                'user_id' => (string) $activeDepositRequest->user_id,
+                'status' => $activeDepositRequest->status?->serialize(),
+                'is_mine' => $isDepositedByMe,
+                'created_at' => $activeDepositRequest->created_at?->toIso8601String(),
+            ] : null;
+            $data['is_locked_by_me'] = $isLockedByMe;
+            $data['is_locked_by_other'] = $isLockedByOther;
+            $data['is_deposit_by_me'] = $isDepositedByMe;
+            $data['is_deposit_by_other'] = $isDepositedByOther;
+            $data['can_lock'] = !$lot->is_locked && $lot->status === LotStatus::AVAILABLE && $activeLockRequest === null && $activeDepositRequest === null;
+            $data['can_deposit'] = !$lot->is_locked && !$isLockedByOther && !$isDepositedByOther && $activeDepositRequest === null;
 
             return $this->success($data, 'Tải chi tiết lô đất thành công.');
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {
@@ -386,6 +417,25 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // Kiểm tra lô đất có bị khóa không
             if ($lot->is_locked) {
                 $this->throw('Lô đất đã bị khóa.', 403);
+            }
+
+            $activeLockRequest = $this->lotLockRequestRepository->findActiveByLotId($dto->lotId);
+            if ($activeLockRequest !== null) {
+                $message = (string) $activeLockRequest->user_id === (string) $dto->userId
+                    ? 'Bạn đã lock lô đất này.'
+                    : 'Lô đất đang được người khác lock.';
+                $this->throw($message, 403);
+            }
+
+            $activeDepositRequest = $lot->depositRequests()
+                ->whereIn('status', [1, 2])
+                ->latest('created_at')
+                ->first();
+            if ($activeDepositRequest !== null) {
+                $message = (string) $activeDepositRequest->user_id === (string) $dto->userId
+                    ? 'Bạn đã gửi yêu cầu đặt cọc lô đất này.'
+                    : 'Lô đất đang có yêu cầu đặt cọc của người khác.';
+                $this->throw($message, 403);
             }
 
             // 5. Kiểm tra Quyền truy cập khu đất của lô đất này
@@ -674,5 +724,69 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             $this->areaRepository->deleteById((string)$areaToDelete->id);
         }
+    }
+
+    private function areaIntroArticle($area): array
+    {
+        $project = $area->project;
+        $projectName = $project?->name ?: 'dự án';
+        $areaName = $area->name;
+        $remainingLots = (int) ($area->remaining_lots ?? 0);
+        $totalLots = (int) ($area->total_lots ?? 0);
+
+        return [
+            'title' => "Giới thiệu {$areaName}",
+            'summary' => "{$areaName} thuộc {$projectName}, được tổ chức như một bảng hàng trực quan để đội kinh doanh theo dõi trạng thái từng lô, kiểm tra quy hoạch và phối hợp tư vấn khách hàng ngay trên mobile.",
+            'body' => "Khu vực hiện có {$remainingLots}/{$totalLots} lô còn khả dụng. Dữ liệu vị trí, pháp lý, mặt bằng và tài liệu được chuẩn hóa theo từng phân khu để nhân sự có thể tra cứu nhanh trong quá trình gặp khách, đi site tour hoặc gửi thông tin cho quản lý.",
+        ];
+    }
+
+    private function areaInfoTabs($area): array
+    {
+        $project = $area->project;
+        $projectName = $project?->name ?: 'dự án';
+        $location = $project?->location ?: 'Đang cập nhật vị trí';
+        $legalInfo = $project?->legal_info;
+        $legalItems = is_array($legalInfo) ? $legalInfo : (is_string($legalInfo) ? json_decode($legalInfo, true) : null);
+        $legalText = is_array($legalItems) && count($legalItems) > 0
+            ? implode(', ', array_values($legalItems))
+            : 'Hồ sơ pháp lý đang được cập nhật theo từng lô.';
+        $salesBoardImages = is_array($area->sales_board_images) ? $area->sales_board_images : [];
+
+        return [
+            [
+                'key' => 'location',
+                'label' => 'Vị trí',
+                'title' => 'Vị trí khu đất',
+                'content' => "{$area->name} nằm tại {$location}. Nhân sự có thể dùng nút chỉ đường hoặc bản đồ dự án để định vị nhanh trước khi gặp khách.",
+                'action_label' => $project?->google_maps_url ? 'Mở chỉ đường' : null,
+                'action_url' => $project?->google_maps_url,
+            ],
+            [
+                'key' => 'legal',
+                'label' => 'Pháp lý',
+                'title' => 'Thông tin pháp lý',
+                'content' => $legalText,
+                'action_label' => null,
+                'action_url' => null,
+            ],
+            [
+                'key' => 'floor_plan',
+                'label' => 'Mặt bằng',
+                'title' => 'Sơ đồ mặt bằng',
+                'content' => "Bảng hàng hiển thị {$area->total_lots} lô, cập nhật trạng thái còn hàng, giữ chỗ, đã bán và không bán theo thời gian thực.",
+                'image_url' => $area->sales_board_image ?: ($salesBoardImages[0] ?? null),
+                'action_label' => $area->planning_check_url ? 'Kiểm tra quy hoạch' : null,
+                'action_url' => $area->planning_check_url,
+            ],
+            [
+                'key' => 'documents',
+                'label' => 'Tài liệu',
+                'title' => 'Tài liệu bán hàng',
+                'content' => "Tài liệu nội bộ của {$projectName} gồm hình ảnh bảng hàng, hồ sơ quy hoạch, thông tin sản phẩm và các ghi chú tư vấn đã được chuẩn hóa cho đội kinh doanh.",
+                'action_label' => $project?->brochure ? 'Mở tài liệu' : null,
+                'action_url' => $project?->brochure,
+            ],
+        ];
     }
 }

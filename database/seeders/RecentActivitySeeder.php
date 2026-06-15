@@ -57,7 +57,7 @@ class RecentActivitySeeder extends Seeder
                 'site_tours' => [
                     [
                         'project' => 'Horizon Hills',
-                        'unit_code' => 'HH-02',
+                        'unit_code' => 'H-02',
                         'customer_name' => 'Phạm Thu Hà',
                         'latitude' => 11.925901,
                         'longitude' => 108.438913,
@@ -65,7 +65,7 @@ class RecentActivitySeeder extends Seeder
                     ],
                     [
                         'project' => 'Riverfront City',
-                        'unit_code' => 'RFC-05',
+                        'unit_code' => 'R-05',
                         'customer_name' => 'Võ Gia Hân',
                         'latitude' => 10.807639,
                         'longitude' => 106.732631,
@@ -96,7 +96,7 @@ class RecentActivitySeeder extends Seeder
                 'site_tours' => [
                     [
                         'project' => 'Riverfront City',
-                        'unit_code' => 'RFC-07',
+                        'unit_code' => 'R-07',
                         'customer_name' => 'Đặng Minh Khoa',
                         'latitude' => 10.807639,
                         'longitude' => 106.732631,
@@ -104,7 +104,7 @@ class RecentActivitySeeder extends Seeder
                     ],
                     [
                         'project' => 'Coastal Bay',
-                        'unit_code' => 'CB-12',
+                        'unit_code' => 'C-12',
                         'customer_name' => 'Nguyễn Hải Yến',
                         'latitude' => 10.945405,
                         'longitude' => 108.287894,

@@ -10,6 +10,7 @@ use App\Modules\Area\DTO\CreateLotDepositRequestDTO;
 use App\Modules\Area\Interfaces\LotDepositRequestRepositoryInterface;
 use App\Modules\Area\Interfaces\LotDepositRequestServiceInterface;
 use App\Modules\Area\Interfaces\LotRepositoryInterface;
+use App\Modules\Area\Interfaces\LotLockRequestRepositoryInterface;
 use App\Modules\Area\Models\Enums\LotStatus;
 use App\Modules\Area\Models\Enums\LotDepositRequestStatus;
 use App\Modules\Area\Events\LotDepositRequested;
@@ -21,6 +22,7 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
     public function __construct(
         private readonly LotDepositRequestRepositoryInterface $repository,
         private readonly LotRepositoryInterface $lotRepository,
+        private readonly LotLockRequestRepositoryInterface $lotLockRequestRepository,
         private readonly AuthRepositoryInterface $authRepository,
         private readonly RewardPointHistoryRepositoryInterface $rewardPointHistoryRepository
     ) {
@@ -38,16 +40,25 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             // Kiểm tra lô đất bị khóa
             $this->validate(!$lot->is_locked, 'Lô đất đã bị khóa.', 403);
 
+            $activeLockRequest = $this->lotLockRequestRepository->findActiveByLotId($dto->lot_id);
+            if ($activeLockRequest !== null && (string) $activeLockRequest->user_id !== (string) $dto->user_id) {
+                $this->throw('Lô đất đang được người khác lock.', 403);
+            }
+
+            $activeDepositRequest = $this->repository->findActiveByLotId($dto->lot_id);
+            if ($activeDepositRequest !== null) {
+                $message = (string) $activeDepositRequest->user_id === (string) $dto->user_id
+                    ? 'Bạn đã gửi yêu cầu đặt cọc lô đất này.'
+                    : 'Lô đất đang có yêu cầu đặt cọc của người khác.';
+                $this->throw($message, 400);
+            }
+
             // Chỉ cho phép AVAILABLE hoặc RESERVED
             $this->validate(
                 in_array($lot->status, [LotStatus::AVAILABLE, LotStatus::RESERVED], true),
                 'Lô đất không ở trạng thái hợp lệ để đặt cọc.',
                 400
             );
-
-            // A2 - Lô đất đang có yêu cầu đặt cọc khác
-            $hasPending = $this->repository->hasPendingDepositRequestForLot($dto->lot_id);
-            $this->validate(!$hasPending, 'Lô đất đang có yêu cầu đặt cọc xử lý.', 400);
 
             // Create deposit request
             $model = $this->repository->create($dto->toArray());

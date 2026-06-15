@@ -10,6 +10,7 @@ use App\Modules\Planning\Models\Enums\PlanningStatus;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -174,7 +175,7 @@ class InventoryAreaSeeder extends Seeder
         $areasData = [
             [
                 'name' => 'The Solaria - Phân khu Aurora',
-                'prefix' => 'AUR',
+                'prefix' => 'A',
                 'direction' => 'Đông Nam',
                 'area_size' => 4120.5,
                 'price' => 5200000000,
@@ -208,7 +209,7 @@ DESC,
             ],
             [
                 'name' => 'Eco Garden - Khu Palm Residence',
-                'prefix' => 'PAL',
+                'prefix' => 'P',
                 'direction' => 'Tây Nam',
                 'area_size' => 3680.25,
                 'price' => 3900000000,
@@ -239,7 +240,7 @@ DESC,
             ],
             [
                 'name' => 'Riverfront City - Shophouse Central',
-                'prefix' => 'RFC',
+                'prefix' => 'R',
                 'direction' => 'Đông Bắc',
                 'area_size' => 2860.75,
                 'price' => 7600000000,
@@ -268,7 +269,7 @@ DESC,
             ],
             [
                 'name' => 'Horizon Hills - Biệt thự đồi thông',
-                'prefix' => 'HH',
+                'prefix' => 'H',
                 'direction' => 'Nam',
                 'area_size' => 5400.0,
                 'price' => 9800000000,
@@ -301,7 +302,7 @@ DESC,
             ],
             [
                 'name' => 'Metro Square - Khu căn hộ dịch vụ',
-                'prefix' => 'MSQ',
+                'prefix' => 'M',
                 'direction' => 'Bắc',
                 'area_size' => 2310.4,
                 'price' => 3450000000,
@@ -332,7 +333,7 @@ DESC,
             ],
             [
                 'name' => 'Coastal Bay - Khu nghỉ dưỡng biển',
-                'prefix' => 'CB',
+                'prefix' => 'C',
                 'direction' => 'Tây Bắc',
                 'area_size' => 6200.9,
                 'price' => 12200000000,
@@ -417,29 +418,34 @@ DESC,
     private function seedPlanningForArea(array $areaData, string $planningUrl, Carbon $now): void
     {
         $projectData = $areaData['project'];
-        $existing = DB::table('plannings')->where('pdf_url', $planningUrl)->first();
+        $detail = $this->planningDetailForArea($areaData);
+        $pdfUrl = $this->ensurePlanningPdfForArea($areaData, $detail);
+        $existing = DB::table('plannings')
+            ->where('symbol', $detail['symbol'])
+            ->orWhere('pdf_url', $planningUrl)
+            ->first();
         $planningId = $existing->id ?? (string) Str::uuid();
         [$city, $district] = $this->planningLocationParts($projectData['location']);
 
         $payload = [
-            'title' => "Quy hoạch {$projectData['name']}",
+            'title' => $areaData['name'],
             'map_image' => "https://picsum.photos/seed/{$areaData['image_seed']}-planning-map/1200/800",
             'status' => PlanningStatus::PUBLIC->value,
             'updated_year' => (int) $now->format('Y'),
-            'description' => "Tra cứu bản đồ quy hoạch trực tuyến cho {$areaData['name']} qua hệ thống Quy hoạch 24h.",
+            'description' => $detail['description'],
             'city' => $city,
             'district' => $district,
-            'sub_area' => $areaData['name'],
-            'symbol' => $areaData['planning_ref'],
-            'density' => $projectData['type'],
-            'max_height' => 'Theo hồ sơ quy hoạch',
-            'land_use_ratio' => 'Đang cập nhật',
-            'setback' => 'Theo từng tuyến đường',
-            'land_type_notes' => 'Dữ liệu chi tiết được mở trong bản đồ quy hoạch trực tuyến.',
-            'pdf_url' => $planningUrl,
+            'sub_area' => $detail['zone_title'],
+            'symbol' => $detail['symbol'],
+            'density' => $detail['density'],
+            'max_height' => $detail['max_height'],
+            'land_use_ratio' => $detail['land_use_ratio'],
+            'setback' => $detail['setback'],
+            'land_type_notes' => implode("\n", $detail['land_types']),
+            'pdf_url' => $pdfUrl,
             'latitude' => null,
             'longitude' => null,
-            'content' => "Ứng dụng mở liên kết quy hoạch bên thứ ba để khách hàng xem lớp bản đồ, vị trí và thông tin kiểm tra mới nhất của {$projectData['name']}.",
+            'content' => "Hồ sơ quy hoạch demo của {$areaData['name']} gồm chỉ tiêu xây dựng, tầng cao, hệ số sử dụng đất, khoảng lùi và chú giải loại đất.",
             'updated_at' => $now,
             'deleted_at' => null,
         ];
@@ -453,6 +459,129 @@ DESC,
                 'created_at' => $now->copy()->subDays(15),
             ]);
         }
+    }
+
+    private function planningDetailForArea(array $areaData): array
+    {
+        $details = [
+            'A' => [
+                'zone_title' => 'Khu trung tâm tài chính',
+                'symbol' => 'C1-Z1',
+                'density' => '65%',
+                'max_height' => '88',
+                'land_use_ratio' => '12.5',
+                'setback' => '6-10m',
+                'description' => 'Quy hoạch chi tiết 1/2000 phục vụ phát triển kinh tế vùng.',
+                'land_types' => ['Đất trung tâm thương mại', 'Đất ở cao tầng', 'Đất ở biệt thự thấp tầng', 'Hạ tầng kỹ thuật', 'Công viên cây xanh'],
+            ],
+            'P' => [
+                'zone_title' => 'Khu nhà ở sinh thái',
+                'symbol' => 'P2-E1',
+                'density' => '48%',
+                'max_height' => '32',
+                'land_use_ratio' => '7.8',
+                'setback' => '5-8m',
+                'description' => 'Quy hoạch phân khu sinh thái, ưu tiên mặt nước, cây xanh và trục đi bộ nội khu.',
+                'land_types' => ['Đất ở cao tầng', 'Đất nhà ở thấp tầng', 'Mặt nước cảnh quan', 'Công viên cây xanh'],
+            ],
+            'R' => [
+                'zone_title' => 'Khu thương mại ven sông',
+                'symbol' => 'R3-S2',
+                'density' => '58%',
+                'max_height' => '45',
+                'land_use_ratio' => '9.2',
+                'setback' => '4-7m',
+                'description' => 'Quy hoạch trục shophouse ven sông kết hợp quảng trường, bến thuyền và phố đi bộ.',
+                'land_types' => ['Đất thương mại dịch vụ', 'Đất hỗn hợp', 'Đất giao thông nội khu', 'Công viên ven sông'],
+            ],
+            'H' => [
+                'zone_title' => 'Khu biệt thự đồi thông',
+                'symbol' => 'H4-V1',
+                'density' => '35%',
+                'max_height' => '5',
+                'land_use_ratio' => '1.6',
+                'setback' => '8-12m',
+                'description' => 'Quy hoạch biệt thự nghỉ dưỡng mật độ thấp, giữ lớp cây xanh và tầm nhìn đồi thông.',
+                'land_types' => ['Đất biệt thự nghỉ dưỡng', 'Đất cây xanh cảnh quan', 'Đất dịch vụ cộng đồng', 'Đất hạ tầng kỹ thuật'],
+            ],
+            'M' => [
+                'zone_title' => 'Khu căn hộ dịch vụ',
+                'symbol' => 'M5-A3',
+                'density' => '60%',
+                'max_height' => '38',
+                'land_use_ratio' => '10.4',
+                'setback' => '5-9m',
+                'description' => 'Quy hoạch cụm căn hộ dịch vụ, tối ưu khai thác lưu trú và tiện ích thương mại tầng đế.',
+                'land_types' => ['Đất căn hộ dịch vụ', 'Đất thương mại tầng đế', 'Đất giao thông', 'Bãi đỗ xe', 'Cây xanh công cộng'],
+            ],
+            'C' => [
+                'zone_title' => 'Khu nghỉ dưỡng biển',
+                'symbol' => 'B6-R1',
+                'density' => '42%',
+                'max_height' => '18',
+                'land_use_ratio' => '4.5',
+                'setback' => '10-15m',
+                'description' => 'Quy hoạch tổ hợp nghỉ dưỡng biển, bảo toàn hành lang cảnh quan và không gian công cộng ven bờ.',
+                'land_types' => ['Đất lưu trú nghỉ dưỡng', 'Đất công trình dịch vụ', 'Đất cây xanh ven biển', 'Đất giao thông nội bộ', 'Hạ tầng kỹ thuật'],
+            ],
+        ];
+
+        return $details[$areaData['prefix']] ?? $details['A'];
+    }
+
+    private function ensurePlanningPdfForArea(array $areaData, array $detail): string
+    {
+        $directory = public_path('planning-pdfs');
+        File::ensureDirectoryExists($directory);
+
+        $fileName = Str::slug($areaData['planning_ref']) . '.pdf';
+        $path = $directory . DIRECTORY_SEPARATOR . $fileName;
+        File::put($path, $this->planningPdfContent($areaData, $detail));
+
+        return rtrim(config('app.url'), '/') . '/planning-pdfs/' . $fileName;
+    }
+
+    private function planningPdfContent(array $areaData, array $detail): string
+    {
+        $projectName = $areaData['project']['name'];
+        $lines = [
+            'HO SO QUY HOACH DEMO',
+            "Du an: {$projectName}",
+            "Khu vuc: {$areaData['name']}",
+            "Phan khu: {$detail['zone_title']}",
+            "Ky hieu: {$detail['symbol']}",
+            "Mat do XD: {$detail['density']}",
+            "Tang cao toi da: {$detail['max_height']}",
+            "He so SDD: {$detail['land_use_ratio']}",
+            "Khoang lui: {$detail['setback']}",
+            'Chu giai: ' . implode(', ', $detail['land_types']),
+        ];
+        $text = implode('\\n', array_map(fn (string $line) => str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line), $lines));
+        $stream = "BT /F1 13 Tf 50 760 Td ({$text}) Tj ET";
+        $objects = [
+            "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+            "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+            "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
+            "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
+            "5 0 obj\n<< /Length " . strlen($stream) . " >>\nstream\n{$stream}\nendstream\nendobj\n",
+        ];
+
+        $pdf = "%PDF-1.4\n";
+        $offsets = [0];
+        foreach ($objects as $object) {
+            $offsets[] = strlen($pdf);
+            $pdf .= $object;
+        }
+
+        $xrefOffset = strlen($pdf);
+        $pdf .= "xref\n0 " . (count($objects) + 1) . "\n";
+        $pdf .= "0000000000 65535 f \n";
+        for ($i = 1; $i <= count($objects); $i++) {
+            $pdf .= str_pad((string) $offsets[$i], 10, '0', STR_PAD_LEFT) . " 00000 n \n";
+        }
+        $pdf .= "trailer\n<< /Size " . (count($objects) + 1) . " /Root 1 0 R >>\nstartxref\n{$xrefOffset}\n%%EOF\n";
+
+        return $pdf;
     }
 
     private function planningLocationParts(string $location): array
@@ -580,12 +709,24 @@ DESC,
         $statuses = array_merge($statuses, array_fill(0, $areaData['sold'], LotStatus::SOLD->value));
         $statuses = array_merge($statuses, array_fill(0, $areaData['unavailable'], LotStatus::UNAVAILABLE->value));
 
+        $existingLots = DB::table('lots')
+            ->where('area_id', $areaId)
+            ->orderByRaw('COALESCE(coordinate_y, 999999), COALESCE(coordinate_x, 999999), created_at, id')
+            ->get()
+            ->values();
+
+        foreach ($existingLots as $index => $lot) {
+            DB::table('lots')
+                ->where('id', $lot->id)
+                ->update([
+                    'code' => '__seed_tmp_' . $index . '_' . $lot->id,
+                    'updated_at' => $now,
+                ]);
+        }
+
         for ($i = 1; $i <= $totalLots; $i++) {
             $code = $areaData['prefix'] . '-' . str_pad((string) $i, 2, '0', STR_PAD_LEFT);
-            $existing = DB::table('lots')
-                ->where('area_id', $areaId)
-                ->where('code', $code)
-                ->first();
+            $existing = $existingLots->get($i - 1);
             $column = ($i - 1) % 6;
             $row = intdiv($i - 1, 6);
             $status = $statuses[$i - 1] ?? LotStatus::AVAILABLE->value;
@@ -626,6 +767,16 @@ DESC,
                 'id' => (string) Str::uuid(),
                 'created_at' => $now,
             ]);
+        }
+
+        $extraLots = $existingLots->slice($totalLots);
+        foreach ($extraLots as $lot) {
+            DB::table('lots')
+                ->where('id', $lot->id)
+                ->update([
+                    'deleted_at' => $now,
+                    'updated_at' => $now,
+                ]);
         }
     }
 

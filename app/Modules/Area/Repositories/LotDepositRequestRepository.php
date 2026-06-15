@@ -29,6 +29,18 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
             ->exists();
     }
 
+    public function findActiveByLotId(string $lotId): ?LotDepositRequest
+    {
+        return $this->model
+            ->where('lot_id', $lotId)
+            ->whereIn('status', [
+                LotDepositRequestStatus::PENDING->value,
+                LotDepositRequestStatus::APPROVED->value,
+            ])
+            ->latest('created_at')
+            ->first();
+    }
+
     public function getAdminList(\App\Modules\Area\DTO\FilterLotDepositRequestDTO $dto): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         $query = $this->model->with(['lot.area.project', 'user']);

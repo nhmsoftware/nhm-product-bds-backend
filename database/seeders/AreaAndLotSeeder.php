@@ -288,21 +288,22 @@ class AreaAndLotSeeder extends Seeder
         foreach ($areas as $area) {
             $lotsToCreate = (int) $area->total_lots;
             $remainingLots = min((int) $area->remaining_lots, $lotsToCreate);
-            $existingLots = DB::table('lots')->where('area_id', $area->id)->whereNull('deleted_at')->count();
-            $existingAvailableLots = DB::table('lots')
+            $prefix = $this->lotPrefix($area->name);
+            $existingLots = DB::table('lots')
                 ->where('area_id', $area->id)
-                ->where('status', LotStatus::AVAILABLE->value)
-                ->whereNull('deleted_at')
-                ->count();
+                ->orderByRaw('COALESCE(coordinate_y, 999999), COALESCE(coordinate_x, 999999), created_at, id')
+                ->get()
+                ->values();
 
-            if ($existingLots === $lotsToCreate && $existingAvailableLots === $remainingLots) {
-                $this->command->line("  ✔ Lots của area '{$area->name}' đã đúng: {$remainingLots}/{$lotsToCreate} còn hàng.");
-                continue;
+            foreach ($existingLots as $index => $lot) {
+                DB::table('lots')
+                    ->where('id', $lot->id)
+                    ->update([
+                        'code' => '__seed_tmp_' . $index . '_' . $lot->id,
+                        'updated_at' => Carbon::now(),
+                    ]);
             }
 
-            DB::table('lots')->where('area_id', $area->id)->delete();
-
-            $lotsData = [];
             $unavailableLots = $lotsToCreate - $remainingLots;
             $reservedLots = (int) floor($unavailableLots * 0.25);
             $notForSaleLots = (int) floor($unavailableLots * 0.1);
@@ -315,11 +316,9 @@ class AreaAndLotSeeder extends Seeder
             ];
 
             for ($i = 1; $i <= $lotsToCreate; $i++) {
-                $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $area->name), 0, 1));
                 $column = ($i - 1) % 10;
                 $row = intdiv($i - 1, 10);
-                $lotsData[] = [
-                    'id'           => Str::uuid()->toString(),
+                $payload = [
                     'area_id'      => $area->id,
                     'code'         => "{$prefix}-" . str_pad($i, 2, '0', STR_PAD_LEFT),
                     'status'       => $statuses[$i - 1] ?? LotStatus::SOLD->value,
@@ -336,14 +335,43 @@ class AreaAndLotSeeder extends Seeder
                     'legal'        => $i % 2 === 0 ? 'Sổ hồng riêng' : 'Sổ đỏ',
                     'description'  => "Lô đất số {$i} thuộc {$area->name}. Vị trí đẹp, thoáng mát.",
                     'is_locked'    => false,
-                    'created_at'   => Carbon::now()->subDays(rand(1, 60)),
                     'updated_at'   => Carbon::now(),
                 ];
+
+                $existing = $existingLots->get($i - 1);
+                if ($existing) {
+                    DB::table('lots')->where('id', $existing->id)->update([
+                        ...$payload,
+                        'deleted_at' => null,
+                    ]);
+                    continue;
+                }
+
+                DB::table('lots')->insert([
+                    ...$payload,
+                    'id'           => Str::uuid()->toString(),
+                    'created_at'   => Carbon::now()->subDays(rand(1, 60)),
+                ]);
             }
 
-            DB::table('lots')->insert($lotsData);
+            foreach ($existingLots->slice($lotsToCreate) as $lot) {
+                DB::table('lots')
+                    ->where('id', $lot->id)
+                    ->update([
+                        'deleted_at' => Carbon::now(),
+                        'updated_at' => Carbon::now(),
+                    ]);
+            }
+
             $this->command->line("  ✔ Đồng bộ {$lotsToCreate} lots cho area: {$area->name} ({$remainingLots} lô còn hàng)");
         }
+    }
+
+    private function lotPrefix(string $areaName): string
+    {
+        $letters = preg_replace('/[^A-Za-z]/', '', $areaName);
+
+        return strtoupper(substr($letters ?: 'L', 0, 1));
     }
 
     /**

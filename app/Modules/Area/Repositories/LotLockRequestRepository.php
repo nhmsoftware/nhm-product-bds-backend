@@ -19,4 +19,12 @@ final class LotLockRequestRepository extends BaseRepository implements LotLockRe
     {
         return LotLockRequest::class;
     }
+
+    public function findActiveByLotId(string $lotId): ?LotLockRequest
+    {
+        return $this->model
+            ->where('lot_id', $lotId)
+            ->latest('created_at')
+            ->first();
+    }
 }

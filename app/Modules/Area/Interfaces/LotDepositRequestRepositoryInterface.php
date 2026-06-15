@@ -17,6 +17,8 @@ interface LotDepositRequestRepositoryInterface extends BaseRepositoryInterface
      */
     public function hasPendingDepositRequestForLot(string $lotId): bool;
 
+    public function findActiveByLotId(string $lotId): ?LotDepositRequest;
+
     /**
      * Lấy danh sách yêu cầu đặt cọc cho Admin/Giám đốc
      *
