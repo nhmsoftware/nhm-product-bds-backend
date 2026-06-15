@@ -12,7 +12,6 @@ use App\Modules\Learning\Models\LessonProgress;
 use App\Modules\Learning\Models\QuizAttempt;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
-use ZipArchive;
 
 class LearningPathDemoSeeder extends Seeder
 {
@@ -236,126 +235,35 @@ class LearningPathDemoSeeder extends Seeder
         $directory = public_path(self::ATTACHMENT_DIR);
         File::ensureDirectoryExists($directory);
 
-        $files = [
-            'overview_pdf' => $this->createPdfAttachment(
-                'tong-quan-he-sinh-thai-kinh-doanh.pdf',
-                'Tong quan he sinh thai kinh doanh BDS',
-                ['San pham, khach hang muc tieu, quy trinh tu van va cac diem can ghi nhan trong CRM.']
-            ),
-            'consulting_pdf' => $this->createPdfAttachment(
-                'quy-trinh-tu-van-khach-hang.pdf',
-                'Quy trinh tu van khach hang',
-                ['1. Ghi nhan nhu cau.', '2. Kiem tra bang hang.', '3. Tu van san pham phu hop.', '4. Cap nhat lich su cham soc.']
-            ),
-            'inventory_pdf' => $this->createPdfAttachment(
-                'quy-dinh-cap-nhat-bang-hang.pdf',
-                'Quy dinh cap nhat bang hang',
-                ['Kiem tra trang thai lo, phap ly, gia ban va thong tin giu cho truoc khi tu van khach hang.']
-            ),
-            'area_reading_pdf' => $this->createPdfAttachment(
-                'huong-dan-doc-thong-tin-khu-dat.pdf',
-                'Huong dan doc thong tin khu dat',
-                ['Doc dien tich, huong, don gia, tong gia, phap ly va tinh trang giao dich cua tung lo dat.']
-            ),
-            'customer_care_pdf' => $this->createPdfAttachment(
-                'lich-cham-soc-khach-hang.pdf',
-                'Lich cham soc khach hang sau tu van',
-                ['Phan nhom nhu cau, dat lich goi lai va cap nhat trang thai cham soc sau moi diem cham.']
-            ),
-            'investment_needs_pdf' => $this->createPdfAttachment(
-                'phan-tich-nhu-cau-dau-tu.pdf',
-                'Phan tich nhu cau dau tu bat dong san',
-                ['Xac dinh muc tieu loi nhuan, thoi gian nam giu, dong tien va muc chap nhan rui ro cua khach hang.']
-            ),
-            'consulting_docx' => $this->createDocxAttachment(
-                'mau-kich-ban-tu-van.docx',
-                'Mau kich ban tu van',
-                ['Mo dau cuoc goi', 'Xac dinh nhu cau', 'Gioi thieu san pham', 'Chot lich gap hoac site tour']
-            ),
-            'follow_up_docx' => $this->createDocxAttachment(
-                'kich-ban-cham-soc-sau-site-tour.docx',
-                'Kich ban cham soc sau site tour',
-                ['Cam on khach hang', 'Tong hop san pham da xem', 'Xu ly ban khoan', 'Hen buoc tiep theo']
-            ),
-            'cashflow_docx' => $this->createDocxAttachment(
-                'goi-y-san-pham-theo-dong-tien.docx',
-                'Goi y san pham theo dong tien',
-                ['Ngan sach', 'Tien do thanh toan', 'Ky vong khai thac', 'Muc do phu hop san pham']
-            ),
-            'customer_checklist_docx' => $this->createDocxAttachment(
-                'checklist-gap-khach-hang.docx',
-                'Checklist gap khach hang',
-                ['Thong tin khach hang', 'Nhu cau dau tu', 'Ngan sach', 'San pham quan tam', 'Buoc cham soc tiep theo']
-            ),
-            'deposit_workflow_docx' => $this->createDocxAttachment(
-                'quy-trinh-giu-cho-dat-coc.docx',
-                'Quy trinh giu cho va dat coc',
-                ['Xac minh lo dat', 'Tao yeu cau giu cho', 'Cho phe duyet', 'Cap nhat trang thai dat coc']
-            ),
+        return [
+            'overview_pdf' => $this->staticAttachment('tong-quan-he-sinh-thai-kinh-doanh.pdf', 'Tổng quan hệ sinh thái kinh doanh BĐS.pdf', 'pdf', 'application/pdf'),
+            'consulting_pdf' => $this->staticAttachment('quy-trinh-tu-van-khach-hang.pdf', 'Quy trình tư vấn khách hàng.pdf', 'pdf', 'application/pdf'),
+            'inventory_pdf' => $this->staticAttachment('quy-dinh-cap-nhat-bang-hang.pdf', 'Quy định cập nhật bảng hàng.pdf', 'pdf', 'application/pdf'),
+            'area_reading_pdf' => $this->staticAttachment('huong-dan-doc-thong-tin-khu-dat.pdf', 'Hướng dẫn đọc thông tin khu đất.pdf', 'pdf', 'application/pdf'),
+            'customer_care_pdf' => $this->staticAttachment('lich-cham-soc-khach-hang.pdf', 'Lịch chăm sóc khách hàng sau tư vấn.pdf', 'pdf', 'application/pdf'),
+            'investment_needs_pdf' => $this->staticAttachment('phan-tich-nhu-cau-dau-tu.pdf', 'Phân tích nhu cầu đầu tư bất động sản.pdf', 'pdf', 'application/pdf'),
+            'consulting_docx' => $this->staticAttachment('mau-kich-ban-tu-van.docx', 'Mẫu kịch bản tư vấn.docx', 'docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+            'follow_up_docx' => $this->staticAttachment('kich-ban-cham-soc-sau-site-tour.docx', 'Kịch bản chăm sóc sau site tour.docx', 'docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+            'cashflow_docx' => $this->staticAttachment('goi-y-san-pham-theo-dong-tien.docx', 'Gợi ý sản phẩm theo dòng tiền.docx', 'docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+            'customer_checklist_docx' => $this->staticAttachment('checklist-gap-khach-hang.docx', 'Checklist gặp khách hàng.docx', 'docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+            'deposit_workflow_docx' => $this->staticAttachment('quy-trinh-giu-cho-dat-coc.docx', 'Quy trình giữ chỗ và đặt cọc.docx', 'docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         ];
-
-        return $files;
     }
 
-    private function createPdfAttachment(string $fileName, string $title, array $lines): array
+    private function staticAttachment(string $fileName, string $name, string $type, string $mimeType): array
     {
-        $path = public_path(self::ATTACHMENT_DIR . '/' . $fileName);
-        $contentLines = array_merge([$title, ''], $lines);
-        $streamLines = [];
-        $y = 760;
-        foreach ($contentLines as $line) {
-            $streamLines[] = sprintf('BT /F1 13 Tf 50 %d Td (%s) Tj ET', $y, $this->escapePdfText($line));
-            $y -= 24;
+        $source = database_path('seeders/assets/learning/attachments/' . $fileName);
+        $target = public_path(self::ATTACHMENT_DIR . '/' . $fileName);
+
+        if (! File::exists($source)) {
+            throw new \RuntimeException("Thiếu file attachment demo học tập: {$source}");
         }
-        $stream = implode("\n", $streamLines);
 
-        $objects = [
-            '1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj',
-            '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj',
-            '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj',
-            '4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj',
-            '5 0 obj << /Length ' . strlen($stream) . " >> stream\n" . $stream . "\nendstream endobj",
-        ];
-
-        $pdf = "%PDF-1.4\n";
-        $offsets = [0];
-        foreach ($objects as $object) {
-            $offsets[] = strlen($pdf);
-            $pdf .= $object . "\n";
+        if (! File::exists($target)) {
+            File::copy($source, $target);
         }
-        $xrefOffset = strlen($pdf);
-        $pdf .= "xref\n0 " . (count($objects) + 1) . "\n0000000000 65535 f \n";
-        for ($i = 1; $i <= count($objects); $i++) {
-            $pdf .= sprintf("%010d 00000 n \n", $offsets[$i]);
-        }
-        $pdf .= "trailer << /Size " . (count($objects) + 1) . " /Root 1 0 R >>\nstartxref\n{$xrefOffset}\n%%EOF";
 
-        file_put_contents($path, $pdf);
-
-        return $this->attachmentPayload($fileName, $title . '.pdf', 'pdf', 'application/pdf');
-    }
-
-    private function createDocxAttachment(string $fileName, string $title, array $lines): array
-    {
-        $path = public_path(self::ATTACHMENT_DIR . '/' . $fileName);
-        $zip = new ZipArchive();
-        $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
-        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
-        $zip->addFromString('word/document.xml', $this->docxDocumentXml($title, $lines));
-        $zip->close();
-
-        return $this->attachmentPayload($fileName, $title . '.docx', 'docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    }
-
-    private function docxDocumentXml(string $title, array $lines): string
-    {
-        $paragraphs = array_map(
-            fn (string $line) => '<w:p><w:r><w:t>' . htmlspecialchars($line, ENT_XML1 | ENT_COMPAT, 'UTF-8') . '</w:t></w:r></w:p>',
-            array_merge([$title, ''], $lines)
-        );
-
-        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' . implode('', $paragraphs) . '<w:sectPr/></w:body></w:document>';
+        return $this->attachmentPayload($fileName, $name, $type, $mimeType);
     }
 
     private function attachmentPayload(string $fileName, string $name, string $type, string $mimeType): array
@@ -379,11 +287,6 @@ class LearningPathDemoSeeder extends Seeder
         }
 
         return max(1, (int) ceil($bytes / 1024)) . ' KB';
-    }
-
-    private function escapePdfText(string $text): string
-    {
-        return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $text);
     }
 
     private function enrollUser(User $user, Course $course, bool $completed): void
