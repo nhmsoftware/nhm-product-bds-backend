@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Modules\Area\Models\Enums\AreaStatus;
 use App\Modules\Area\Models\Enums\LotStatus;
 use App\Modules\Auth\Models\Enums\UserRole;
-use App\Modules\Project\Models\Enums\ProjectStatus;
 use App\Modules\Planning\Models\Enums\PlanningStatus;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
@@ -25,10 +24,12 @@ class InventoryAreaSeeder extends Seeder
             $now = Carbon::now();
             $users = $this->ensureDemoUsers($now);
             $areas = $this->seedAreas($now);
+            $this->backfillAreaGoogleMapsUrls($now);
 
+            $this->syncBranchesFromAreas($now);
             $this->seedAreaAssignments($users, $areas, $now);
 
-            $this->command?->info('Seeded inventory demo data: ' . count($areas) . ' areas.');
+            $this->command?->info('Seeded inventory demo data: ' . count($areas) . ' areas, ' . DB::table('lots')->whereNull('deleted_at')->count() . ' lots.');
         });
     }
 
@@ -54,6 +55,16 @@ class InventoryAreaSeeder extends Seeder
                 'department' => 'HCM',
                 'job_position' => 'Nhân viên kinh doanh',
                 'area' => 'Hồ Chí Minh',
+            ],
+            [
+                'email' => 'candidate@test.com',
+                'name' => 'Ứng Viên Chưa Duyệt',
+                'phone' => '0900000008',
+                'staff_code' => 'TEST-CAND-001',
+                'role' => UserRole::EMPLOYEE->value,
+                'department' => null,
+                'job_position' => null,
+                'area' => null,
             ],
             [
                 'email' => 'manager@test.com',
@@ -370,15 +381,18 @@ DESC,
             $remainingLots = $totalLots - $data['sold'] - $data['reserved'] - $data['unavailable'];
             $planningRef = $data['planning_check_ref'] ?? $data['planning_ref'];
             $planningUrl = "https://quyhoach24h.vn?ref={$planningRef}";
-            $project = $this->seedProjectForArea($data, $totalLots, $remainingLots, $now, $planningUrl);
+            $projectData = $data['project'];
             $existing = DB::table('areas')
                 ->where('planning_check_url', $planningUrl)
                 ->orWhere('name', $data['name'])
                 ->first();
             $areaId = $existing->id ?? (string) Str::uuid();
             $areaPayload = [
-                'project_id' => $project->id,
                 'name' => $data['name'],
+                'keywords' => $this->json($projectData['keywords']),
+                'location' => $projectData['location'],
+                'image' => "https://picsum.photos/seed/{$data['image_seed']}-area/1200/800",
+                'banner' => $this->json($this->projectBannerImages($data['image_seed'])),
                 'sales_board_image' => "https://picsum.photos/seed/{$data['image_seed']}/1200/800",
                 'sales_board_iframe' => null,
                 'planning_check_url' => $planningUrl,
@@ -393,7 +407,29 @@ DESC,
                 'price' => $data['price'],
                 'unit_price' => $data['unit_price'],
                 'status' => $data['status'],
+                'type' => $projectData['type'],
+                'is_public' => true,
+                'description' => $projectData['description'],
+                'amenities' => $this->json($this->projectAmenities($data['image_seed'])),
+                'floor_plans' => $this->json([
+                    'Sơ đồ tổng thể' => "https://picsum.photos/seed/{$data['image_seed']}-floor-plan/1200/800",
+                ]),
+                'legal_info' => $this->json($projectData['legal_info']),
+                'brochure' => rtrim(config('app.url'), '/') . "/brochures/{$data['planning_ref']}.pdf",
+                'contact_info' => $this->json([
+                    'hotline' => '1900 636 668',
+                    'email' => 'kinhdoanh@nhm.vn',
+                ]),
+                'google_maps_url' => $projectData['google_maps_url'],
+                'location_image' => "https://picsum.photos/seed/{$data['image_seed']}-location-map/1200/900",
+                'planning_info' => $this->json([
+                    ...$projectData['planning_info'],
+                    'Link tra cứu quy hoạch' => $planningUrl,
+                    'Ảnh quy hoạch' => "https://picsum.photos/seed/{$data['image_seed']}-planning-map/1200/800",
+                ]),
+                'branch' => $projectData['branch'],
                 'is_featured' => $data['is_featured'],
+                'is_locked' => false,
                 'updated_at' => $now,
                 'deleted_at' => null,
             ];
@@ -410,6 +446,7 @@ DESC,
 
             $this->seedPlanningForArea($data, $planningUrl, $now);
             $this->seedLots($areaId, $data, $totalLots, $now);
+            $this->command?->line("  - {$data['name']}: {$totalLots} lô");
             $areas[$data['name']] = DB::table('areas')->where('id', $areaId)->first();
         }
 
@@ -594,63 +631,6 @@ DESC,
         return [$city, $district];
     }
 
-    private function seedProjectForArea(array $areaData, int $totalLots, int $remainingLots, Carbon $now, string $planningUrl): object
-    {
-        $projectData = $areaData['project'];
-        $existing = DB::table('projects')->where('name', $projectData['name'])->first();
-        $projectId = $existing->id ?? (string) Str::uuid();
-        $payload = [
-            'name' => $projectData['name'],
-            'keywords' => $this->json($projectData['keywords']),
-            'location' => $projectData['location'],
-            'google_maps_url' => $projectData['google_maps_url'],
-            'location_image' => "https://picsum.photos/seed/{$areaData['image_seed']}-location-map/1200/900",
-            'planning_info' => $this->json([
-                ...$projectData['planning_info'],
-                'Link tra cứu quy hoạch' => $planningUrl,
-                'Ảnh quy hoạch' => "https://picsum.photos/seed/{$areaData['image_seed']}-planning-map/1200/800",
-            ]),
-            'image' => "https://picsum.photos/seed/{$areaData['image_seed']}-project/1200/800",
-            'banner' => $this->json($this->projectBannerImages($areaData['image_seed'])),
-            'price' => $areaData['price'],
-            'status' => $areaData['status'] === AreaStatus::COMING_SOON->value
-                ? ProjectStatus::COMING_SOON->value
-                : ProjectStatus::OPENING->value,
-            'type' => $projectData['type'],
-            'is_public' => true,
-            'description' => $projectData['description'],
-            'amenities' => $this->json($this->projectAmenities($areaData['image_seed'])),
-            'floor_plans' => $this->json([
-                'Sơ đồ tổng thể' => "https://picsum.photos/seed/{$areaData['image_seed']}-floor-plan/1200/800",
-            ]),
-            'legal_info' => $this->json($projectData['legal_info']),
-            'brochure' => rtrim(config('app.url'), '/') . "/brochures/{$areaData['planning_ref']}.pdf",
-            'contact_info' => $this->json([
-                'hotline' => '1900 636 668',
-                'email' => 'kinhdoanh@nhm.vn',
-            ]),
-            'branch' => $projectData['branch'],
-            'total_lots' => $totalLots,
-            'remaining_lots' => $remainingLots,
-            'is_featured' => $areaData['is_featured'],
-            'is_locked' => false,
-            'updated_at' => $now,
-            'deleted_at' => null,
-        ];
-
-        if ($existing) {
-            DB::table('projects')->where('id', $projectId)->update($payload);
-        } else {
-            DB::table('projects')->insert([
-                ...$payload,
-                'id' => $projectId,
-                'created_at' => $now->copy()->subDays(30),
-            ]);
-        }
-
-        return DB::table('projects')->where('id', $projectId)->first();
-    }
-
     private function json(array $value): string
     {
         return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -781,12 +761,99 @@ DESC,
         }
     }
 
+    private function backfillAreaGoogleMapsUrls(Carbon $now): void
+    {
+        $fallbackQueries = [
+            'Hạ Long' => '20.949083,107.073706',
+            'Hải Phòng' => '20.844911,106.688084',
+            'Hà Nội' => '21.028511,105.804817',
+            'Hồ Chí Minh' => '10.776889,106.700806',
+            'Đà Lạt' => '11.940419,108.458313',
+            'Phan Thiết' => '10.933210,108.102445',
+            'Mũi Né' => '10.933333,108.283333',
+            'Quảng Ninh' => '21.006382,107.292514',
+        ];
+
+        DB::table('areas')
+            ->whereNull('deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('google_maps_url')
+                    ->orWhere('google_maps_url', '');
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'location'])
+            ->each(function ($area) use ($fallbackQueries, $now) {
+                $searchText = trim((string) ($area->location ?: $area->name));
+                $query = $searchText;
+
+                foreach ($fallbackQueries as $needle => $coordinate) {
+                    if (str_contains(mb_strtolower($searchText), mb_strtolower($needle))) {
+                        $query = $coordinate;
+                        break;
+                    }
+                }
+
+                DB::table('areas')->where('id', $area->id)->update([
+                    'google_maps_url' => 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($query),
+                    'updated_at' => $now,
+                ]);
+            });
+    }
+
+    private function syncBranchesFromAreas(Carbon $now): void
+    {
+        if (!DB::getSchemaBuilder()->hasTable('branches')) {
+            return;
+        }
+
+        $branchNames = DB::table('areas')
+            ->whereNotNull('branch')
+            ->where('branch', '!=', '')
+            ->distinct()
+            ->orderBy('branch')
+            ->pluck('branch')
+            ->all();
+
+        foreach ($branchNames as $index => $name) {
+            $payload = [
+                'code' => $this->branchCodeFromName((string) $name),
+                'area' => $name,
+                'is_active' => true,
+                'sort' => $index + 1,
+                'updated_at' => $now,
+            ];
+
+            $existing = DB::table('branches')->where('name', $name)->first();
+
+            if ($existing) {
+                DB::table('branches')->where('id', $existing->id)->update($payload);
+                continue;
+            }
+
+            DB::table('branches')->insert([
+                ...$payload,
+                'id' => (string) Str::uuid(),
+                'name' => $name,
+                'created_at' => $now,
+            ]);
+        }
+    }
+
+    private function branchCodeFromName(string $name): string
+    {
+        return match ($name) {
+            'Hà Nội' => 'HN',
+            'Hồ Chí Minh' => 'HCM',
+            'Đà Nẵng' => 'DN',
+            default => strtoupper(Str::slug($name, '_')),
+        };
+    }
     private function seedAreaAssignments(array $users, array $areas, Carbon $now): void
     {
         $areaList = array_values($areas);
         $assignmentPlan = [
             'employee@test.com' => $areaList,
-            'employee2@test.com' => $areaList,
+            'employee2@test.com' => array_values(array_filter($areaList, fn ($area) => $area->name === 'Metro Square - Khu căn hộ dịch vụ')) ?: array_slice($areaList, 0, 1),
             'manager@test.com' => array_slice($areaList, 0, 5),
             'director@test.com' => $areaList,
             'ceo@test.com' => $areaList,
@@ -806,6 +873,9 @@ DESC,
 
                 if ($existing) {
                     DB::table('area_assignments')->where('id', $existing->id)->update([
+                        'assignable_id' => $users[$email]->id,
+                        'assignable_type' => 'user',
+                        'permissions' => json_encode(['view_project', 'view_area', 'view_lot', 'lock_lot', 'deposit_lot'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                         'deleted_at' => null,
                         'updated_at' => $now,
                     ]);
@@ -815,6 +885,9 @@ DESC,
                 DB::table('area_assignments')->insert([
                     'id' => (string) Str::uuid(),
                     'user_id' => $users[$email]->id,
+                    'assignable_id' => $users[$email]->id,
+                    'assignable_type' => 'user',
+                    'permissions' => json_encode(['view_project', 'view_area', 'view_lot', 'lock_lot', 'deposit_lot'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                     'area_id' => $area->id,
                     'created_at' => $now,
                     'updated_at' => $now,

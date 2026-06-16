@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Modules\Auth\Models\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\HasDatabaseNotifications;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -67,7 +69,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'is_active', type: 'boolean', example: true),
     ]
 )]
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable implements FilamentUser, JWTSubject
 {
     use HasFactory, Notifiable, HasDatabaseNotifications, SoftDeletes, HasUuids;
 
@@ -99,6 +101,17 @@ class User extends Authenticatable implements JWTSubject
         'is_active' => 'boolean',
         'role' => UserRole::class,
     ];
+
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return in_array($this->role, [
+            UserRole::MANAGER,
+            UserRole::DIRECTOR,
+            UserRole::CEO,
+            UserRole::SUPER_ADMIN,
+        ], true);
+    }
 
     // ─── Relationships ───────────────────────────────────────────
 

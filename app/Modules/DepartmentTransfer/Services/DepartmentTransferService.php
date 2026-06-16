@@ -218,6 +218,12 @@ class DepartmentTransferService extends BaseService implements DepartmentTransfe
 
             $this->validate($updated !== false, 'Không thể cập nhật trạng thái yêu cầu.', 500);
 
+            $updatedUser = $this->authRepository->updateById($transferRequest->user_id, [
+                'department' => $transferRequest->target_department,
+            ]);
+
+            $this->validate($updatedUser !== false, 'Không thể cập nhật phòng ban nhân viên.', 500);
+
             // 7. Bắn Domain Event báo duyệt thành công để hệ thống gửi thông báo cho nhân viên
             event(new \App\Modules\DepartmentTransfer\Events\DepartmentTransferRequestApproved($updated));
 

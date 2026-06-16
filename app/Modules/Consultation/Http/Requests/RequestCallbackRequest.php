@@ -25,7 +25,7 @@ class RequestCallbackRequest extends FormRequest
             ],
             'preferred_callback_time' => 'required|string|max:255',
             'email' => 'nullable|email|max:100',
-            'project_id' => 'nullable|uuid|exists:projects,id',
+            'project_id' => 'nullable|uuid|exists:areas,id',
             'project_name' => 'nullable|string|max:255',
         ];
     }
@@ -38,7 +38,7 @@ class RequestCallbackRequest extends FormRequest
             'phone.regex' => 'Số điện thoại không hợp lệ.',
             'preferred_callback_time.required' => 'Vui lòng nhập thời gian mong muốn.',
             'email.email' => 'Email không hợp lệ.',
-            'project_id.exists' => 'Dự án quan tâm không tồn tại trên hệ thống.',
+            'project_id.exists' => 'Khu đất quan tâm không tồn tại trên hệ thống.',
         ];
     }
 }

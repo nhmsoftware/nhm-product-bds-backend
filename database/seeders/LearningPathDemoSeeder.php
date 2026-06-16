@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\File;
 
 class LearningPathDemoSeeder extends Seeder
 {
-    private const VIDEO_URL = 'https://d1p1y5pyxk2k6i.cloudfront.net/46sqc%2Ffile%2F318fd3c7e66174be5a09944477b10d66_dcc4514484c10342f3ce0ae9da0a529b.mp4?response-content-disposition=inline%3Bfilename%3D%22318fd3c7e66174be5a09944477b10d66_dcc4514484c10342f3ce0ae9da0a529b.mp4%22%3B&response-content-type=video%2Fmp4&Expires=1781009192&Signature=CAFyy2AhLIGJF3KSst3PtulY6xNYtv8cETxa65O1YXwnZb3TgT2SuGUItHVDRWhwMTXkSfxw87Sq0CgKAeCAWK~6zUIEproTN8OPDcHD46ZaQwViVolIWxhrnpHQZzmGxmcaOnkTGMJq1W4smKTaWkdpgLKAWhrmRmob8814iY3aVJz~0oHFptScScDeIRSvg8AB5PwN3q3RZ-9Nzb-PQdUPnrXx2rhaaEtY1TEm4~4W9LQsUPDeMTIdAj5ltLEtAm-B2Op7qkTo4ags-t72GMaz4eDDTPuepbWgKGscoXBRmUXito4m7TG1g0sHTW1v3SfFghZNXzufqt52MpN8sw__&Key-Pair-Id=APKAJT5WQLLEOADKLHBQ';
+    private const VIDEO_URL = 'https://dswa1xdat8uez.cloudfront.net/27yvp%2Ffile%2F900a804230b16379a024523ea4672d84_dcc4514484c10342f3ce0ae9da0a529b.mp4?response-content-disposition=inline%3Bfilename%3D%22900a804230b16379a024523ea4672d84_dcc4514484c10342f3ce0ae9da0a529b.mp4%22%3B&response-content-type=video%2Fmp4&Expires=1781622438&Signature=DefG1B3fOLzAR7EnNKHyki3Hv2hgxmpxlxlFAystYBVJgb4hZXS69MZbZNpLf45LcXRtQHJRTS3~IzIxcqsmA-~0VJx6hkwJn2yiB1xnjosfq04TFKeCxRPlrzw23MKRNwIm~S~fLZcqE5GOwiNOJd4Rr5tRpA~CTTFPqZHnvcxGp8-Zx3HIiuFmxW6Ktcp~aDkfUcOmICeVixg6IV2Qzflj2ow8WMX~8SViPDgt-~sspxSCaMrIShfuwZ5QLFRiH2tWrmB1uW1arKr92fNrYnuBgpE08gpAEkSqNs0ri8C54h5BFk58vdR277WECzR6CJBe-N6u0SPoDcWbqMZxQQ__&Key-Pair-Id=APKAJT5WQLLEOADKLHBQ';
     private const ATTACHMENT_DIR = 'storage/learning/attachments';
 
     /**
@@ -143,8 +143,8 @@ class LearningPathDemoSeeder extends Seeder
             ->get();
 
         foreach ($users as $user) {
-            foreach ($createdCourses as $index => $course) {
-                $this->enrollUser($user, $course, $index === 0 && $user->email === 'employee@test.com');
+            foreach ($createdCourses as $course) {
+                $this->enrollUser($user, $course, false);
             }
         }
 
@@ -186,7 +186,7 @@ class LearningPathDemoSeeder extends Seeder
 
     private function createCourse(array $courseData): Course
     {
-        $lessons = $courseData['lessons'];
+        $lessons = $courseData['is_required'] ? array_slice($courseData['lessons'], 0, 1) : $courseData['lessons'];
         $quizzes = $courseData['quiz'];
         unset($courseData['lessons'], $courseData['quiz']);
 

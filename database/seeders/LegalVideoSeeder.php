@@ -8,6 +8,8 @@ use Illuminate\Support\Str;
 
 class LegalVideoSeeder extends Seeder
 {
+    private const VIDEO_URL = 'https://dswa1xdat8uez.cloudfront.net/27yvp%2Ffile%2F900a804230b16379a024523ea4672d84_dcc4514484c10342f3ce0ae9da0a529b.mp4?response-content-disposition=inline%3Bfilename%3D%22900a804230b16379a024523ea4672d84_dcc4514484c10342f3ce0ae9da0a529b.mp4%22%3B&response-content-type=video%2Fmp4&Expires=1781622438&Signature=DefG1B3fOLzAR7EnNKHyki3Hv2hgxmpxlxlFAystYBVJgb4hZXS69MZbZNpLf45LcXRtQHJRTS3~IzIxcqsmA-~0VJx6hkwJn2yiB1xnjosfq04TFKeCxRPlrzw23MKRNwIm~S~fLZcqE5GOwiNOJd4Rr5tRpA~CTTFPqZHnvcxGp8-Zx3HIiuFmxW6Ktcp~aDkfUcOmICeVixg6IV2Qzflj2ow8WMX~8SViPDgt-~sspxSCaMrIShfuwZ5QLFRiH2tWrmB1uW1arKr92fNrYnuBgpE08gpAEkSqNs0ri8C54h5BFk58vdR277WECzR6CJBe-N6u0SPoDcWbqMZxQQ__&Key-Pair-Id=APKAJT5WQLLEOADKLHBQ';
+
     /**
      * Run the database seeds.
      */
@@ -20,9 +22,9 @@ class LegalVideoSeeder extends Seeder
                 'slug' => 'quy-trinh-kiem-tra-phap-ly-du-an-can-ho-hinh-thanh-trong-tuong-lai',
                 'short_description' => 'Hướng dẫn chi tiết các bước kiểm tra pháp lý dự án từ giấy phép xây dựng đến bảo lãnh ngân hàng.',
                 'description' => 'Trong video này, chuyên gia pháp lý bất động sản sẽ hướng dẫn bạn cách kiểm tra tính pháp lý của một dự án căn hộ chung cư hình thành trong tương lai trước khi ký hợp đồng mua bán. Các giấy tờ quan trọng cần kiểm tra bao gồm: Quyết định giao đất, Giấy phép xây dựng, Biên bản nghiệm thu phần móng, Văn bản đủ điều kiện bán nhà của Sở Xây dựng và Chứng thư bảo lãnh của ngân hàng.',
-                'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'video_url' => self::VIDEO_URL,
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&q=80',
-                'duration_seconds' => 642,
+                'duration_seconds' => 30,
                 'category' => 'project_legal',
                 'is_active' => true,
                 'published_at' => now(),
@@ -35,9 +37,9 @@ class LegalVideoSeeder extends Seeder
                 'slug' => '5-bay-phap-ly-trong-hop-dong-mua-ban-can-ho-can-tranh',
                 'short_description' => 'Nhận diện những điều khoản bất lợi trong hợp đồng mua bán nhà đất và cách thương thảo lại.',
                 'description' => 'Ký hợp đồng mua bán là bước quan trọng nhất quyết định giao dịch bất động sản của bạn. Video này sẽ vạch rõ 5 điều khoản mập mờ phổ biến mà người mua thường bỏ qua: Cách tính diện tích thông thủy so với tim tường, thời gian bàn giao sổ hồng thực tế, mức phạt chậm thanh toán so với chậm bàn giao nhà, điều khoản miễn trừ trách nhiệm của chủ đầu tư và cách thức giải quyết tranh chấp.',
-                'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'video_url' => self::VIDEO_URL,
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=600&q=80',
-                'duration_seconds' => 480,
+                'duration_seconds' => 30,
                 'category' => 'contract',
                 'is_active' => true,
                 'published_at' => now(),
@@ -50,9 +52,9 @@ class LegalVideoSeeder extends Seeder
                 'slug' => 'cach-tu-kiem-tra-quy-hoach-dat-dai-truc-tuyen-chinh-xac-nhat',
                 'short_description' => 'Hướng dẫn tra cứu quy hoạch đất đai thông qua các ứng dụng bản đồ số của nhà nước.',
                 'description' => 'Làm thế nào để biết thửa đất bạn sắp mua có nằm trong vùng quy hoạch cây xanh, giao thông hay dự án công cộng không? Video hướng dẫn bạn từng bước cách tự sử dụng điện thoại và máy tính để tra cứu thông tin quy hoạch đất đai trên các cổng thông tin của thành phố Hồ Chí Minh, Hà Nội, Đồng Nai... và cách đọc bản đồ quy hoạch màu sắc chuẩn xác.',
-                'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'video_url' => self::VIDEO_URL,
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=80',
-                'duration_seconds' => 715,
+                'duration_seconds' => 30,
                 'category' => 'planning',
                 'is_active' => true,
                 'published_at' => now(),
@@ -65,9 +67,9 @@ class LegalVideoSeeder extends Seeder
                 'slug' => 'quy-trinh-cong-chung-mua-ban-nha-dat-an-toan-tu-a-den-z',
                 'short_description' => 'Tất tần tật về quy trình giao dịch tại phòng công chứng, đóng thuế thu nhập cá nhân và đăng bộ.',
                 'description' => 'Từ lúc đặt cọc đến khi cầm được sổ hồng trên tay, bạn phải trải qua quy trình công chứng mua bán vô cùng nghiêm ngặt. Video chia sẻ chi tiết về: Hồ sơ cần chuẩn bị cho cả bên mua và bên bán, quy trình ký kết tại tổ chức hành nghề công chứng, việc thanh toán tiền qua ngân hàng đảm bảo an toàn, cách kê khai thuế thu nhập cá nhân/lệ phí trước bạ và thủ tục đăng bộ sang tên.',
-                'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'video_url' => self::VIDEO_URL,
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?auto=format&fit=crop&w=600&q=80',
-                'duration_seconds' => 920,
+                'duration_seconds' => 30,
                 'category' => 'transaction_process',
                 'is_active' => true,
                 'published_at' => now(),
@@ -80,9 +82,9 @@ class LegalVideoSeeder extends Seeder
                 'slug' => 'chuyen-de-phan-tich-du-thao-luat-dat-dai-moi-nhat',
                 'short_description' => 'Video thảo luận chuyên sâu về luật đất đai sửa đổi bổ sung năm nay.',
                 'description' => 'Video này hiện đang được biên tập lại để cập nhật các nghị định mới nhất của chính phủ và tạm thời không khả dụng.',
-                'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'video_url' => self::VIDEO_URL,
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-                'duration_seconds' => 1200,
+                'duration_seconds' => 30,
                 'category' => 'project_legal',
                 'is_active' => false,
                 'published_at' => now(),
@@ -91,6 +93,17 @@ class LegalVideoSeeder extends Seeder
             ],
         ];
 
-        DB::table('legal_videos')->insert($videos);
+        foreach ($videos as $video) {
+            $existingId = DB::table('legal_videos')->where('slug', $video['slug'])->value('id');
+
+            if ($existingId) {
+                unset($video['id'], $video['created_at']);
+                $video['updated_at'] = now();
+                DB::table('legal_videos')->where('id', $existingId)->update($video);
+                continue;
+            }
+
+            DB::table('legal_videos')->insert($video);
+        }
     }
 }

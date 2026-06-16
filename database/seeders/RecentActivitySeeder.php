@@ -20,10 +20,10 @@ class RecentActivitySeeder extends Seeder
         $this->ensurePlaceholderImages();
 
         DB::transaction(function () use ($now) {
-            $projects = $this->projectsByName();
+            $areas = $this->areasByName();
 
-            if ($projects->isEmpty()) {
-                $this->command?->warn('Chưa có project trong database, hãy chạy InventoryAreaSeeder trước.');
+            if ($areas->isEmpty()) {
+                $this->command?->warn('Chưa có khu đất trong database, hãy chạy InventoryAreaSeeder trước.');
                 return;
             }
 
@@ -72,7 +72,7 @@ class RecentActivitySeeder extends Seeder
                         'created_at' => $now->copy()->subDays(2)->setTimeFromTimeString('16:10:00'),
                     ],
                 ],
-            ], $projects);
+            ], $areas);
 
             $this->seedForEmployee('employee2@test.com', [
                 'meetings' => [
@@ -111,11 +111,11 @@ class RecentActivitySeeder extends Seeder
                         'created_at' => $now->copy()->subDays(4)->setTimeFromTimeString('09:50:00'),
                     ],
                 ],
-            ], $projects);
+            ], $areas);
         });
     }
 
-    private function seedForEmployee(string $email, array $data, $projects): void
+    private function seedForEmployee(string $email, array $data, $areas): void
     {
         $user = DB::table('users')->where('email', $email)->first();
 
@@ -144,13 +144,13 @@ class RecentActivitySeeder extends Seeder
         }
 
         foreach ($data['meetings'] as $meeting) {
-            $project = $projects->get($meeting['project']) ?? $projects->first();
+            $area = $areas->get($meeting['project']) ?? $areas->first();
             $createdAt = $meeting['created_at'];
 
             DB::table('customer_meetings')->insert([
                 'id' => (string) Str::uuid(),
                 'user_id' => $user->id,
-                'project_id' => $project->id,
+                'project_id' => $area->id,
                 'customer_name' => $meeting['customer_name'],
                 'customer_phone' => $meeting['customer_phone'],
                 'image_path' => '/' . self::MEETING_IMAGE,
@@ -163,13 +163,13 @@ class RecentActivitySeeder extends Seeder
         }
 
         foreach ($data['site_tours'] as $tour) {
-            $project = $projects->get($tour['project']) ?? $projects->first();
+            $area = $areas->get($tour['project']) ?? $areas->first();
             $createdAt = $tour['created_at'];
 
             DB::table('site_tours')->insert([
                 'id' => (string) Str::uuid(),
                 'user_id' => $user->id,
-                'project_id' => $project->id,
+                'project_id' => $area->id,
                 'unit_code' => $tour['unit_code'],
                 'customer_name' => $tour['customer_name'],
                 'image_path' => '/' . self::SITE_TOUR_IMAGE,
@@ -184,13 +184,16 @@ class RecentActivitySeeder extends Seeder
         $this->command?->info("Seeded recent activities for {$email}.");
     }
 
-    private function projectsByName()
+    private function areasByName()
     {
-        return DB::table('projects')
+        return DB::table('areas')
             ->select('id', 'name')
             ->whereNull('deleted_at')
             ->get()
-            ->keyBy('name');
+            ->mapWithKeys(function ($area) {
+                $baseName = trim(explode(' - ', $area->name)[0]);
+                return [$baseName => $area, $area->name => $area];
+            });
     }
 
     private function ensurePlaceholderImages(): void

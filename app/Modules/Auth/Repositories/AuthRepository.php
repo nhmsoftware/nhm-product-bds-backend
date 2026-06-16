@@ -173,7 +173,18 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
      */
     public function findByStaffCode(string $staffCode)
     {
-        return $this->model->where('staff_code', $staffCode)->first();
+        return $this->model->where('staff_code', $this->normalizeReferralStaffCode($staffCode))->first();
+    }
+
+    private function normalizeReferralStaffCode(string $referralCode): string
+    {
+        $code = trim($referralCode);
+
+        if (str_starts_with(strtoupper($code), 'REC-') || str_starts_with(strtoupper($code), 'CUS-')) {
+            return substr($code, 4);
+        }
+
+        return $code;
     }
 
     public function countActiveTeamMembers(User $user): int

@@ -43,7 +43,7 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
 
     public function getAdminList(\App\Modules\Area\DTO\FilterLotDepositRequestDTO $dto): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
-        $query = $this->model->with(['lot.area.project', 'user']);
+        $query = $this->model->with(['lot.area', 'user']);
 
         if ($dto->status !== null) {
             $query->where('status', $dto->status);
@@ -54,7 +54,7 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
         }
 
         if ($dto->project_id !== null || $dto->branch !== null) {
-            $query->whereHas('lot.area.project', function ($q) use ($dto) {
+            $query->whereHas('lot.area', function ($q) use ($dto) {
                 if ($dto->project_id !== null) {
                     $q->where('id', $dto->project_id);
                 }
@@ -73,8 +73,8 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
                        ->orWhere('email', 'iLike', "%{$search}%");
                 })->orWhereHas('lot', function ($ql) use ($search) {
                     $ql->where('code', 'iLike', "%{$search}%");
-                })->orWhereHas('lot.area.project', function ($qp) use ($search) {
-                    $qp->where('name', 'iLike', "%{$search}%");
+                })->orWhereHas('lot.area', function ($qa) use ($search) {
+                    $qa->where('name', 'iLike', "%{$search}%");
                 });
             });
         }
@@ -97,12 +97,11 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
                 'users.area',
                 'users.name as user_name',
                 'users.id as user_id',
-                'projects.name as project_name',
-                'projects.id as project_id'
+                'areas.name as project_name',
+                'areas.id as project_id'
             ])
             ->join('lots', 'lot_deposit_requests.lot_id', '=', 'lots.id')
             ->join('areas', 'lots.area_id', '=', 'areas.id')
-            ->leftJoin('projects', 'areas.project_id', '=', 'projects.id')
             ->join('users', 'lot_deposit_requests.user_id', '=', 'users.id')
             ->where('lot_deposit_requests.status', 2) // APPROVED
             ->whereNull('lot_deposit_requests.deleted_at');
@@ -117,7 +116,7 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
             $query->where('users.department', $department);
         }
         if (!empty($projectId)) {
-            $query->where('projects.id', $projectId);
+            $query->where('areas.id', $projectId);
         }
         if (!empty($area)) {
             $query->where('users.area', $area);

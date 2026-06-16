@@ -98,6 +98,12 @@ class Attendance extends Model
         'status' => AttendanceStatus::class,
     ];
 
+
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Auth\Models\User::class, 'user_id');
+    }
+
     public function setStatusAttribute($value)
     {
         if ($value === null) {

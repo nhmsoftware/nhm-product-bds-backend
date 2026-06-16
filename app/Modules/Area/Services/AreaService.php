@@ -18,8 +18,11 @@ use App\Modules\Area\Interfaces\LotLockRequestRepositoryInterface;
 use App\Modules\Area\DTO\SearchInventoryDTO;
 use App\Modules\Area\DTO\CreateAreaCommentDTO;
 use App\Modules\Area\DTO\RequestLockLotDTO;
+use App\Modules\Area\Models\Enums\LotLockRequestStatus;
 use App\Modules\Area\Models\Enums\LotStatus;
 use App\Modules\Area\Events\LotLocked;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 final class AreaService extends BaseService implements AreaServiceInterface
 {
@@ -125,7 +128,6 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // 4. Kiểm tra khu đất có tồn tại
             $area = $this->areaRepository->findById($areaId);
             $this->validate($area !== null, 'Khu đất không tồn tại.', 404);
-            $area->load('project');
 
             // 5. Kiểm tra A1: Quyền truy cập khu đất (phải được cấp quyền hoặc là admin)
             $this->validate(
@@ -161,7 +163,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             return $this->success([
                 'area_id' => $area->id,
                 'area_name' => $area->name,
-                'google_maps_url' => $area->project ? $area->project->google_maps_url : null,
+                'google_maps_url' => $area->google_maps_url,
                 'sales_board_image' => $area->sales_board_image,
                 'sales_board_iframe' => $area->sales_board_iframe,
                 'planning_check_url' => $area->planning_check_url,
@@ -234,7 +236,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             );
 
             // Eager load the planning relation
-            $lot->load(['planning', 'area.project']);
+            $lot->load(['planning', 'area']);
 
             // 6. Trả về thông tin lô đất kèm tên khu đất
             $data = $lot->toArray();
@@ -254,9 +256,9 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 }
                 $data['area'] = $lot->area->toArray();
                 $data['area']['sales_board_images'] = $areaImages;
-                $data['area']['google_maps_url'] = $lot->area->project?->google_maps_url;
-                $data['area']['location'] = $lot->area->project?->location;
-                $data['area']['project_name'] = $lot->area->project?->name;
+                $data['area']['google_maps_url'] = $lot->area->google_maps_url;
+                $data['area']['location'] = $lot->area->location;
+                $data['area']['project_name'] = $lot->area->name;
             }
 
             $activeLockRequest = $this->lotLockRequestRepository->findActiveByLotId($lotId);
@@ -331,11 +333,10 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // 4. Kiểm tra Khu đất tồn tại
             $area = $this->areaRepository->findById($dto->areaId);
             $this->validate($area !== null, 'Khu đất không tồn tại.', 404);
-            $area->load('project');
 
-            // 4.5. Kiểm tra dự án có bị khoá không
-            if ($area->project && $area->project->is_locked) {
-                $this->throw('Dự án đã bị khóa. Không thể thực hiện thao tác trên bảng hàng.', 403);
+            // 4.5. Kiểm tra khu đất có bị khoá không
+            if ($area->is_locked) {
+                $this->throw('Khu đất đã bị khóa. Không thể thực hiện thao tác trên bảng hàng.', 403);
             }
 
             // 5. Kiểm tra Quyền truy cập khu đất này
@@ -407,11 +408,11 @@ final class AreaService extends BaseService implements AreaServiceInterface
             // 4. Kiểm tra Lô đất tồn tại
             $lot = $this->lotRepository->findById($dto->lotId);
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
-            $lot->load('area.project');
+            $lot->load('area');
 
-            // 4.5. Kiểm tra dự án có bị khoá không
-            if ($lot->area && $lot->area->project && $lot->area->project->is_locked) {
-                $this->throw('Dự án đã bị khóa. Không thể thực hiện thao tác trên bảng hàng.', 403);
+            // 4.5. Kiểm tra khu đất có bị khoá không
+            if ($lot->area && $lot->area->is_locked) {
+                $this->throw('Khu đất đã bị khóa. Không thể thực hiện thao tác trên bảng hàng.', 403);
             }
 
             // Kiểm tra lô đất có bị khóa không
@@ -456,19 +457,16 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 $this->throw('Lô đất không ở trạng thái còn hàng.', 400);
             }
 
-            // 7. Tạo yêu cầu lock lô
+            // 7. Tạo yêu cầu lock lô và chờ Admin duyệt
             $lockRequest = $this->lotLockRequestRepository->create([
                 'lot_id' => $dto->lotId,
                 'user_id' => $dto->userId,
                 'reason' => $dto->reason,
+                'status' => LotLockRequestStatus::PENDING->value,
+                'expires_at' => $this->lotLockExpiresAt(),
             ]);
 
-            // 8. Cập nhật trạng thái lô đất: Đang giữ chỗ (RESERVED)
-            $lot->update([
-                'status' => LotStatus::RESERVED,
-            ]);
-
-            // 9. Fire Event
+            // 8. Fire Event
             event(new LotLocked($lot, $lockRequest));
 
             $data = [
@@ -476,15 +474,18 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 'lot_id' => (string) $lockRequest->lot_id,
                 'user_id' => (string) $lockRequest->user_id,
                 'reason' => $lockRequest->reason,
+                'status' => LotLockRequestStatus::PENDING->value,
+                'status_label' => LotLockRequestStatus::PENDING->label(),
+                'expires_at' => $lockRequest->expires_at ? $lockRequest->expires_at->toIso8601String() : null,
                 'created_at' => $lockRequest->created_at ? $lockRequest->created_at->toIso8601String() : null,
                 'lot' => [
                     'id' => $lot->id,
                     'code' => $lot->code,
-                    'status' => LotStatus::RESERVED->serialize(),
+                    'status' => LotStatus::AVAILABLE->serialize(),
                 ]
             ];
 
-            return $this->success($data, 'Yêu cầu lock lô thành công.');
+            return $this->success($data, 'Yêu cầu lock lô đã được gửi và đang chờ phê duyệt.');
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
             if ($e instanceof ServiceException) {
                 return ServiceReturn::error(
@@ -497,6 +498,19 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 code: 500
             );
         });
+    }
+
+    private function lotLockExpiresAt(): Carbon
+    {
+        $setting = DB::table('inventory_settings')->where('key', 'lot_lock_approval_timeout')->first();
+        $value = $setting ? json_decode((string) $setting->value, true) : null;
+        $amount = max(1, (int) ($value['amount'] ?? 24));
+        $unit = (string) ($value['unit'] ?? 'hours');
+
+        return match ($unit) {
+            'days' => now()->addDays($amount),
+            default => now()->addHours($amount),
+        };
     }
 
     /**
@@ -627,13 +641,11 @@ final class AreaService extends BaseService implements AreaServiceInterface
             $lot = $this->lotRepository->findById($id);
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
 
-            $lot->load('area.project');
+            $lot->load('area');
 
             // General Director chỉ được Lock/Unlock Lot chi nhánh của bản thân
-            if ($user->role === UserRole::DIRECTOR) {
-                if ($lot->area && $lot->area->project) {
-                    $this->validate($lot->area->project->branch === $user->department, 'Bạn không có quyền thực hiện chức năng này trên lô đất của chi nhánh khác.', 403);
-                }
+            if ($user->role === UserRole::DIRECTOR && $lot->area) {
+                $this->validate($lot->area->branch === $user->area, 'Bạn không có quyền thực hiện chức năng này trên lô đất của chi nhánh khác.', 403);
             }
 
             // Kiểm tra trạng thái hiện tại
@@ -728,25 +740,22 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
     private function areaIntroArticle($area): array
     {
-        $project = $area->project;
-        $projectName = $project?->name ?: 'dự án';
         $areaName = $area->name;
         $remainingLots = (int) ($area->remaining_lots ?? 0);
         $totalLots = (int) ($area->total_lots ?? 0);
 
         return [
             'title' => "Giới thiệu {$areaName}",
-            'summary' => "{$areaName} thuộc {$projectName}, được tổ chức như một bảng hàng trực quan để đội kinh doanh theo dõi trạng thái từng lô, kiểm tra quy hoạch và phối hợp tư vấn khách hàng ngay trên mobile.",
+            'summary' => "{$areaName} được tổ chức như một bảng hàng trực quan để đội kinh doanh theo dõi trạng thái từng lô, kiểm tra quy hoạch và phối hợp tư vấn khách hàng ngay trên mobile.",
             'body' => "Khu vực hiện có {$remainingLots}/{$totalLots} lô còn khả dụng. Dữ liệu vị trí, pháp lý, mặt bằng và tài liệu được chuẩn hóa theo từng phân khu để nhân sự có thể tra cứu nhanh trong quá trình gặp khách, đi site tour hoặc gửi thông tin cho quản lý.",
         ];
     }
 
     private function areaInfoTabs($area): array
     {
-        $project = $area->project;
-        $projectName = $project?->name ?: 'dự án';
-        $location = $project?->location ?: 'Đang cập nhật vị trí';
-        $legalInfo = $project?->legal_info;
+        $areaName = $area->name ?: 'khu đất';
+        $location = $area->location ?: 'Đang cập nhật vị trí';
+        $legalInfo = $area->legal_info;
         $legalItems = is_array($legalInfo) ? $legalInfo : (is_string($legalInfo) ? json_decode($legalInfo, true) : null);
         $legalText = is_array($legalItems) && count($legalItems) > 0
             ? implode(', ', array_values($legalItems))
@@ -758,9 +767,9 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 'key' => 'location',
                 'label' => 'Vị trí',
                 'title' => 'Vị trí khu đất',
-                'content' => "{$area->name} nằm tại {$location}. Nhân sự có thể dùng nút chỉ đường hoặc bản đồ dự án để định vị nhanh trước khi gặp khách.",
-                'action_label' => $project?->google_maps_url ? 'Mở chỉ đường' : null,
-                'action_url' => $project?->google_maps_url,
+                'content' => "{$area->name} nằm tại {$location}. Nhân sự có thể dùng nút chỉ đường hoặc bản đồ khu đất để định vị nhanh trước khi gặp khách.",
+                'action_label' => $area->google_maps_url ? 'Mở chỉ đường' : null,
+                'action_url' => $area->google_maps_url,
             ],
             [
                 'key' => 'legal',
@@ -783,9 +792,9 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 'key' => 'documents',
                 'label' => 'Tài liệu',
                 'title' => 'Tài liệu bán hàng',
-                'content' => "Tài liệu nội bộ của {$projectName} gồm hình ảnh bảng hàng, hồ sơ quy hoạch, thông tin sản phẩm và các ghi chú tư vấn đã được chuẩn hóa cho đội kinh doanh.",
-                'action_label' => $project?->brochure ? 'Mở tài liệu' : null,
-                'action_url' => $project?->brochure,
+                'content' => "Tài liệu nội bộ của {$areaName} gồm hình ảnh bảng hàng, hồ sơ quy hoạch, thông tin sản phẩm và các ghi chú tư vấn đã được chuẩn hóa cho đội kinh doanh.",
+                'action_label' => $area->brochure ? 'Mở tài liệu' : null,
+                'action_url' => $area->brochure,
             ],
         ];
     }

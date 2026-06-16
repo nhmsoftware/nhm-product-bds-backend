@@ -6,6 +6,7 @@ namespace App\Modules\Area\Repositories;
 
 use App\Core\Repository\BaseRepository;
 use App\Modules\Area\Interfaces\LotLockRequestRepositoryInterface;
+use App\Modules\Area\Models\Enums\LotLockRequestStatus;
 use App\Modules\Area\Models\LotLockRequest;
 
 final class LotLockRequestRepository extends BaseRepository implements LotLockRequestRepositoryInterface
@@ -24,6 +25,7 @@ final class LotLockRequestRepository extends BaseRepository implements LotLockRe
     {
         return $this->model
             ->where('lot_id', $lotId)
+            ->whereIn('status', [LotLockRequestStatus::PENDING->value, LotLockRequestStatus::APPROVED->value])
             ->latest('created_at')
             ->first();
     }

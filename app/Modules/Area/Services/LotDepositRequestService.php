@@ -83,7 +83,7 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
         return $this->execute(function () use ($id) {
             $model = $this->repository->findById($id);
             $this->validate($model !== null, 'Yêu cầu đặt cọc không tồn tại.', 404);
-            $model->load(['lot.area.project', 'user']);
+            $model->load(['lot.area', 'user']);
             return $this->success($model->toArray());
         });
     }
@@ -95,12 +95,12 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             $this->validate($model !== null, 'Yêu cầu đặt cọc không tồn tại.', 404);
             $this->validate($model->status === LotDepositRequestStatus::PENDING, 'Yêu cầu này không ở trạng thái chờ xác nhận.', 400);
 
-            $model->load('lot.area.project');
+            $model->load('lot.area');
             $lot = $model->lot;
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
 
             if ($user->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
-                $this->validate($lot->area->project->branch === $user->area, 'Bạn không có quyền thực hiện chức năng này.', 403);
+                $this->validate($lot->area && $lot->area->branch === $user->area, 'Bạn không có quyền thực hiện chức năng này.', 403);
             }
 
             $this->validate(
@@ -125,13 +125,13 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             $this->validate($model !== null, 'Yêu cầu đặt cọc không tồn tại.', 404);
             $this->validate($model->status === LotDepositRequestStatus::PENDING, 'Yêu cầu đặt cọc đã được xử lý.', 400);
 
-            $model->load('lot.area.project');
+            $model->load('lot.area');
             $lot = $model->lot;
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
 
             // Kiểm tra phân quyền chi nhánh (A4)
             if ($user->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
-                $this->validate($lot->area->project->branch === $user->area, 'Bạn không có quyền thực hiện chức năng này.', 403);
+                $this->validate($lot->area && $lot->area->branch === $user->area, 'Bạn không có quyền thực hiện chức năng này.', 403);
             }
 
             $this->repository->updateById($id, [
@@ -162,13 +162,13 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             }
             $this->validate($model->status === LotDepositRequestStatus::APPROVED, 'Giao dịch không ở trạng thái hợp lệ.', 400);
 
-            $model->load('lot.area.project', 'user.employeeProfile');
+            $model->load('lot.area', 'user.employeeProfile');
             $lot = $model->lot;
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
 
             // A4 - Người dùng không có quyền xác nhận giao dịch
             if ($user->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
-                $this->validate($lot->area->project->branch === $user->area, 'Bạn không có quyền thực hiện chức năng này.', 403);
+                $this->validate($lot->area && $lot->area->branch === $user->area, 'Bạn không có quyền thực hiện chức năng này.', 403);
             }
 
             // Update status

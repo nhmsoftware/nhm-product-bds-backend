@@ -7,6 +7,7 @@ namespace App\Modules\Area\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Modules\Area\Models\Enums\LotLockRequestStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use OpenApi\Attributes as OA;
 
@@ -47,12 +48,23 @@ class LotLockRequest extends Model
         'lot_id',
         'user_id',
         'reason',
+        'status',
+        'expires_at',
+        'approved_by',
+        'approved_at',
+        'rejected_by',
+        'rejected_at',
+        'reject_reason',
     ];
 
     protected $casts = [
         'id' => 'string',
         'lot_id' => 'string',
         'user_id' => 'string',
+        'status' => LotLockRequestStatus::class,
+        'expires_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
     ];
 
     /**

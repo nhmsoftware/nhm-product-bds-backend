@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\CustomerMeeting\Models;
 
 use App\Modules\Auth\Models\User;
-use App\Modules\Project\Models\Project;
+use App\Modules\Area\Models\Area;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,7 +28,7 @@ use OpenApi\Attributes as OA;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read User|null $user
- * @property-read Project|null $project
+ * @property-read Area|null $project
  * @mixin \Eloquent
  */
 #[OA\Schema(
@@ -90,6 +90,6 @@ class CustomerMeeting extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(Project::class, 'project_id');
+        return $this->belongsTo(Area::class, 'project_id');
     }
 }

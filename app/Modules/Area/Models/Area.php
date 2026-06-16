@@ -15,7 +15,6 @@ use OpenApi\Attributes as OA;
  * Class Area
  *
  * @property string $id
- * @property string|null $project_id
  * @property string $name
  * @property string|null $sales_board_image
  * @property string|null $sales_board_iframe
@@ -41,7 +40,6 @@ use OpenApi\Attributes as OA;
     description: 'Thông tin khu đất / bảng hàng',
     properties: [
         new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
-        new OA\Property(property: 'project_id', type: 'string', format: 'uuid', nullable: true, example: 'd3b07384-d113-4ec2-a5d6-c734b1234568'),
         new OA\Property(property: 'name', type: 'string', example: 'Phân khu A - Golden Land'),
         new OA\Property(property: 'sales_board_image', type: 'string', nullable: true, example: 'https://example.com/images/sales_board.jpg'),
         new OA\Property(property: 'sales_board_iframe', type: 'string', nullable: true, example: 'https://quyhoach24h.vn?ref=C5WA63ND'),
@@ -67,8 +65,11 @@ class Area extends Model
     protected $table = 'areas';
 
     protected $fillable = [
-        'project_id',
         'name',
+        'keywords',
+        'location',
+        'image',
+        'banner',
         'sales_board_image',
         'sales_board_iframe',
         'planning_check_url',
@@ -80,7 +81,20 @@ class Area extends Model
         'price',
         'unit_price',
         'status',
+        'type',
+        'is_public',
+        'description',
+        'amenities',
+        'floor_plans',
+        'legal_info',
+        'brochure',
+        'contact_info',
+        'google_maps_url',
+        'location_image',
+        'planning_info',
+        'branch',
         'is_featured',
+        'is_locked',
     ];
 
     protected $casts = [
@@ -91,7 +105,16 @@ class Area extends Model
         'price' => 'integer',
         'unit_price' => 'integer',
         'status' => AreaStatus::class,
+        'is_public' => 'boolean',
         'is_featured' => 'boolean',
+        'is_locked' => 'boolean',
+        'keywords' => 'array',
+        'banner' => 'array',
+        'amenities' => 'array',
+        'floor_plans' => 'array',
+        'legal_info' => 'array',
+        'contact_info' => 'array',
+        'planning_info' => 'array',
         'sales_board_images' => 'array',
     ];
 
@@ -155,14 +178,6 @@ class Area extends Model
     public function lots(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Lot::class, 'area_id');
-    }
-
-    /**
-     * Thuộc về dự án nào.
-     */
-    public function project(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-    {
-        return $this->belongsTo(\App\Modules\Project\Models\Project::class, 'project_id');
     }
 
     /**

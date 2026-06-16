@@ -40,22 +40,17 @@ final class CourseRepository extends BaseRepository implements CourseRepositoryI
     {
         return $this->query()
             ->where('is_active', true)
+            ->where('is_required', true)
             ->where(function ($q) use ($department, $jobPosition) {
-                // Khóa học bắt buộc chung cho toàn bộ nhân viên mới
-                $q->where('is_required', true)
-                    // Hoặc khóa học tự chọn dùng chung cho toàn bộ nhân viên
-                    ->orWhere(function ($query) {
-                        $query->where('is_required', false)
-                            ->whereNull('department')
-                            ->whereNull('job_position');
-                    });
+                $q->where(function ($query) {
+                    $query->whereNull('department')
+                        ->whereNull('job_position');
+                });
 
-                // Hoặc khóa học được phân bổ theo phòng ban
                 if (!empty($department)) {
                     $q->orWhere('department', $department);
                 }
 
-                // Hoặc khóa học được phân bổ theo vị trí công việc
                 if (!empty($jobPosition)) {
                     $q->orWhere('job_position', $jobPosition);
                 }

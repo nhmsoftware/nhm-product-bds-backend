@@ -16,18 +16,26 @@ use Illuminate\Support\Str;
 
 class LearningFakeDataSeeder extends Seeder
 {
+    private const VIDEO_URL = 'https://dswa1xdat8uez.cloudfront.net/27yvp%2Ffile%2F900a804230b16379a024523ea4672d84_dcc4514484c10342f3ce0ae9da0a529b.mp4?response-content-disposition=inline%3Bfilename%3D%22900a804230b16379a024523ea4672d84_dcc4514484c10342f3ce0ae9da0a529b.mp4%22%3B&response-content-type=video%2Fmp4&Expires=1781622438&Signature=DefG1B3fOLzAR7EnNKHyki3Hv2hgxmpxlxlFAystYBVJgb4hZXS69MZbZNpLf45LcXRtQHJRTS3~IzIxcqsmA-~0VJx6hkwJn2yiB1xnjosfq04TFKeCxRPlrzw23MKRNwIm~S~fLZcqE5GOwiNOJd4Rr5tRpA~CTTFPqZHnvcxGp8-Zx3HIiuFmxW6Ktcp~aDkfUcOmICeVixg6IV2Qzflj2ow8WMX~8SViPDgt-~sspxSCaMrIShfuwZ5QLFRiH2tWrmB1uW1arKr92fNrYnuBgpE08gpAEkSqNs0ri8C54h5BFk58vdR277WECzR6CJBe-N6u0SPoDcWbqMZxQQ__&Key-Pair-Id=APKAJT5WQLLEOADKLHBQ';
+
     public function run()
     {
-        // Lấy user đầu tiên trong DB để gán dữ liệu. Nếu chưa có user nào, tạo 1 user ảo.
-        $user = User::first();
-        if (!$user) {
-            $user = User::create([
-                'id' => Str::uuid()->toString(),
-                'name' => 'Demo User',
-                'email' => 'demo' . rand(100, 999) . '@example.com',
-                'password' => bcrypt('password'),
+        $users = User::query()
+            ->whereIn('email', ['employee@test.com', 'employee2@test.com'])
+            ->get();
+
+        if ($users->isEmpty()) {
+            $users = collect([
+                User::create([
+                    'id' => Str::uuid()->toString(),
+                    'name' => 'Demo User',
+                    'email' => 'demo' . rand(100, 999) . '@example.com',
+                    'password' => bcrypt('password'),
+                ])
             ]);
         }
+
+        $this->clearExistingFakeCourses();
 
         for ($i = 1; $i <= 10; $i++) {
             // 1. Tạo 10 khóa học (Course)
@@ -35,7 +43,7 @@ class LearningFakeDataSeeder extends Seeder
                 'title' => 'Khóa học mẫu số ' . $i,
                 'description' => 'Đây là mô tả cho khóa học mẫu số ' . $i . ' dành cho team frontend test giao diện.',
                 'thumbnail' => 'https://via.placeholder.com/600x400?text=Course+' . $i,
-                'is_required' => rand(0, 1) == 1,
+                'is_required' => false,
                 'order' => $i,
                 'is_active' => true,
                 'has_certificate' => true,
@@ -46,8 +54,8 @@ class LearningFakeDataSeeder extends Seeder
                 'course_id' => $course->id,
                 'title' => 'Bài 1: Giới thiệu khóa học ' . $i,
                 'content' => '<p>Nội dung text của bài học số ' . $i . '</p>',
-                'video_url' => 'http://localhost:8000/videos/demo.mp4',
-                'duration_seconds' => 15,
+                'video_url' => self::VIDEO_URL,
+                'duration_seconds' => 30,
                 'order' => 1,
                 'is_active' => true,
                 'attachments' => [
@@ -63,21 +71,23 @@ class LearningFakeDataSeeder extends Seeder
                 'correct_option' => rand(0, 3),
             ]);
 
-            // 4. Tạo 10 Lượt đăng ký khóa học (CourseEnrollment) cho User
-            $enrollment = CourseEnrollment::create([
-                'user_id' => $user->id,
-                'course_id' => $course->id,
-                'status' => CourseEnrollmentStatus::IN_PROGRESS,
-                'progress_percent' => 50.00,
-            ]);
+            // 4. Tạo lượt đăng ký khóa học cho các nhân viên demo
+            foreach ($users as $user) {
+                $enrollment = CourseEnrollment::create([
+                    'user_id' => $user->id,
+                    'course_id' => $course->id,
+                    'status' => CourseEnrollmentStatus::IN_PROGRESS,
+                    'progress_percent' => 0.00,
+                ]);
 
-            // 5. Tạo 10 Tiến độ bài học (LessonProgress)
-            $progress = LessonProgress::create([
-                'enrollment_id' => $enrollment->id,
-                'lesson_id' => $lesson->id,
-                'is_completed' => false,
-                'current_watch_seconds' => 120,
-            ]);
+                // 5. Tạo tiến độ bài học
+                LessonProgress::create([
+                    'enrollment_id' => $enrollment->id,
+                    'lesson_id' => $lesson->id,
+                    'is_completed' => false,
+                    'current_watch_seconds' => 0,
+                ]);
+            }
 
             // 6. Tạo 10 Lượt làm bài Quiz (QuizAttempt)
             QuizAttempt::create([
@@ -90,5 +100,27 @@ class LearningFakeDataSeeder extends Seeder
         }
 
         echo "Đã tạo thành công 10 dữ liệu mẫu cho mỗi bảng trong Module Learning!\n";
+    }
+
+    private function clearExistingFakeCourses(): void
+    {
+        $courses = Course::withTrashed()
+            ->where('title', 'like', 'Khóa học mẫu số %')
+            ->get();
+
+        foreach ($courses as $course) {
+            $lessonIds = CourseLesson::withTrashed()
+                ->where('course_id', $course->id)
+                ->pluck('id');
+            $enrollmentIds = CourseEnrollment::query()
+                ->where('course_id', $course->id)
+                ->pluck('id');
+
+            LessonProgress::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
+            CourseEnrollment::query()->where('course_id', $course->id)->delete();
+            CourseQuiz::withTrashed()->whereIn('lesson_id', $lessonIds)->forceDelete();
+            CourseLesson::withTrashed()->where('course_id', $course->id)->forceDelete();
+            $course->forceDelete();
+        }
     }
 }

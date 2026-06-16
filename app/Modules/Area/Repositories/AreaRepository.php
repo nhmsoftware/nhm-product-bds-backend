@@ -8,6 +8,7 @@ use App\Core\Repository\BaseRepository;
 use App\Core\DTOs\FilterDTO;
 use App\Modules\Area\Interfaces\AreaRepositoryInterface;
 use App\Modules\Area\Models\Area;
+use App\Modules\Auth\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 final class AreaRepository extends BaseRepository implements AreaRepositoryInterface
@@ -22,6 +23,36 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
         return Area::class;
     }
 
+
+    private function assignmentScope(string $userId): \Closure
+    {
+        $user = User::query()->find($userId);
+        $department = $user?->department;
+        $branch = $user?->area;
+
+        return function ($query) use ($userId, $department, $branch): void {
+            $query->where('area_assignments.user_id', $userId)
+                ->orWhere(function ($q) use ($userId): void {
+                    $q->where('area_assignments.assignable_type', 'user')
+                        ->where('area_assignments.assignable_id', $userId);
+                });
+
+            if (!empty($department)) {
+                $query->orWhere(function ($q) use ($department): void {
+                    $q->where('area_assignments.assignable_type', 'department')
+                        ->where('area_assignments.assignable_id', $department);
+                });
+            }
+
+            if (!empty($branch)) {
+                $query->orWhere(function ($q) use ($branch): void {
+                    $q->where('area_assignments.assignable_type', 'branch')
+                        ->where('area_assignments.assignable_id', $branch);
+                });
+            }
+        };
+    }
+
     /**
      * Lấy tổng số lượng khu đất trong hệ thống.
      *
@@ -30,18 +61,6 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
     public function countAll(): int
     {
         return $this->model->newQuery()->count();
-    }
-
-    public function findByIdAndProjectId(string $areaId, string $projectId): ?Area
-    {
-        return $this->model->where('id', $areaId)->where('project_id', $projectId)->first();
-    }
-
-    public function getAreasToDelete(string $projectId, array $keepAreaIds): \Illuminate\Database\Eloquent\Collection
-    {
-        return $this->model->where('project_id', $projectId)
-            ->whereNotIn('id', $keepAreaIds)
-            ->get();
     }
 
     /**
@@ -54,10 +73,13 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
     public function getAssignedAreas(string $userId, FilterDTO $filter): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->join('area_assignments', 'areas.id', '=', 'area_assignments.area_id')
-            ->where('area_assignments.user_id', $userId)
-            ->whereNull('area_assignments.deleted_at')
-            ->select('areas.*');
+            ->whereExists(function ($subQuery) use ($userId): void {
+                $subQuery->selectRaw('1')
+                    ->from('area_assignments')
+                    ->whereColumn('area_assignments.area_id', 'areas.id')
+                    ->where($this->assignmentScope($userId))
+                    ->whereNull('area_assignments.deleted_at');
+            });
 
         $filters = $filter->getFilters();
         if (isset($filters['is_featured'])) {
@@ -69,7 +91,7 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
         $direction = $filter->getDirection();
         $query->orderBy("areas.{$sortBy}", $direction);
 
-        return $query->paginate($filter->getPerPage(), ['*'], 'page', $filter->getPage());
+        return $query->paginate($filter->getPerPage(), ['areas.*'], 'page', $filter->getPage());
     }
 
     /**
@@ -81,10 +103,15 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
      */
     public function hasAssignment(string $userId, string $areaId): bool
     {
-        return $this->model->join('area_assignments', 'areas.id', '=', 'area_assignments.area_id')
-            ->where('area_assignments.user_id', $userId)
-            ->where('area_assignments.area_id', $areaId)
-            ->whereNull('area_assignments.deleted_at')
+        return $this->model->newQuery()
+            ->where('areas.id', $areaId)
+            ->whereExists(function ($subQuery) use ($userId): void {
+                $subQuery->selectRaw('1')
+                    ->from('area_assignments')
+                    ->whereColumn('area_assignments.area_id', 'areas.id')
+                    ->where($this->assignmentScope($userId))
+                    ->whereNull('area_assignments.deleted_at');
+            })
             ->exists();
     }
 
@@ -98,16 +125,20 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
      */
     public function searchAreas(string $userId, string $keyword, bool $isAdmin): \Illuminate\Support\Collection
     {
-        $query = $this->model;
+        $query = $this->model->newQuery();
 
         if (!$isAdmin) {
-            $query = $query->join('area_assignments', 'areas.id', '=', 'area_assignments.area_id')
-                ->where('area_assignments.user_id', $userId)
-                ->whereNull('area_assignments.deleted_at')
-                ->select('areas.*');
+            $query->whereExists(function ($subQuery) use ($userId): void {
+                $subQuery->selectRaw('1')
+                    ->from('area_assignments')
+                    ->whereColumn('area_assignments.area_id', 'areas.id')
+                    ->where($this->assignmentScope($userId))
+                    ->whereNull('area_assignments.deleted_at');
+            });
         }
 
         return $query->where('areas.name', 'like', "%{$keyword}%")->get();
     }
+
 }
 

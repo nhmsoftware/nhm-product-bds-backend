@@ -9,7 +9,7 @@ use App\Modules\CustomerMeeting\DTO\CheckInMeetCustomerDTO;
 use App\Modules\CustomerMeeting\Events\CustomerMeetCheckedIn;
 use App\Modules\CustomerMeeting\Interfaces\CustomerMeetingRepositoryInterface;
 use App\Modules\CustomerMeeting\Interfaces\CustomerMeetingServiceInterface;
-use App\Modules\Project\Interfaces\ProjectRepositoryInterface;
+use App\Modules\Area\Interfaces\AreaRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
 use App\Modules\Auth\Models\Enums\UserRole;
 
@@ -18,7 +18,7 @@ final class CustomerMeetingService extends BaseService implements CustomerMeetin
     public function __construct(
         private readonly CustomerMeetingRepositoryInterface $customerMeetingRepository,
         private readonly AuthRepositoryInterface $authRepository,
-        private readonly ProjectRepositoryInterface $projectRepository
+        private readonly AreaRepositoryInterface $areaRepository
     ) {
     }
 
@@ -55,10 +55,10 @@ final class CustomerMeetingService extends BaseService implements CustomerMeetin
             );
 
             // 2. Kiểm tra dự án tồn tại
-            $project = $this->projectRepository->findById($dto->projectId);
+            $area = $this->areaRepository->findById($dto->projectId);
             $this->validate(
-                $project !== null,
-                'Dự án quan tâm không tồn tại trên hệ thống.',
+                $area !== null,
+                'Khu đất quan tâm không tồn tại trên hệ thống.',
                 404
             );
 

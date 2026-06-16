@@ -18,24 +18,6 @@ interface AreaRepositoryInterface extends BaseRepositoryInterface
     public function countAll(): int;
 
     /**
-     * Tìm khu đất theo ID và Project ID.
-     *
-     * @param string $areaId
-     * @param string $projectId
-     * @return \App\Modules\Area\Models\Area|null
-     */
-    public function findByIdAndProjectId(string $areaId, string $projectId): ?\App\Modules\Area\Models\Area;
-
-    /**
-     * Lấy các khu đất cần xóa trong dự án.
-     *
-     * @param string $projectId
-     * @param array $keepAreaIds
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function getAreasToDelete(string $projectId, array $keepAreaIds): \Illuminate\Database\Eloquent\Collection;
-
-    /**
      * Lấy danh sách khu đất được phân quyền cho người dùng có phân trang và lọc.
      *
      * @param string $userId

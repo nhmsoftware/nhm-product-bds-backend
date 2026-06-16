@@ -65,39 +65,45 @@ final class AuthService extends BaseService implements AuthServiceInterface
             );
 
             // 2. Chuẩn bị dữ liệu
+            $referralType = $this->detectReferralType($dto->referral_code);
+            $referrer = null;
+
+            if (!empty($dto->referral_code)) {
+                $referrer = $this->authRepository->findByStaffCode($dto->referral_code);
+                $this->validate($referrer !== null, 'Mã giới thiệu không hợp lệ hoặc không tồn tại.', 422);
+            }
+
             $data = $dto->toArray();
             $data['password']   = Hash::make($dto->password);
             $data['staff_code'] = $this->generateStaffCode();
-            $data['role']       = UserRole::BUYER; // Mặc định là buyer khi đăng ký qua public form
+            $data['role']       = $referrer && $referralType === ReferralType::RECRUITMENT ? UserRole::EMPLOYEE : UserRole::BUYER;
             $data['is_active']  = true;
 
             // 3. Tạo user
             $user = $this->authRepository->create($data);
 
             // Xử lý Referral Code nếu có
-            if (!empty($dto->referral_code)) {
-                $employee = $this->authRepository->findByStaffCode($dto->referral_code);
-                if ($employee) {
-                    $referralHistory = $this->referralHistoryRepository->findByReferrerAndPhone($employee->id, $dto->phone);
+            if ($referrer) {
+                $referralHistory = $this->referralHistoryRepository->findByReferrerAndPhone($referrer->id, $dto->phone);
 
-                    if ($referralHistory) {
-                        $referralHistory->update([
-                            'referee_id' => $user->id,
-                            'status' => ReferralStatus::REGISTERED->value,
-                            'registered_at' => now(),
-                        ]);
-                    } else {
-                        $this->referralHistoryRepository->create([
-                            'referrer_id' => $employee->id,
-                            'referee_id' => $user->id,
-                            'name' => $user->name,
-                            'phone' => $user->phone,
-                            'referral_type' => ReferralType::RECRUITMENT->value,
-                            'status' => ReferralStatus::REGISTERED->value,
-                            'scanned_at' => now(),
-                            'registered_at' => now(),
-                        ]);
-                    }
+                if ($referralHistory) {
+                    $referralHistory->update([
+                        'referee_id' => $user->id,
+                        'referral_type' => ($referralType ?? ReferralType::RECRUITMENT)->value,
+                        'status' => ReferralStatus::REGISTERED->value,
+                        'registered_at' => now(),
+                    ]);
+                } else {
+                    $this->referralHistoryRepository->create([
+                        'referrer_id' => $referrer->id,
+                        'referee_id' => $user->id,
+                        'name' => $user->name,
+                        'phone' => $user->phone,
+                        'referral_type' => ($referralType ?? ReferralType::RECRUITMENT)->value,
+                        'status' => ReferralStatus::REGISTERED->value,
+                        'scanned_at' => now(),
+                        'registered_at' => now(),
+                    ]);
                 }
             }
 
@@ -106,6 +112,21 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             return $this->success($user, 'Đăng ký thành công.');
         }, useTransaction: true);
+    }
+
+    private function detectReferralType(?string $referralCode): ?ReferralType
+    {
+        $code = strtoupper(trim((string) $referralCode));
+
+        if ($code === '') {
+            return null;
+        }
+
+        if (str_starts_with($code, 'CUS-')) {
+            return ReferralType::CUSTOMER;
+        }
+
+        return ReferralType::RECRUITMENT;
     }
 
     /**

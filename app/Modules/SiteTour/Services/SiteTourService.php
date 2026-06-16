@@ -9,7 +9,7 @@ use App\Modules\SiteTour\DTO\CheckInSiteTourDTO;
 use App\Modules\SiteTour\Events\SiteTourCheckedIn;
 use App\Modules\SiteTour\Interfaces\SiteTourRepositoryInterface;
 use App\Modules\SiteTour\Interfaces\SiteTourServiceInterface;
-use App\Modules\Project\Interfaces\ProjectRepositoryInterface;
+use App\Modules\Area\Interfaces\AreaRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
 use App\Modules\Auth\Models\Enums\UserRole;
 
@@ -18,7 +18,7 @@ final class SiteTourService extends BaseService implements SiteTourServiceInterf
     public function __construct(
         private readonly SiteTourRepositoryInterface $siteTourRepository,
         private readonly AuthRepositoryInterface $authRepository,
-        private readonly ProjectRepositoryInterface $projectRepository
+        private readonly AreaRepositoryInterface $areaRepository
     ) {
     }
 
@@ -54,10 +54,10 @@ final class SiteTourService extends BaseService implements SiteTourServiceInterf
             );
 
             // 2. Kiểm tra dự án tồn tại
-            $project = $this->projectRepository->findById($dto->projectId);
+            $area = $this->areaRepository->findById($dto->projectId);
             $this->validate(
-                $project !== null,
-                'Dự án quan tâm không tồn tại trên hệ thống.',
+                $area !== null,
+                'Khu đất quan tâm không tồn tại trên hệ thống.',
                 404
             );
 

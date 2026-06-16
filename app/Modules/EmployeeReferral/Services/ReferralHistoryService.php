@@ -32,7 +32,7 @@ final class ReferralHistoryService extends BaseService implements ReferralHistor
     public function recordScan(ScanReferralDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
-            // 1. Tìm nhân viên theo referral_code (staff_code)
+            // 1. Tìm nhân viên theo referral_code (staff_code, REC-staff_code hoặc CUS-staff_code)
             $employee = $this->authRepository->findByStaffCode($dto->referral_code);
             $this->validate($employee !== null, 'Mã giới thiệu không hợp lệ hoặc không tồn tại.', 404);
             $this->validate($employee->is_active === true, 'Tài khoản nhân viên giới thiệu đã bị khóa.', 403);

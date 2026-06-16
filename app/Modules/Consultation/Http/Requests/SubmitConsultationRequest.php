@@ -34,7 +34,7 @@ class SubmitConsultationRequest extends FormRequest
                 'regex:/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/',
             ],
             'email' => 'nullable|email|max:100',
-            'project_id' => 'nullable|uuid|exists:projects,id',
+            'project_id' => 'nullable|uuid|exists:areas,id',
             'project_name' => 'nullable|string|max:255',
             'content' => 'nullable|string',
         ];
@@ -52,7 +52,7 @@ class SubmitConsultationRequest extends FormRequest
             'phone.required' => 'Vui lòng nhập số điện thoại.',
             'phone.regex' => 'Số điện thoại không hợp lệ.',
             'email.email' => 'Email không hợp lệ.',
-            'project_id.exists' => 'Dự án quan tâm không tồn tại trên hệ thống.',
+            'project_id.exists' => 'Khu đất quan tâm không tồn tại trên hệ thống.',
         ];
     }
 }

@@ -148,7 +148,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                         $durationSeconds       = $lesson->duration_seconds ?? 0;
                         $watchedSeconds        = $progressRecord ? (int) $progressRecord->current_watch_seconds : 0;
                         $lessonProgressPercent = $durationSeconds > 0
-                            ? (int) round(($watchedSeconds / $durationSeconds) * 100)
+                            ? min(100, (int) round(($watchedSeconds / $durationSeconds) * 100))
                             : 0;
                     } else {
                         $lessonStatus          = LessonStatus::LOCKED;

@@ -15,6 +15,7 @@ use App\Modules\Project\Interfaces\ProjectRepositoryInterface;
 use App\Modules\Project\Interfaces\ProjectServiceInterface;
 use App\Modules\Project\Models\Project;
 use App\Modules\Area\Interfaces\AreaServiceInterface;
+use App\Modules\Area\Models\Area;
 
 /**
  * Class ProjectService
@@ -43,17 +44,19 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     public function getPublicList(ProjectListDTO $dto): ServiceReturn
     {
         return $this->execute(function () use ($dto) {
-            $projects = $this->projectRepository->listPublic($dto);
-            $projects->setCollection(
-                $projects->getCollection()->map(fn (Project $project) => $this->publicProjectPayload($project))
+            $areas = $this->publicAreaQuery($dto)
+                ->latest()
+                ->paginate($dto->perPage, ['*'], 'page', $dto->page);
+            $areas->setCollection(
+                $areas->getCollection()->map(fn (Area $area) => $this->publicAreaPayload($area))
             );
 
-            $message = $projects->total() > 0 
-                ? 'Tải danh sách dự án thành công.' 
-                : 'Không tìm thấy dự án phù hợp.';
+            $message = $areas->total() > 0
+                ? 'Tải danh sách khu đất thành công.'
+                : 'Không tìm thấy khu đất phù hợp.';
 
             return $this->success(
-                $projects,
+                $areas,
                 $message
             );
         }, useTransaction: false);
@@ -68,13 +71,13 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     public function getPublicDetail(string $id): ServiceReturn
     {
         return $this->execute(function () use ($id) {
-            $project = $this->projectRepository->findPublicById($id);
+            $area = Area::query()->where('is_public', true)->find($id);
 
-            $this->validate($project !== null, 'Dự án không tồn tại hoặc đã bị xóa.', 404);
+            $this->validate($area !== null, 'Khu đất không tồn tại hoặc đã bị xóa.', 404);
 
             return $this->success(
-                $this->publicProjectPayload($project),
-                'Tải chi tiết dự án thành công.'
+                $this->publicAreaPayload($area),
+                'Tải chi tiết khu đất thành công.'
             );
         }, useTransaction: false);
     }
@@ -90,26 +93,72 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     public function searchProjects(string $keyword, int $perPage = 10, int $page = 1): ServiceReturn
     {
         return $this->execute(function () use ($keyword, $perPage, $page) {
-            $projects = $this->projectRepository->searchPublic($keyword, $perPage, $page);
-            $projects->setCollection(
-                $projects->getCollection()->map(fn (Project $project) => $this->publicProjectPayload($project))
+            $areas = Area::query()
+                ->where('is_public', true)
+                ->where(function ($query) use ($keyword) {
+                    $query->where('name', 'like', '%' . $keyword . '%')
+                        ->orWhere('location', 'like', '%' . $keyword . '%')
+                        ->orWhere('description', 'like', '%' . $keyword . '%')
+                        ->orWhereJsonContains('keywords', $keyword);
+                })
+                ->latest()
+                ->paginate($perPage, ['*'], 'page', $page);
+            $areas->setCollection(
+                $areas->getCollection()->map(fn (Area $area) => $this->publicAreaPayload($area))
             );
 
-            $message = $projects->total() > 0 
-                ? 'Tìm thấy ' . $projects->total() . ' dự án phù hợp.' 
-                : 'Không tìm thấy dự án phù hợp.';
+            $message = $areas->total() > 0
+                ? 'Tìm thấy ' . $areas->total() . ' khu đất phù hợp.'
+                : 'Không tìm thấy khu đất phù hợp.';
 
             return $this->success(
-                $projects,
+                $areas,
                 $message
             );
         }, useTransaction: false);
     }
 
-    private function publicProjectPayload(Project $project): array
+    private function publicAreaQuery(ProjectListDTO $dto): \Illuminate\Database\Eloquent\Builder
     {
-        $payload = $project->toArray();
+        $query = Area::query()->where('is_public', true);
+
+        if ($dto->search) {
+            $query->where('name', 'like', '%' . $dto->search . '%');
+        }
+
+        if ($dto->status) {
+            $query->where('status', $dto->status);
+        }
+
+        if ($dto->type) {
+            $query->where('type', $dto->type);
+        }
+
+        if ($dto->location) {
+            $query->where('location', 'like', '%' . $dto->location . '%');
+        }
+
+        if ($dto->minPrice) {
+            $query->where('price', '>=', $dto->minPrice);
+        }
+
+        if ($dto->maxPrice) {
+            $query->where('price', '<=', $dto->maxPrice);
+        }
+
+        return $query;
+    }
+
+    private function publicAreaPayload(Area $area): array
+    {
+        $payload = $area->toArray();
         $payload['banner'] = $this->bannerList($payload['banner'] ?? null);
+        $payload['image'] = $payload['image'] ?? $payload['sales_board_image'] ?? null;
+        $payload['price'] = $payload['price'] ?? $payload['unit_price'] ?? 0;
+        $payload['planning_info'] = $payload['planning_info'] ?? [];
+        if (!empty($payload['planning_check_url'])) {
+            $payload['planning_info']['Link tra cứu quy hoạch'] = $payload['planning_check_url'];
+        }
 
         return $payload;
     }
@@ -139,15 +188,15 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     public function getBrochure(string $id): ServiceReturn
     {
         return $this->execute(function () use ($id) {
-            $project = $this->projectRepository->findPublicById($id);
+            $area = Area::query()->where('is_public', true)->find($id);
 
-            $this->validate($project !== null, 'Dự án không tồn tại hoặc đã bị xóa.', 404);
-            $this->validate(!empty($project->brochure), 'Brochure đang được cập nhật.', 404);
+            $this->validate($area !== null, 'Khu đất không tồn tại hoặc đã bị xóa.', 404);
+            $this->validate(!empty($area->brochure), 'Brochure đang được cập nhật.', 404);
 
             return $this->success(
                 [
-                    'url' => $project->brochure,
-                    'project_name' => $project->name
+                    'url' => $area->brochure,
+                    'project_name' => $area->name
                 ],
                 'Tải brochure thành công.'
             );
@@ -163,11 +212,11 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     public function getHotline(string $id): ServiceReturn
     {
         return $this->execute(function () use ($id) {
-            $project = $this->projectRepository->findPublicById($id);
+            $area = Area::query()->where('is_public', true)->find($id);
 
-            $this->validate($project !== null, 'Dự án không tồn tại hoặc đã bị xóa.', 404);
+            $this->validate($area !== null, 'Khu đất không tồn tại hoặc đã bị xóa.', 404);
             
-            $hotline = $project->contact_info['hotline'] ?? null;
+            $hotline = $area->contact_info['hotline'] ?? null;
             $this->validate(!empty($hotline), 'Hotline tư vấn hiện chưa khả dụng.', 404);
 
             return $this->success(

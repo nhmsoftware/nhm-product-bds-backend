@@ -199,12 +199,33 @@ final class DashboardService extends BaseService implements DashboardServiceInte
         if (!in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
             $query
                 ->join('area_assignments', 'lots.area_id', '=', 'area_assignments.area_id')
-                ->where('area_assignments.user_id', $user->id)
+                ->where(function ($assignmentQuery) use ($user): void {
+                    $assignmentQuery->where('area_assignments.user_id', $user->id)
+                        ->orWhere(function ($q) use ($user): void {
+                            $q->where('area_assignments.assignable_type', 'user')
+                                ->where('area_assignments.assignable_id', $user->id);
+                        });
+
+                    if (!empty($user->department)) {
+                        $assignmentQuery->orWhere(function ($q) use ($user): void {
+                            $q->where('area_assignments.assignable_type', 'department')
+                                ->where('area_assignments.assignable_id', $user->department);
+                        });
+                    }
+
+                    if (!empty($user->area)) {
+                        $assignmentQuery->orWhere(function ($q) use ($user): void {
+                            $q->where('area_assignments.assignable_type', 'branch')
+                                ->where('area_assignments.assignable_id', $user->area);
+                        });
+                    }
+                })
                 ->whereNull('area_assignments.deleted_at')
-                ->select('lots.*');
+                ->select('lots.*')
+                ->distinct();
         }
 
-        return $query->count();
+        return (int) $query->distinct('lots.id')->count('lots.id');
     }
 
     private function resolveRewardRank(int $totalPoints): array

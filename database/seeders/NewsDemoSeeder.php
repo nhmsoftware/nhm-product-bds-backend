@@ -285,10 +285,10 @@ class NewsDemoSeeder extends Seeder
             'slug' => $slug,
             'summary' => $item['summary'],
             'content' => $item['content'],
-            'content_blocks' => $item['content_blocks'] ?? null,
+            'content_blocks' => $this->jsonOrNull($item['content_blocks'] ?? null),
             'thumbnail' => $item['thumbnail'],
-            'attachments' => $item['attachments'] ?? null,
-            'quote' => $item['quote'] ?? null,
+            'attachments' => $this->jsonOrNull($item['attachments'] ?? null),
+            'quote' => $this->jsonOrNull($item['quote'] ?? null),
             'category' => $item['category'],
             'department' => $department,
             'area' => $area,
@@ -312,5 +312,13 @@ class NewsDemoSeeder extends Seeder
             'id' => (string) Str::uuid(),
             'created_at' => $item['published_at'],
         ]);
+    }
+    private function jsonOrNull(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

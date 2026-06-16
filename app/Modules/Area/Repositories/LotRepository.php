@@ -7,10 +7,41 @@ namespace App\Modules\Area\Repositories;
 use App\Core\Repository\BaseRepository;
 use App\Modules\Area\Interfaces\LotRepositoryInterface;
 use App\Modules\Area\Models\Lot;
+use App\Modules\Auth\Models\User;
 use Illuminate\Support\Collection;
 
 final class LotRepository extends BaseRepository implements LotRepositoryInterface
 {
+
+    private function assignmentScope(string $userId): \Closure
+    {
+        $user = User::query()->find($userId);
+        $department = $user?->department;
+        $branch = $user?->area;
+
+        return function ($query) use ($userId, $department, $branch): void {
+            $query->where('area_assignments.user_id', $userId)
+                ->orWhere(function ($q) use ($userId): void {
+                    $q->where('area_assignments.assignable_type', 'user')
+                        ->where('area_assignments.assignable_id', $userId);
+                });
+
+            if (!empty($department)) {
+                $query->orWhere(function ($q) use ($department): void {
+                    $q->where('area_assignments.assignable_type', 'department')
+                        ->where('area_assignments.assignable_id', $department);
+                });
+            }
+
+            if (!empty($branch)) {
+                $query->orWhere(function ($q) use ($branch): void {
+                    $q->where('area_assignments.assignable_type', 'branch')
+                        ->where('area_assignments.assignable_id', $branch);
+                });
+            }
+        };
+    }
+
     /**
      * Define the model class specific for this repository
      *
@@ -59,7 +90,7 @@ final class LotRepository extends BaseRepository implements LotRepositoryInterfa
      */
     public function findLotWithArea(string $lotId): ?Lot
     {
-        return $this->model->where('id', $lotId)->with('area.project')->first();
+        return $this->model->where('id', $lotId)->with('area')->first();
     }
 
     /**
@@ -76,10 +107,14 @@ final class LotRepository extends BaseRepository implements LotRepositoryInterfa
 
         if (!$isAdmin) {
             $query = $query->join('areas', 'lots.area_id', '=', 'areas.id')
-                ->join('area_assignments', 'areas.id', '=', 'area_assignments.area_id')
-                ->where('area_assignments.user_id', $userId)
-                ->whereNull('area_assignments.deleted_at')
                 ->whereNull('areas.deleted_at')
+                ->whereExists(function ($subQuery) use ($userId): void {
+                    $subQuery->selectRaw('1')
+                        ->from('area_assignments')
+                        ->whereColumn('area_assignments.area_id', 'areas.id')
+                        ->where($this->assignmentScope($userId))
+                        ->whereNull('area_assignments.deleted_at');
+                })
                 ->select('lots.*');
         }
 
