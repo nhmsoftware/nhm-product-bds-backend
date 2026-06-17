@@ -173,8 +173,6 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 'summary' => [
                     'area_size' => $area->area_size,
                     'direction' => $area->direction,
-                    'price' => $area->price,
-                    'unit_price' => $area->unit_price,
                     'status' => $area->status,
                 ],
                 'lots' => $lots->toArray(),

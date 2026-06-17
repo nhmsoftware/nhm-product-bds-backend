@@ -6,6 +6,7 @@ use App\Filament\Resources\DepartmentResource\Pages;
 use App\Modules\Auth\Models\Department;
 use App\Modules\Auth\Models\User;
 use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Branch\Models\Branch;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -51,6 +52,13 @@ class DepartmentResource extends Resource
                     ->numeric()
                     ->default(0)
                     ->required(),
+                Forms\Components\Select::make('branch_id')
+                    ->label('Chi nhánh')
+                    ->options(fn () => Branch::where('is_active', true)->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->nullable()
+                    ->placeholder('Chọn chi nhánh'),
                 Forms\Components\Toggle::make('is_active')
                     ->label('Đang hoạt động')
                     ->default(true),
@@ -64,6 +72,10 @@ class DepartmentResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label('Tên phòng ban')
                     ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('branch.name')
+                    ->label('Chi nhánh')
+                    ->placeholder('Chưa phân')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('code')
                     ->label('Mã')

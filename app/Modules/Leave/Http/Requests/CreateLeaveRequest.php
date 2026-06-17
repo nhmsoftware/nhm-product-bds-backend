@@ -36,7 +36,7 @@ final class CreateLeaveRequest extends FormRequest
         $types = implode(',', $validLeaveTypes);
         return [
             'leave_type' => ['required', "in:{$types}"],
-            'start_date' => ['required', 'date_format:Y-m-d'],
+            'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:today'],
             'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'reason' => ['required', 'string', 'min:5'],
         ];
@@ -60,6 +60,7 @@ final class CreateLeaveRequest extends FormRequest
             
             // A2: Ngày nghỉ không hợp lệ
             'start_date.date_format' => 'Ngày nghỉ không hợp lệ.',
+            'start_date.after_or_equal' => 'Ngày bắt đầu nghỉ không được nằm trong quá khứ.',
             'end_date.date_format' => 'Ngày nghỉ không hợp lệ.',
             
             // A3: Ngày kết thúc nhỏ hơn ngày bắt đầu

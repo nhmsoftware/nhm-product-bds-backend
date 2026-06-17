@@ -5,6 +5,7 @@ use App\Filament\Resources\AreaResource\Pages;
 use App\Modules\Area\Models\Area;
 use App\Modules\Area\Models\Enums\AreaStatus;
 use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Models\Enums\UserRole;
 use App\Filament\Support\AdminUploads;
 use App\Filament\Support\AdminOptions;
 use Illuminate\Support\Str;
@@ -20,7 +21,7 @@ class AreaResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-map';
     protected static ?string $navigationGroup = 'Kho hàng';
     protected static ?string $modelLabel = 'Khu đất';
-    protected static ?string $pluralModelLabel = 'Khu đất';
+    protected static ?string $pluralModelLabel = 'Quản lý khu đất';
 
     public static function form(Form $form): Form
     {
@@ -30,7 +31,7 @@ class AreaResource extends Resource
                     ->description('Thông tin định danh và vị trí')
                     ->schema([
                         Forms\Components\TextInput::make('name')->label('Tên khu')->required()->maxLength(255),
-                        Forms\Components\Select::make('branch_id')->relationship('branch', 'name')->label('Chi nhánh')->searchable(),
+                        Forms\Components\Select::make('branch_id')->relationship('branch', 'name')->label('Chi nhánh')->searchable()->preload(),
                         Forms\Components\TextInput::make('location')->label('Vị trí')->maxLength(255),
                         Forms\Components\TextInput::make('type')->label('Loại hình')->maxLength(255),
                         Forms\Components\Select::make('status')->label('Trạng thái')->options(self::enumOptions(AreaStatus::class)),
@@ -42,8 +43,6 @@ class AreaResource extends Resource
                 Forms\Components\Wizard\Step::make('Giá & Tài liệu')
                     ->description('Định giá và thông tin pháp lý, bản đồ')
                     ->schema([
-                        Forms\Components\TextInput::make('price')->label('Giá')->mask('999,999,999,999,999.99')->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
-                        Forms\Components\TextInput::make('unit_price')->label('Đơn giá')->mask('999,999,999,999,999.99')->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
                         Forms\Components\Toggle::make('is_featured')->label('Nổi bật'),
                         Forms\Components\Toggle::make('is_locked')->label('Khóa khu đất'),
                         Forms\Components\Toggle::make('is_public')->label('Hiển thị công khai')->default(true),
@@ -66,7 +65,7 @@ class AreaResource extends Resource
                                     ->options(fn () => User::query()
                                         ->where('is_active', true)
                                         ->where('role', '!=', UserRole::BUYER->value)
-                                        ->where(fn ($query) => $query->where('role', '!=', UserRole::EMPLOYEE->value)->orWhere(fn ($sub) => $sub->whereNotNull('job_position')->where('job_position', '!=', '')))
+                                        ->where(fn ($query) => $query->where('role', '!=', UserRole::EMPLOYEE->value)->orWhereNotNull('job_position_id'))
                                         ->orderBy('name')
                                         ->pluck('name', 'id')
                                         ->all()

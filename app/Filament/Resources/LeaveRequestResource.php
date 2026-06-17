@@ -14,7 +14,16 @@ class LeaveRequestResource extends Resource
         return $form->schema([
             Forms\Components\Select::make('user_id')
                 ->label('Nhân viên')
-                ->relationship('user', 'name')
+                ->relationship('user', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
+                    $currentUser = auth()->user();
+                    if (!$currentUser) return $query;
+
+                    return $query->where('id', '!=', $currentUser->id)
+                        ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::BUYER->value)
+                        ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value)
+                        ->where('role', '<=', $currentUser->role->value)
+                        ->whereNotNull('job_position_id');
+                })
                 ->searchable()
                 ->preload()
                 ->required(),
@@ -24,16 +33,49 @@ class LeaveRequestResource extends Resource
                 ->required(),
             Forms\Components\DatePicker::make('start_date')
                 ->label('Từ ngày')
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->minDate(fn (string $operation) => $operation === 'create' ? now()->startOfDay() : null)
+                ->beforeOrEqual('end_date')
                 ->required(),
             Forms\Components\DatePicker::make('end_date')
                 ->label('Đến ngày')
-                ->required(),
+                ->native(false)
+                ->displayFormat('d/m/Y')
+                ->minDate(fn (string $operation) => $operation === 'create' ? now()->startOfDay() : null)
+                ->afterOrEqual('start_date')
+                ->required()
+                ->rule(function (Forms\Get $get, ?\Illuminate\Database\Eloquent\Model $record) {
+                    return function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                        $startDate = $get('start_date');
+                        $endDate = $value;
+                        $userId = $get('user_id');
+
+                        if ($startDate && $endDate && $userId) {
+                            $query = \App\Modules\Leave\Models\LeaveRequest::query()
+                                ->where('user_id', $userId)
+                                ->where('status', '!=', \App\Modules\Leave\Models\Enums\RequestStatus::REJECTED->value)
+                                ->where('status', '!=', \App\Modules\Leave\Models\Enums\RequestStatus::CANCELLED->value)
+                                ->where(function ($q) use ($startDate, $endDate) {
+                                    $q->where('start_date', '<=', $endDate)
+                                      ->where('end_date', '>=', $startDate);
+                                });
+                            if ($record) {
+                                $query->where('id', '!=', $record->id);
+                            }
+                            if ($query->exists()) {
+                                $fail('Nhân viên đã có yêu cầu nghỉ phép trùng trong khoảng thời gian này.');
+                            }
+                        }
+                    };
+                }),
             Forms\Components\Select::make('status')
                 ->label('Trạng thái')
                 ->options(self::enumOptions(RequestStatus::class))
                 ->required(),
             Forms\Components\Textarea::make('reason')
                 ->label('Lý do')
+                ->required()
                 ->columnSpanFull(),
             Forms\Components\Textarea::make('rejection_reason')
                 ->label('Lý do từ chối')
@@ -60,7 +102,16 @@ class LeaveRequestResource extends Resource
                 ->label('Trạng thái')
                 ->formatStateUsing(fn($state) => $state instanceof RequestStatus ? $state->label() : RequestStatus::tryFrom((int)$state)?->label())
                 ->badge()
-        ])->actions([
+                ->color(fn ($state) => match ($state instanceof RequestStatus ? $state->value : (int)$state) {
+                    RequestStatus::PENDING->value => 'warning',
+                    RequestStatus::APPROVED->value => 'success',
+                    RequestStatus::REJECTED->value => 'danger',
+                    RequestStatus::CANCELLED->value => 'gray',
+                    default => 'primary',
+                })
+        ])
+        ->defaultSort('created_at', 'desc')
+        ->actions([
             Tables\Actions\Action::make('approve')
                 ->label('Duyệt')
                 ->icon('heroicon-o-check')
@@ -106,7 +157,7 @@ class LeaveRequestResource extends Resource
 
         if ($user->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR) {
             return $query->whereHas('user', function ($q) use ($user) {
-                $q->where('area', $user->area);
+                $q->where('branch_id', $user->branch_id);
             });
         }
 

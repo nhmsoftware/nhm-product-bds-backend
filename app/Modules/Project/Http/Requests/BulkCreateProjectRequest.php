@@ -53,8 +53,6 @@ class BulkCreateProjectRequest extends FormRequest
             'area.sales_board_images.*' => 'string|url',
             'area.area_size' => 'nullable|numeric|min:0',
             'area.direction' => 'nullable|string|max:100',
-            'area.price' => 'nullable|integer|min:0',
-            'area.unit_price' => 'nullable|integer|min:0',
             'area.status' => 'nullable|integer',
             'area.total_lots' => 'nullable|integer|min:0',
 

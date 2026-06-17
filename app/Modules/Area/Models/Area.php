@@ -24,8 +24,6 @@ use OpenApi\Attributes as OA;
  * @property int $remaining_lots
  * @property float|null $area_size
  * @property string|null $direction
- * @property int|null $price
- * @property int|null $unit_price
  * @property AreaStatus|null $status
  * @property string|null $label_status
  * @property bool $is_featured
@@ -47,8 +45,6 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'sales_board_images', type: 'array', items: new OA\Items(type: 'string'), nullable: true, example: ['https://example.com/images/sales_board_1.jpg']),
         new OA\Property(property: 'area_size', type: 'number', format: 'float', nullable: true, example: 120.5),
         new OA\Property(property: 'direction', type: 'string', nullable: true, example: 'Đông Nam'),
-        new OA\Property(property: 'price', type: 'integer', nullable: true, example: 5000000000),
-        new OA\Property(property: 'unit_price', type: 'integer', nullable: true, example: 45000000),
         new OA\Property(property: 'status', type: 'integer', nullable: true, example: 1),
         new OA\Property(property: 'label_status', type: 'string', nullable: true, example: 'Đang mở bán'),
         new OA\Property(property: 'total_lots', type: 'integer', example: 100),
@@ -78,8 +74,6 @@ class Area extends Model
         'remaining_lots',
         'area_size',
         'direction',
-        'price',
-        'unit_price',
         'status',
         'type',
         'is_public',
@@ -102,8 +96,6 @@ class Area extends Model
         'total_lots' => 'integer',
         'remaining_lots' => 'integer',
         'area_size' => 'float',
-        'price' => 'integer',
-        'unit_price' => 'integer',
         'status' => AreaStatus::class,
         'is_public' => 'boolean',
         'is_featured' => 'boolean',

@@ -15,7 +15,7 @@ class BranchResource extends Resource
 {
     protected static ?string $model = Branch::class;
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
-    protected static ?string $navigationGroup = 'Hệ thống';
+    protected static ?string $navigationGroup = 'Nhân sự';
     protected static ?string $modelLabel = 'Chi nhánh';
     protected static ?string $pluralModelLabel = 'Chi nhánh';
 
