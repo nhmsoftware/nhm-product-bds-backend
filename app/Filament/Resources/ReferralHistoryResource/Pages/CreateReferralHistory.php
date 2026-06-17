@@ -2,4 +2,9 @@
 namespace App\Filament\Resources\ReferralHistoryResource\Pages;
 use App\Filament\Resources\ReferralHistoryResource;
 use Filament\Resources\Pages\CreateRecord;
-class CreateReferralHistory extends CreateRecord { protected static string $resource = ReferralHistoryResource::class; }
+class CreateReferralHistory extends CreateRecord { protected static string $resource = ReferralHistoryResource::class; 
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+}

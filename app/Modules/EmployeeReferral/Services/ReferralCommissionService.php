@@ -36,7 +36,7 @@ final class ReferralCommissionService extends BaseService implements ReferralCom
             // A5 - Nhân viên không có quyền truy cập
             $allowedRoles = [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN];
             $this->validate(
-                in_array($user->role, $allowedRoles, true),
+                in_array($user->role, $allowedRoles, true) && ($user->role !== UserRole::EMPLOYEE || !empty($user->job_position)),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -84,7 +84,7 @@ final class ReferralCommissionService extends BaseService implements ReferralCom
 
             $allowedRoles = [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN];
             $this->validate(
-                in_array($user->role, $allowedRoles, true),
+                in_array($user->role, $allowedRoles, true) && ($user->role !== UserRole::EMPLOYEE || !empty($user->job_position)),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );

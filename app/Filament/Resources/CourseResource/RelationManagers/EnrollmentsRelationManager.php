@@ -43,6 +43,31 @@ class EnrollmentsRelationManager extends RelationManager
             ->filters([Tables\Filters\SelectFilter::make('status')->label('Trạng thái')->options($this->enumOptions(CourseEnrollmentStatus::class))])
             ->headerActions([Tables\Actions\CreateAction::make()->label('Gán nhân viên học')])
             ->actions([
+                Tables\Actions\Action::make('confirmOnboarding')
+                    ->label('Duyệt onboarding')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->status !== CourseEnrollmentStatus::COMPLETED)
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        $learningService = app(\App\Modules\Learning\Interfaces\LearningServiceInterface::class);
+                        $result = $learningService->adminConfirmOnboarding(
+                            (string) $record->course_id,
+                            (string) $record->user_id,
+                            (string) auth()->id()
+                        );
+                        if ($result->isError()) {
+                            \Filament\Notifications\Notification::make()
+                                ->title($result->getMessage())
+                                ->danger()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Duyệt hoàn thành onboarding cho nhân viên thành công.')
+                                ->success()
+                                ->send();
+                        }
+                    }),
                 Tables\Actions\EditAction::make()->label('Cập nhật tiến độ'),
                 Tables\Actions\DeleteAction::make()->label('Xóa lượt học'),
             ]);

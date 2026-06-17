@@ -25,57 +25,112 @@ class AreaResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('name')->label('Tên khu')->required()->maxLength(255),
-            Forms\Components\Select::make('branch')->label('Chi nhánh')->options(fn () => AdminOptions::branches())->searchable(),
-            Forms\Components\TextInput::make('location')->label('Vị trí')->maxLength(255),
-            Forms\Components\TextInput::make('type')->label('Loại hình')->maxLength(255),
-            Forms\Components\Select::make('status')->label('Trạng thái')->options(self::enumOptions(AreaStatus::class)),
-            Forms\Components\TextInput::make('total_lots')->label('Tổng lô')->numeric()->default(0),
-            Forms\Components\TextInput::make('remaining_lots')->label('Còn hàng')->numeric()->default(0),
-            Forms\Components\TextInput::make('area_size')->label('Diện tích')->numeric(),
-            Forms\Components\TextInput::make('direction')->label('Hướng'),
-            Forms\Components\TextInput::make('price')->label('Giá')->mask('999,999,999,999,999.99')->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
-            Forms\Components\TextInput::make('unit_price')->label('Đơn giá')->mask('999,999,999,999,999.99')->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
-            Forms\Components\Toggle::make('is_featured')->label('Nổi bật'),
-            Forms\Components\Toggle::make('is_locked')->label('Khóa khu đất'),
-            Forms\Components\Toggle::make('is_public')->label('Hiển thị công khai')->default(true),
-            AdminUploads::image('sales_board_image', 'Ảnh bảng hàng', 'admin/area-sales-boards')->columnSpanFull(),
-            AdminUploads::images('sales_board_images', 'Danh sách ảnh bảng hàng', 'admin/area-sales-board-gallery')->columnSpanFull(),
-            Forms\Components\TextInput::make('sales_board_iframe')->label('Iframe bảng hàng')->columnSpanFull(),
-            Forms\Components\TextInput::make('planning_check_url')->label('Link kiểm tra quy hoạch')->columnSpanFull(),
-            Forms\Components\TextInput::make('google_maps_url')->label('Google Maps URL')->url()->columnSpanFull(),
-            Forms\Components\TextInput::make('brochure')->label('Brochure')->url()->columnSpanFull(),
-            Forms\Components\Textarea::make('description')->label('Mô tả')->columnSpanFull(),
-            Forms\Components\Select::make('assigned_user_ids')
-                ->label('Nhân viên được cấp quyền')
-                ->multiple()
-                ->options(fn () => User::query()->orderBy('name')->pluck('name', 'id')->all())
-                ->preload()
-                ->searchable()
-                ->dehydrated(false)
-                ->afterStateHydrated(fn (Forms\Components\Select $component, ?Area $record) => $component->state($record?->assignedUsers()->pluck('users.id')->all() ?? []))
-                ->saveRelationshipsUsing(function (Area $record, ?array $state): void {
-                    $existing = $record->assignedUsers()->pluck('users.id')->all();
-                    $next = $state ?? [];
-                    $record->assignedUsers()->detach(array_values(array_diff($existing, $next)));
-                    foreach (array_diff($next, $existing) as $userId) {
-                        $record->assignedUsers()->attach($userId, [
-                            'id' => (string) Str::uuid(),
-                            'assignable_id' => $userId,
-                            'assignable_type' => 'user',
-                            'permissions' => json_encode(['view_project', 'view_area', 'view_lot', 'lock_lot', 'deposit_lot'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                        ]);
-                    }
-                })
-                ->columnSpanFull(),
-        ])->columns(2);
+            Forms\Components\Wizard::make([
+                Forms\Components\Wizard\Step::make('Thông tin cơ bản')
+                    ->description('Thông tin định danh và vị trí')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')->label('Tên khu')->required()->maxLength(255),
+                        Forms\Components\Select::make('branch_id')->relationship('branch', 'name')->label('Chi nhánh')->searchable(),
+                        Forms\Components\TextInput::make('location')->label('Vị trí')->maxLength(255),
+                        Forms\Components\TextInput::make('type')->label('Loại hình')->maxLength(255),
+                        Forms\Components\Select::make('status')->label('Trạng thái')->options(self::enumOptions(AreaStatus::class)),
+                        Forms\Components\TextInput::make('total_lots')->label('Tổng lô')->numeric()->default(0),
+                        Forms\Components\TextInput::make('remaining_lots')->label('Còn hàng')->numeric()->default(0),
+                        Forms\Components\TextInput::make('area_size')->label('Diện tích')->numeric(),
+                        Forms\Components\TextInput::make('direction')->label('Hướng'),
+                    ])->columns(2),
+                Forms\Components\Wizard\Step::make('Giá & Tài liệu')
+                    ->description('Định giá và thông tin pháp lý, bản đồ')
+                    ->schema([
+                        Forms\Components\TextInput::make('price')->label('Giá')->mask('999,999,999,999,999.99')->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
+                        Forms\Components\TextInput::make('unit_price')->label('Đơn giá')->mask('999,999,999,999,999.99')->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
+                        Forms\Components\Toggle::make('is_featured')->label('Nổi bật'),
+                        Forms\Components\Toggle::make('is_locked')->label('Khóa khu đất'),
+                        Forms\Components\Toggle::make('is_public')->label('Hiển thị công khai')->default(true),
+                        Forms\Components\TextInput::make('planning_check_url')->label('Link kiểm tra quy hoạch')->columnSpanFull(),
+                        Forms\Components\TextInput::make('google_maps_url')->label('Google Maps URL')->url()->columnSpanFull(),
+                        Forms\Components\TextInput::make('brochure')->label('Brochure')->url()->columnSpanFull(),
+                        Forms\Components\Textarea::make('description')->label('Mô tả')->columnSpanFull(),
+                    ])->columns(2),
+                Forms\Components\Wizard\Step::make('Hình ảnh & Phân quyền')
+                    ->description('Ảnh bảng hàng và phân quyền truy cập')
+                    ->schema([
+                        AdminUploads::image('sales_board_image', 'Ảnh bảng hàng', 'admin/area-sales-boards')->columnSpanFull(),
+                        AdminUploads::images('sales_board_images', 'Danh sách ảnh bảng hàng', 'admin/area-sales-board-gallery')->columnSpanFull(),
+                        Forms\Components\TextInput::make('sales_board_iframe')->label('Iframe bảng hàng')->columnSpanFull(),
+                        Forms\Components\Repeater::make('assignments')
+                            ->label('Phân quyền truy cập cho nhân sự')
+                            ->schema([
+                                Forms\Components\Select::make('user_id')
+                                    ->label('Nhân viên')
+                                    ->options(fn () => User::query()
+                                        ->where('is_active', true)
+                                        ->where('role', '!=', UserRole::BUYER->value)
+                                        ->where(fn ($query) => $query->where('role', '!=', UserRole::EMPLOYEE->value)->orWhere(fn ($sub) => $sub->whereNotNull('job_position')->where('job_position', '!=', '')))
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->all()
+                                    )
+                                    ->required()
+                                    ->searchable(),
+                                Forms\Components\CheckboxList::make('permissions')
+                                    ->label('Quyền hạn')
+                                    ->options([
+                                        'view_area' => 'Xem khu đất',
+                                        'view_lot' => 'Xem lô đất',
+                                        'lock_lot' => 'Khóa lô đất',
+                                        'deposit_lot' => 'Đặt cọc lô đất',
+                                    ])
+                                    ->columns(2)
+                                    ->required(),
+                            ])
+                            ->columns(2)
+                            ->dehydrated(false)
+                            ->afterStateHydrated(function (Forms\Components\Repeater $component, ?Area $record) {
+                                if (!$record) return;
+                                $assignments = \DB::table('area_assignments')
+                                    ->where('area_id', $record->id)
+                                    ->whereNull('deleted_at')
+                                    ->get()
+                                    ->map(fn($row) => [
+                                        'user_id' => $row->user_id,
+                                        'permissions' => json_decode($row->permissions ?? '[]', true) ?: [],
+                                    ])
+                                    ->toArray();
+                                $component->state($assignments);
+                            })
+                            ->saveRelationshipsUsing(function (Area $record, ?array $state): void {
+                                $next = $state ?? [];
+                                
+                                \DB::table('area_assignments')
+                                    ->where('area_id', $record->id)
+                                    ->delete();
+                                    
+                                foreach ($next as $item) {
+                                    if (empty($item['user_id'])) continue;
+                                    \DB::table('area_assignments')->insert([
+                                        'id' => (string) Str::uuid(),
+                                        'area_id' => $record->id,
+                                        'user_id' => $item['user_id'],
+                                        'assignable_id' => $item['user_id'],
+                                        'assignable_type' => 'user',
+                                        'permissions' => json_encode($item['permissions'] ?? [], JSON_UNESCAPED_UNICODE),
+                                        'created_at' => now(),
+                                        'updated_at' => now(),
+                                    ]);
+                                }
+                            })
+                            ->columnSpanFull(),
+                    ]),
+            ])->columnSpanFull(),
+        ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table->columns([
             Tables\Columns\TextColumn::make('name')->label('Khu đất')->searchable()->sortable(),
-            Tables\Columns\TextColumn::make('branch')->label('Chi nhánh')->searchable()->sortable(),
+            Tables\Columns\TextColumn::make('branch.name')->label('Chi nhánh')->searchable()->sortable(),
             Tables\Columns\TextColumn::make('status')->label('Trạng thái')->formatStateUsing(fn ($state) => $state instanceof AreaStatus ? $state->label() : AreaStatus::tryFrom((int) $state)?->label())->badge(),
             Tables\Columns\TextColumn::make('remaining_lots')->label('Còn hàng')->sortable(),
             Tables\Columns\IconColumn::make('is_featured')->label('Nổi bật')->boolean(),

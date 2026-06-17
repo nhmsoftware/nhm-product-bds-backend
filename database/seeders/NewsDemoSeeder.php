@@ -37,7 +37,7 @@ class NewsDemoSeeder extends Seeder
                     'staff_code' => 'TEST-MGR-001',
                     'phone' => '0900000002',
                     'role' => UserRole::MANAGER->value,
-                    'department' => 'HN',
+                    'department' => 'Kinh doanh',
                     'job_position' => 'Trưởng phòng kinh doanh',
                     'area' => 'Hà Nội',
                 ],
@@ -51,7 +51,7 @@ class NewsDemoSeeder extends Seeder
                     'staff_code' => 'TEST-MGR-002',
                     'phone' => '0900000017',
                     'role' => UserRole::MANAGER->value,
-                    'department' => 'HCM',
+                    'department' => 'Kinh doanh',
                     'job_position' => 'Trưởng nhóm kinh doanh',
                     'area' => 'Hồ Chí Minh',
                 ],
@@ -65,7 +65,7 @@ class NewsDemoSeeder extends Seeder
                     'staff_code' => 'TEST-DIR-001',
                     'phone' => '0900000003',
                     'role' => UserRole::DIRECTOR->value,
-                    'department' => 'HN',
+                    'department' => 'Kinh doanh',
                     'job_position' => 'Giám đốc khu vực',
                     'area' => 'Hà Nội',
                 ],
@@ -89,6 +89,34 @@ class NewsDemoSeeder extends Seeder
         }
 
         $id = (string) Str::uuid();
+        
+        $branchId = null;
+        if (!empty($fallback['area'])) {
+            $branchId = DB::table('branches')->where('name', $fallback['area'])->value('id');
+        }
+        $deptId = null;
+        if (!empty($fallback['department'])) {
+            $deptId = DB::table('departments')->where('name', $fallback['department'])->value('id');
+        }
+
+        $jobPosId = null;
+        if (!empty($fallback['job_position'])) {
+            $existingPosId = DB::table('job_positions')->where('name', $fallback['job_position'])->value('id');
+            if ($existingPosId) {
+                $jobPosId = $existingPosId;
+            } else {
+                $jobPosId = (string) Str::uuid();
+                DB::table('job_positions')->insert([
+                    'id' => $jobPosId,
+                    'name' => $fallback['job_position'],
+                    'code' => strtoupper(Str::slug($fallback['job_position'], '_')),
+                    'department_id' => $deptId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
+
         DB::table('users')->insert([
             'id' => $id,
             'staff_code' => $fallback['staff_code'],
@@ -97,9 +125,9 @@ class NewsDemoSeeder extends Seeder
             'phone' => $fallback['phone'],
             'password' => Hash::make(self::DEMO_PASSWORD),
             'role' => $fallback['role'],
-            'department' => $fallback['department'],
-            'job_position' => $fallback['job_position'],
-            'area' => $fallback['area'],
+            'department_id' => $deptId,
+            'job_position_id' => $jobPosId,
+            'branch_id' => $branchId,
             'is_active' => true,
             'created_at' => $now,
             'updated_at' => $now,
@@ -237,7 +265,7 @@ class NewsDemoSeeder extends Seeder
                 'thumbnail' => 'https://picsum.photos/seed/internal-training-hn/1200/800',
                 'category' => 'internal',
                 'author' => 'manager',
-                'department' => 'HN',
+                'department' => 'Kinh doanh',
                 'area' => 'Hà Nội',
                 'published_at' => $now->copy()->subHours(5),
             ],
@@ -259,7 +287,7 @@ class NewsDemoSeeder extends Seeder
                 'thumbnail' => 'https://picsum.photos/seed/internal-hcm-leads/1200/800',
                 'category' => 'internal',
                 'author' => 'manager_hcm',
-                'department' => 'HCM',
+                'department' => 'Kinh doanh',
                 'area' => 'Hồ Chí Minh',
                 'published_at' => $now->copy()->subDay()->setTime(16, 45),
             ],
@@ -280,6 +308,10 @@ class NewsDemoSeeder extends Seeder
     {
         $slug = Str::slug($item['title']);
         $existing = DB::table('news')->where('slug', $slug)->first();
+        $branchId = null;
+        if (!empty($area)) {
+            $branchId = DB::table('branches')->where('name', $area)->value('id');
+        }
         $payload = [
             'title' => $item['title'],
             'slug' => $slug,
@@ -291,7 +323,7 @@ class NewsDemoSeeder extends Seeder
             'quote' => $this->jsonOrNull($item['quote'] ?? null),
             'category' => $item['category'],
             'department' => $department,
-            'area' => $area,
+            'branch_id' => $branchId,
             'author_id' => $author->id,
             'is_published' => true,
             'is_featured' => (bool) ($item['featured'] ?? false),

@@ -2,4 +2,9 @@
 namespace App\Filament\Resources\SiteTourResource\Pages;
 use App\Filament\Resources\SiteTourResource;
 use Filament\Resources\Pages\CreateRecord;
-class CreateSiteTour extends CreateRecord { protected static string $resource = SiteTourResource::class; }
+class CreateSiteTour extends CreateRecord { protected static string $resource = SiteTourResource::class; 
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+}

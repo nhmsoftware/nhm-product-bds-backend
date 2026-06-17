@@ -38,7 +38,7 @@ final class CreateNotificationsForInternalPost implements ShouldQueue
 
         $recipients = $this->authRepository->getActiveUsersForInternalPost(
             department: $news->department,
-            area: $news->area,
+            branchId: $news->branch_id,
             authorId: (string) $news->author_id
         );
 

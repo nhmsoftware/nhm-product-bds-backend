@@ -155,7 +155,7 @@ final class DashboardService extends BaseService implements DashboardServiceInte
         if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
             $query->where('department', $user->department);
         } elseif ($user->role === UserRole::DIRECTOR) {
-            $query->where('area', $user->area);
+            $query->where('branch_id', $user->branch_id);
         } elseif (!in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
             $query->whereRaw('1 = 0');
         }
@@ -213,10 +213,10 @@ final class DashboardService extends BaseService implements DashboardServiceInte
                         });
                     }
 
-                    if (!empty($user->area)) {
+                    if (!empty($user->branch_id)) {
                         $assignmentQuery->orWhere(function ($q) use ($user): void {
                             $q->where('area_assignments.assignable_type', 'branch')
-                                ->where('area_assignments.assignable_id', $user->area);
+                                ->where('area_assignments.assignable_id', $user->branch_id);
                         });
                     }
                 })

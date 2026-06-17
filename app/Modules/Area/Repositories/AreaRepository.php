@@ -28,7 +28,7 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
     {
         $user = User::query()->find($userId);
         $department = $user?->department;
-        $branch = $user?->area;
+        $branch = $user?->branch_id;
 
         return function ($query) use ($userId, $department, $branch): void {
             $query->where('area_assignments.user_id', $userId)

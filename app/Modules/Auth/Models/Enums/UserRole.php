@@ -28,7 +28,7 @@ enum UserRole: int
             self::DIRECTOR => 'Giám đốc',
             self::CEO => 'Tổng giám đốc',
             self::SUPER_ADMIN => 'Super Admin',
-            self::BUYER => 'Khách hàng/Người mua',
+            self::BUYER => 'Khách hàng',
         };
     }
 }

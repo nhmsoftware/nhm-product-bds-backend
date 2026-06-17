@@ -35,10 +35,20 @@ final class AdminCommentService extends BaseService implements AdminCommentServi
             
             // Giám đốc chi nhánh chỉ xem được comment thuộc khu vực của họ
             if ($user->role === UserRole::DIRECTOR) {
-                if ($user->area) {
-                    $filters['area_id'] = $user->area;
+                if ($user->branch_id) {
+                    $filters['area_id'] = $user->branch_id;
                 } else {
                     $filters['area_id'] = 'NO_AREA'; // Prevent seeing all if no area assigned
+                }
+            }
+
+            if (!empty($filters['area_id'])) {
+                $areaId = $filters['area_id'];
+                if ($areaId && !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $areaId)) {
+                    $resolved = \Illuminate\Support\Facades\DB::table('branches')->where('name', $areaId)->value('id');
+                    if ($resolved) {
+                        $filters['area_id'] = $resolved;
+                    }
                 }
             }
 

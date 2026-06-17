@@ -20,6 +20,7 @@ use App\Modules\Area\DTO\CreateAreaCommentDTO;
 use App\Modules\Area\DTO\RequestLockLotDTO;
 use App\Modules\Area\Models\Enums\LotLockRequestStatus;
 use App\Modules\Area\Models\Enums\LotStatus;
+use App\Modules\Area\Models\Lot;
 use App\Modules\Area\Events\LotLocked;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -405,8 +406,11 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 403
             );
 
-            // 4. Kiểm tra Lô đất tồn tại
-            $lot = $this->lotRepository->findById($dto->lotId);
+            // 4. Kiểm tra Lô đất tồn tại và khóa row để tránh race với luồng đặt cọc.
+            $lot = Lot::query()
+                ->where('id', $dto->lotId)
+                ->lockForUpdate()
+                ->first();
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
             $lot->load('area');
 
@@ -645,7 +649,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // General Director chỉ được Lock/Unlock Lot chi nhánh của bản thân
             if ($user->role === UserRole::DIRECTOR && $lot->area) {
-                $this->validate($lot->area->branch === $user->area, 'Bạn không có quyền thực hiện chức năng này trên lô đất của chi nhánh khác.', 403);
+                $this->validate($lot->area->branch_id === $user->branch_id, 'Bạn không có quyền thực hiện chức năng này trên lô đất của chi nhánh khác.', 403);
             }
 
             // Kiểm tra trạng thái hiện tại

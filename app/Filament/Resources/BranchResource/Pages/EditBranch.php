@@ -14,4 +14,9 @@ class EditBranch extends EditRecord
     {
         return [Actions\DeleteAction::make()->label('Xóa')];
     }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

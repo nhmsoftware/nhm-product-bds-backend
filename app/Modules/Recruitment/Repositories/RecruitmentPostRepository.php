@@ -30,7 +30,10 @@ class RecruitmentPostRepository extends BaseRepository implements RecruitmentPos
                 $q->where('title', 'ilike', "%{$search}%")
                   ->orWhere('job_position', 'ilike', "%{$search}%")
                   ->orWhere('department', 'ilike', "%{$search}%")
-                  ->orWhere('branch_name', 'ilike', "%{$search}%");
+                  ->orWhereHas('branch', function ($qb) use ($search) {
+                      $qb->where('name', 'ilike', "%{$search}%");
+                  });
+
             });
         }
 

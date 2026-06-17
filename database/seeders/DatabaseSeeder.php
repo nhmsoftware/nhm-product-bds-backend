@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             InventoryAreaSeeder::class,
+            DepartmentSeeder::class,
             ConsultationSettingSeeder::class,
             LegalVideoSeeder::class,
             BdsCourseSeeder::class,
@@ -28,6 +29,7 @@ class DatabaseSeeder extends Seeder
             AreaCommentSeeder::class,
             RecentActivitySeeder::class,
             RewardPointHistoryDemoSeeder::class,
+            RevenueReportSeeder::class,
         ]);
     }
 
@@ -98,6 +100,7 @@ class DatabaseSeeder extends Seeder
             'leave_requests',
             'department_transfer_requests',
             'employee_profiles',
+            'departments',
         ];
     }
 
@@ -106,6 +109,9 @@ class DatabaseSeeder extends Seeder
         return [
             'employee@test.com',
             'employee2@test.com',
+            'employee.qn@test.com',
+            'employee.ld@test.com',
+            'employee.bt@test.com',
             'candidate@test.com',
             'manager@test.com',
             'director@test.com',

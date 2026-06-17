@@ -27,7 +27,7 @@ class CompanyStatsOverview extends StatsOverviewWidget
             ->sum('lots.price');
 
         $employees = $this->employeeQuery()->count();
-        $departments = (clone $this->employeeQuery())->whereNotNull('department')->distinct('department')->count('department');
+        $departments = (clone $this->employeeQuery())->whereNotNull('department_id')->distinct('department_id')->count('department_id');
         $customers = $this->customerQuery()->count();
         $referrals = $this->referralQuery()->count();
         $totalKpi = (int) $this->employeeQuery()
@@ -76,7 +76,15 @@ class CompanyStatsOverview extends StatsOverviewWidget
             ])
             ->where('is_active', true)
             ->whereNull('deleted_at')
-            ->when($this->scopeArea(), fn (Builder $query, string $area) => $query->where('area', $area));
+            ->where(fn (Builder $query) => $query->where('role', '!=', UserRole::EMPLOYEE->value)->orWhereNotNull('job_position_id'))
+            ->when($this->scopeArea(), function (Builder $query, string $area) {
+                if (\Illuminate\Support\Str::isUuid($area)) {
+                    return $query->where('branch_id', $area);
+                }
+                return $query->whereIn('branch_id', function ($qb) use ($area) {
+                    $qb->select('id')->from('branches')->where('name', $area);
+                });
+            });
     }
 
     private function customerQuery(): Builder
@@ -84,7 +92,15 @@ class CompanyStatsOverview extends StatsOverviewWidget
         return $this->applyDateFilters(DB::table('users')
             ->where('role', UserRole::BUYER->value)
             ->whereNull('deleted_at')
-            ->when($this->scopeArea(), fn (Builder $query, string $area) => $query->where('area', $area)));
+            // No department check needed for customers as they shouldn't have departments
+            ->when($this->scopeArea(), function (Builder $query, string $area) {
+                if (\Illuminate\Support\Str::isUuid($area)) {
+                    return $query->where('branch_id', $area);
+                }
+                return $query->whereIn('branch_id', function ($qb) use ($area) {
+                    $qb->select('id')->from('branches')->where('name', $area);
+                });
+            }));
     }
 
     private function referralQuery(): Builder
@@ -95,13 +111,23 @@ class CompanyStatsOverview extends StatsOverviewWidget
     private function completedTransactionsQuery(): Builder
     {
         return $this->applyDateFilters(DB::table('lot_deposit_requests')
-            ->where('lot_deposit_requests.status', LotDepositRequestStatus::COMPLETED->value)
+            ->whereIn('lot_deposit_requests.status', [
+                LotDepositRequestStatus::APPROVED->value,
+                LotDepositRequestStatus::COMPLETED->value,
+            ])
             ->whereNull('lot_deposit_requests.deleted_at')
             ->when($this->scopeArea(), function (Builder $query, string $area): void {
                 $query->join('lots as area_filter_lots', 'area_filter_lots.id', '=', 'lot_deposit_requests.lot_id')
-                    ->join('areas as area_filter_areas', 'area_filter_areas.id', '=', 'area_filter_lots.area_id')
-                    ->where('area_filter_areas.name', $area)
-                    ->whereNull('area_filter_lots.deleted_at')
+                    ->join('areas as area_filter_areas', 'area_filter_areas.id', '=', 'area_filter_lots.area_id');
+                
+                if (\Illuminate\Support\Str::isUuid($area)) {
+                    $query->where('area_filter_areas.branch_id', $area);
+                } else {
+                    $query->join('branches as area_filter_branches', 'area_filter_branches.id', '=', 'area_filter_areas.branch_id')
+                        ->where('area_filter_branches.name', $area);
+                }
+
+                $query->whereNull('area_filter_lots.deleted_at')
                     ->whereNull('area_filter_areas.deleted_at');
             }), 'lot_deposit_requests.created_at');
     }
@@ -126,10 +152,10 @@ class CompanyStatsOverview extends StatsOverviewWidget
         $user = Filament::auth()->user();
 
         if ($user?->role === UserRole::DIRECTOR) {
-            return filled($user->area) ? (string) $user->area : '__director_without_area__';
+            return filled($user->branch_id) ? (string) $user->branch_id : '__director_without_area__';
         }
 
-        return $this->filterValue('area');
+        return $this->filterValue('branch');
     }
 
     private function filterValue(string $key): ?string

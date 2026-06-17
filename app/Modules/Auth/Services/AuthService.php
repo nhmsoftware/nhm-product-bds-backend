@@ -178,6 +178,9 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 403
             );
 
+            // Ứng viên (EMPLOYEE chưa có job_position) vẫn được phép đăng nhập.
+            // Trạng thái "chờ duyệt" sẽ hiển thị bên trong app, không chặn ở luồng login.
+
             // 6. Tạo token (Sử dụng JWT)
             $token = auth('api')->login($user);
 
@@ -539,16 +542,11 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $identityCard = $user->cccd ?: ($ep?->identity_card ?: null);
 
             $profileData = [
-                'user' => [
-                    'id'             => (string) $user->id,
-                    'name'           => $user->name,
+                'user' => array_merge($user->toArray(), [
                     'cccd'           => $identityCard ?: 'Chưa cập nhật.',
                     'phone'          => $user->phone ?: 'Chưa cập nhật.',
-                    'email'          => $user->email,
-                    'avatar'         => $user->avatar,
-                    'role'           => $user->role->serialize(), // Chức vụ
                     'address'        => $user->address ?: 'Chưa cập nhật.',
-                ],
+                ]),
                 'employee_details' => [
                     'employee_title'  => $ep?->employee_title ?: 'Chưa cập nhật.',
                     'identity_card'   => $identityCard ?: 'Chưa cập nhật.',
@@ -669,16 +667,11 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $identityCard = $freshUser->cccd ?: ($ep?->identity_card ?: null);
 
             $profileData = [
-                'user' => [
-                    'id'             => (string) $freshUser->id,
-                    'name'           => $freshUser->name,
+                'user' => array_merge($freshUser->toArray(), [
                     'cccd'           => $identityCard ?: 'Chưa cập nhật.',
                     'phone'          => $freshUser->phone ?: 'Chưa cập nhật.',
-                    'email'          => $freshUser->email,
-                    'avatar'         => $freshUser->avatar,
-                    'role'           => $freshUser->role->serialize(),
                     'address'        => $freshUser->address ?: 'Chưa cập nhật.',
-                ],
+                ]),
                 'employee_details' => [
                     'employee_title'  => $ep?->employee_title ?: 'Chưa cập nhật.',
                     'identity_card'   => $identityCard ?: 'Chưa cập nhật.',
@@ -853,7 +846,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 UserRole::DIRECTOR->value,
             ];
             $this->validate(
-                in_array($user->role->value, $allowedRoles),
+                in_array($user->role->value, $allowedRoles) && ($user->role !== UserRole::EMPLOYEE || (!empty($user->job_position))),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -927,7 +920,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 UserRole::DIRECTOR->value,
             ];
             $this->validate(
-                in_array($user->role->value, $allowedRoles),
+                in_array($user->role->value, $allowedRoles) && ($user->role !== UserRole::EMPLOYEE || (!empty($user->job_position))),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -1336,13 +1329,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
             // Kiểm tra nhân viên có cùng phòng ban/khu vực không
             if ($manager->role === UserRole::MANAGER) {
                 $this->validate(
-                    $employee->department === $manager->department,
+                    $employee->department_id === $manager->department_id,
                     'Bạn không có quyền truy cập chức năng này.',
                     403
                 );
             } elseif ($manager->role === UserRole::DIRECTOR) {
                 $this->validate(
-                    $employee->area === $manager->area,
+                    $employee->branch_id === $manager->branch_id,
                     'Bạn không có quyền truy cập chức năng này.',
                     403
                 );
@@ -1387,9 +1380,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
                     'staff_code' => $employee->staff_code,
                     'name' => $employee->name,
                     'job_position' => $employee->job_position,
+                    'job_position_id' => $employee->job_position_id,
                     'avatar' => $employee->avatar,
                     'department' => $employee->department,
+                    'department_id' => $employee->department_id,
                     'area' => $employee->area,
+                    'branch_id' => $employee->branch_id,
+                    'branch_name' => $employee->area,
                 ],
                 'kpi_summary' => [
                     'total_kpi_points' => $kpiPoints,
@@ -1439,8 +1436,13 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 return $this->success($paginated, 'Chưa có dữ liệu xếp hạng phòng ban.');
             }
 
-            // Áp dụng lọc theo Area tại Repository
-            $users = $this->authRepository->getActiveEmployeesWithDepartment($dto->area);
+            $branchId = $dto->area;
+            if ($branchId && !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $branchId)) {
+                $branchId = \Illuminate\Support\Facades\DB::table('branches')->where('name', $branchId)->value('id');
+            }
+
+            // Áp dụng lọc theo Branch tại Repository
+            $users = $this->authRepository->getActiveEmployeesWithDepartment($branchId);
 
             // Nếu sau khi lọc không tìm thấy dữ liệu phù hợp:
             if ($users->isEmpty()) {

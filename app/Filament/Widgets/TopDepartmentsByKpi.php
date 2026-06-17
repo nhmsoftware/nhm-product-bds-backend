@@ -37,15 +37,23 @@ class TopDepartmentsByKpi extends TableWidget
     {
         return DB::table('users')
             ->leftJoin('employee_profiles', 'employee_profiles.user_id', '=', 'users.id')
-            ->whereNotNull('users.department')
+            ->join('departments', 'departments.id', '=', 'users.department_id')
+            ->whereNotNull('users.department_id')
             ->where('users.is_active', true)
             ->whereNull('users.deleted_at')
-            ->when($this->scopeArea(), fn ($query, string $area) => $query->where('users.area', $area))
-            ->selectRaw('MIN(users.id) as id')
-            ->selectRaw('users.department as department_name')
+            ->when($this->scopeArea(), function ($query, string $area) {
+                if (\Illuminate\Support\Str::isUuid($area)) {
+                    return $query->where('users.branch_id', $area);
+                }
+                return $query->whereIn('users.branch_id', function ($qb) use ($area) {
+                    $qb->select('id')->from('branches')->where('name', $area);
+                });
+            })
+            ->selectRaw('MIN(users.id::text) as id')
+            ->selectRaw('departments.name as department_name')
             ->selectRaw('COUNT(users.id) as employee_count')
             ->selectRaw('COALESCE(SUM(employee_profiles.kpi_stars), 0) as total_kpi')
-            ->groupBy('users.department');
+            ->groupBy('users.department_id', 'departments.name');
     }
 
     private function scopeArea(): ?string
@@ -53,10 +61,10 @@ class TopDepartmentsByKpi extends TableWidget
         $user = Filament::auth()->user();
 
         if ($user?->role === UserRole::DIRECTOR) {
-            return filled($user->area) ? (string) $user->area : '__director_without_area__';
+            return filled($user->branch_id) ? (string) $user->branch_id : '__director_without_area__';
         }
 
-        return $this->filterValue('area');
+        return $this->filterValue('branch');
     }
 
     private function filterValue(string $key): ?string

@@ -39,39 +39,56 @@ class DepartmentPerformance extends TableWidget
         $transactionSubquery = DB::table('lot_deposit_requests')
             ->join('users as transaction_users', 'transaction_users.id', '=', 'lot_deposit_requests.user_id')
             ->join('lots', 'lots.id', '=', 'lot_deposit_requests.lot_id')
-            ->where('lot_deposit_requests.status', LotDepositRequestStatus::COMPLETED->value)
+            ->whereIn('lot_deposit_requests.status', [
+                LotDepositRequestStatus::APPROVED->value,
+                LotDepositRequestStatus::COMPLETED->value,
+            ])
             ->whereNull('lot_deposit_requests.deleted_at')
             ->whereNull('transaction_users.deleted_at')
+            ->whereNotNull('transaction_users.department_id')
             ->whereNull('lots.deleted_at')
             ->when($this->scopeArea(), function ($query, string $area): void {
-                $query->join('areas', 'areas.id', '=', 'lots.area_id')
-                    ->where('areas.name', $area)
-                    ->whereNull('areas.deleted_at');
+                $query->join('areas', 'areas.id', '=', 'lots.area_id');
+                if (\Illuminate\Support\Str::isUuid($area)) {
+                    $query->where('areas.branch_id', $area);
+                } else {
+                    $query->join('branches as area_branches', 'area_branches.id', '=', 'areas.branch_id')
+                        ->where('area_branches.name', $area);
+                }
+                $query->whereNull('areas.deleted_at');
             });
 
         $this->applyDateFilters($transactionSubquery, 'lot_deposit_requests.created_at');
 
         $transactionSubquery
-            ->selectRaw('transaction_users.department as department_name')
+            ->selectRaw('transaction_users.department_id as department_id')
             ->selectRaw('COUNT(*) as successful_transactions')
             ->selectRaw('COALESCE(SUM(lots.price), 0) as total_revenue')
-            ->groupBy('transaction_users.department');
+            ->groupBy('transaction_users.department_id');
 
         return DB::table('users')
             ->leftJoin('employee_profiles', 'employee_profiles.user_id', '=', 'users.id')
+            ->join('departments', 'departments.id', '=', 'users.department_id')
             ->leftJoinSub($transactionSubquery, 'department_transactions', function ($join): void {
-                $join->on('department_transactions.department_name', '=', 'users.department');
+                $join->on('department_transactions.department_id', '=', 'users.department_id');
             })
-            ->whereNotNull('users.department')
+            ->whereNotNull('users.department_id')
             ->where('users.is_active', true)
             ->whereNull('users.deleted_at')
-            ->when($this->scopeArea(), fn ($query, string $area) => $query->where('users.area', $area))
-            ->selectRaw('MIN(users.id) as id')
-            ->selectRaw('users.department as department_name')
+            ->when($this->scopeArea(), function ($query, string $area) {
+                if (\Illuminate\Support\Str::isUuid($area)) {
+                    return $query->where('users.branch_id', $area);
+                }
+                return $query->whereIn('users.branch_id', function ($qb) use ($area) {
+                    $qb->select('id')->from('branches')->where('name', $area);
+                });
+            })
+            ->selectRaw('MIN(users.id::text) as id')
+            ->selectRaw('departments.name as department_name')
             ->selectRaw('COALESCE(SUM(employee_profiles.kpi_stars), 0) as total_kpi')
             ->selectRaw('COALESCE(MAX(department_transactions.successful_transactions), 0) as successful_transactions')
             ->selectRaw('COALESCE(MAX(department_transactions.total_revenue), 0) as total_revenue')
-            ->groupBy('users.department');
+            ->groupBy('users.department_id', 'departments.name');
     }
 
     private function applyDateFilters(\Illuminate\Database\Query\Builder $query, string $column): void
@@ -94,10 +111,10 @@ class DepartmentPerformance extends TableWidget
         $user = Filament::auth()->user();
 
         if ($user?->role === UserRole::DIRECTOR) {
-            return filled($user->area) ? (string) $user->area : '__director_without_area__';
+            return filled($user->branch_id) ? (string) $user->branch_id : '__director_without_area__';
         }
 
-        return $this->filterValue('area');
+        return $this->filterValue('branch');
     }
 
     private function filterValue(string $key): ?string

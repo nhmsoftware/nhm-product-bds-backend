@@ -56,6 +56,11 @@ final class AdminNewsService extends BaseService implements AdminNewsServiceInte
                 $slug = $slug . '-' . Str::random(5);
             }
 
+            $branchId = $dto->area;
+            if ($branchId && !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $branchId)) {
+                $branchId = \Illuminate\Support\Facades\DB::table('branches')->where('name', $branchId)->value('id');
+            }
+
             try {
                 $news = $this->newsRepository->create([
                     'title' => $dto->title,
@@ -66,7 +71,7 @@ final class AdminNewsService extends BaseService implements AdminNewsServiceInte
                     'thumbnail' => $dto->thumbnail,
                     'category' => $dto->category,
                     'department' => $dto->department,
-                    'area' => $dto->area,
+                    'branch_id' => $branchId,
                     'author_id' => $dto->authorId,
                     'is_published' => $dto->isPublished,
                     'is_featured' => $dto->isFeatured,
@@ -86,6 +91,11 @@ final class AdminNewsService extends BaseService implements AdminNewsServiceInte
             $news = $this->newsRepository->findById($dto->id);
             $this->validate($news !== null, 'Bài viết không tồn tại.', 404);
 
+            $branchId = $dto->area;
+            if ($branchId && !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $branchId)) {
+                $branchId = \Illuminate\Support\Facades\DB::table('branches')->where('name', $branchId)->value('id');
+            }
+
             $updateData = [];
 
             if ($dto->title !== null) {
@@ -100,10 +110,10 @@ final class AdminNewsService extends BaseService implements AdminNewsServiceInte
 
             if ($dto->type !== null) {
                 $updateData['department'] = $dto->department;
-                $updateData['area'] = $dto->area;
+                $updateData['branch_id'] = $branchId;
             } else {
                 if ($dto->department !== null) $updateData['department'] = $dto->department === '' ? null : $dto->department;
-                if ($dto->area !== null) $updateData['area'] = $dto->area === '' ? null : $dto->area;
+                if ($dto->area !== null) $updateData['branch_id'] = $branchId === '' ? null : $branchId;
             }
 
             if ($dto->isPublished !== null) {

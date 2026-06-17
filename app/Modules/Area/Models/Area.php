@@ -92,7 +92,7 @@ class Area extends Model
         'google_maps_url',
         'location_image',
         'planning_info',
-        'branch',
+        'branch_id',
         'is_featured',
         'is_locked',
     ];
@@ -150,19 +150,46 @@ class Area extends Model
     }
 
     /**
-     * Override toArray để luôn include label_status trong response.
+     * Override toArray để luôn include label_status và branch name trong response.
      */
     public function toArray(): array
     {
         $array = parent::toArray();
         $array['label_status'] = $this->label_status;
+        $array['branch'] = $this->branch;
         return $array;
     }
+
+
+    /**
+     * Chi nhánh quản lý khu đất này.
+     */
+    public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Branch\Models\Branch::class, 'branch_id');
+    }
+
+    /**
+     * Accessor trả về tên chi nhánh để tương thích với các API cũ.
+     */
+    public function getBranchAttribute(): ?string
+    {
+        $branchModel = $this->getRelationValue('branch');
+        if (!$branchModel && $this->branch_id) {
+            $branchModel = $this->branch()->first();
+            if ($branchModel) {
+                $this->setRelation('branch', $branchModel);
+            }
+        }
+        return $branchModel?->name;
+    }
+
 
     /**
      * Danh sách người dùng được cấp quyền truy cập khu đất này.
      */
     public function assignedUsers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+
     {
         return $this->belongsToMany(
             \App\Modules\Auth\Models\User::class,

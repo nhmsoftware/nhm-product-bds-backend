@@ -127,8 +127,8 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
             // Employee or Manager: Chỉ xem bài viết thuộc phòng ban của mình
             $query->where('department', $user->department);
         } elseif ($user->role === UserRole::DIRECTOR) {
-            // Director: Xem bài viết của tất cả phòng ban thuộc khu vực mình quản lý
-            $query->where('area', $user->area);
+            // Director: Xem bài viết của tất cả phòng ban thuộc chi nhánh mình quản lý
+            $query->where('branch_id', $user->branch_id);
         } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
             // Toàn quyền
         } else {
@@ -163,10 +163,10 @@ final class NewsRepository extends BaseRepository implements NewsRepositoryInter
 
         if (!empty($filters['type'])) {
             if ($filters['type'] === 'public') {
-                $query->whereNull('department')->whereNull('area');
+                $query->whereNull('department')->whereNull('branch_id');
             } elseif ($filters['type'] === 'internal') {
                 $query->where(function ($q) {
-                    $q->whereNotNull('department')->orWhereNotNull('area');
+                    $q->whereNotNull('department')->orWhereNotNull('branch_id');
                 });
             }
         }

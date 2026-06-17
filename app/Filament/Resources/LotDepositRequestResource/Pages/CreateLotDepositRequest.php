@@ -2,4 +2,9 @@
 namespace App\Filament\Resources\LotDepositRequestResource\Pages;
 use App\Filament\Resources\LotDepositRequestResource;
 use Filament\Resources\Pages\CreateRecord;
-class CreateLotDepositRequest extends CreateRecord { protected static string $resource = LotDepositRequestResource::class; }
+class CreateLotDepositRequest extends CreateRecord { protected static string $resource = LotDepositRequestResource::class; 
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+}

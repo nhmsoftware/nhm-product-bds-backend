@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Models;
 
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 
 use App\Modules\Auth\Models\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -35,6 +37,7 @@ use OpenApi\Attributes as OA;
  * @property string $department
  * @property string $job_position
  * @property string $area
+ * @property string|null $branch_id
  * @property string $fcm_token
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -65,7 +68,8 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'address', type: 'string', nullable: true, example: '123 Đường ABC, Quận 1, TP. HCM'),
         new OA\Property(property: 'department', type: 'string', nullable: true, example: 'Kinh doanh', description: 'Phòng ban của nhân viên'),
         new OA\Property(property: 'job_position', type: 'string', nullable: true, example: 'Nhân viên kinh doanh', description: 'Vị trí công việc'),
-        new OA\Property(property: 'area', type: 'string', nullable: true, example: 'Miền Nam', description: 'Khu vực quản lý/khu vực làm việc'),
+        new OA\Property(property: 'area', type: 'string', nullable: true, example: 'Hà Nội', description: 'Khu vực địa lý làm việc'),
+        new OA\Property(property: 'branch_id', type: 'string', format: 'uuid', nullable: true, example: 'uuid-string', description: 'ID chi nhánh công ty'),
         new OA\Property(property: 'is_active', type: 'boolean', example: true),
     ]
 )]
@@ -85,7 +89,10 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'address',
         'department',
         'job_position',
+        'department_id',
+        'job_position_id',
         'area',
+        'branch_id',
         'fcm_token',
         'is_active',
     ];
@@ -100,6 +107,8 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'password' => 'hashed',
         'is_active' => 'boolean',
         'role' => UserRole::class,
+        'department_id' => 'string',
+        'job_position_id' => 'integer',
     ];
 
 
@@ -136,9 +145,34 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
     }
 
     /**
+     * Chi nhánh làm việc của nhân sự.
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Branch\Models\Branch::class, 'branch_id');
+    }
+
+    /**
+     * Accessor trả về tên chi nhánh dưới dạng chuỗi để tương thích ngược.
+     */
+    public function getBranchAttribute(): ?string
+    {
+        $branchModel = $this->getRelationValue('branch');
+        if (!$branchModel && $this->branch_id) {
+            $branchModel = $this->branch()->first();
+            if ($branchModel) {
+                $this->setRelation('branch', $branchModel);
+            }
+        }
+        return $branchModel?->name;
+    }
+
+
+    /**
      * Quan hệ tới chi tiết hồ sơ nhân sự.
      */
     public function employeeProfile()
+
     : HasOne {
         return $this->hasOne(EmployeeProfile::class, 'user_id');
     }
@@ -196,6 +230,71 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         return $this->hasMany(\App\Modules\Attendance\Models\Attendance::class, 'user_id');
     }
 
+    public function departmentRel(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function jobPosition(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(JobPosition::class, 'job_position_id');
+    }
+
+    public function getDepartmentAttribute(): ?string
+    {
+        $relation = $this->getRelationValue('departmentRel');
+        if (!$relation && $this->department_id) {
+            $relation = $this->departmentRel()->first();
+            if ($relation) {
+                $this->setRelation('departmentRel', $relation);
+            }
+        }
+        return $relation?->name;
+    }
+
+    public function getJobPositionAttribute(): ?string
+    {
+        $relation = $this->getRelationValue('jobPosition');
+        if (!$relation && $this->job_position_id) {
+            $relation = $this->jobPosition()->first();
+            if ($relation) {
+                $this->setRelation('jobPosition', $relation);
+            }
+        }
+        return $relation?->name;
+    }
+
+    public function setDepartmentAttribute(?string $value): void
+    {
+        if (empty($value)) {
+            $this->attributes['department_id'] = null;
+            return;
+        }
+
+        $dept = Department::where('name', $value)->first();
+        if ($dept) {
+            $this->attributes['department_id'] = $dept->id;
+        }
+    }
+
+    public function setJobPositionAttribute(mixed $value): void
+    {
+        if (empty($value)) {
+            $this->attributes['job_position_id'] = null;
+            return;
+        }
+
+        if (is_numeric($value)) {
+            $this->attributes['job_position_id'] = (int) $value;
+            return;
+        }
+
+        $pos = JobPosition::where('name', $value)->orWhere('code', $value)->first();
+        if ($pos) {
+            $this->attributes['job_position_id'] = $pos->id;
+        }
+    }
+
     public function setRoleAttribute($value)
     {
         if ($value === null) {
@@ -205,12 +304,23 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         $this->attributes['role'] = $value instanceof UserRole ? $value->value : UserRole::deserialize($value)->value;
     }
 
+    public function getAreaAttribute(): ?string
+    {
+        return $this->branch;
+    }
+
     public function toArray()
     {
         $array = parent::toArray();
         if (isset($array['role']) && $this->role instanceof UserRole) {
             $array['role'] = $this->role->serialize();
         }
+        $array['branch'] = $this->branch;
+        $array['branch_name'] = $this->branch;
+        $array['branch_id'] = $this->branch_id;
+        $array['area'] = $this->branch;
+        $array['department'] = $this->department;
+        $array['job_position'] = $this->job_position;
         return $array;
     }
 }

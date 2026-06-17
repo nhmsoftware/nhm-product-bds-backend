@@ -69,8 +69,12 @@ final class ReferralHistoryRepository extends BaseRepository implements Referral
         $query = $this->model->where('status', 2);
 
         if (!empty($area)) {
-            $query->whereHas('referrer', function ($q) use ($area) {
-                $q->where('area', $area);
+            $branchId = $area;
+            if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $branchId)) {
+                $branchId = \Illuminate\Support\Facades\DB::table('branches')->where('name', $branchId)->value('id');
+            }
+            $query->whereHas('referrer', function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
             });
         }
 

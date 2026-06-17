@@ -36,7 +36,7 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
 
     public function hasActiveEmployeesWithDepartment(): bool;
 
-    public function getActiveEmployeesWithDepartment(?string $area = null): Collection;
+    public function getActiveEmployeesWithDepartment(?string $branchId = null): Collection;
 
     public function getActiveDepartmentNames(): array;
 
@@ -44,11 +44,11 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
      * Lấy danh sách người dùng đang hoạt động cần nhận thông báo khi có bài viết nội bộ mới.
      *
      * @param string|null $department Phòng ban của bài viết
-     * @param string|null $area Khu vực của bài viết
+     * @param string|null $branchId ID chi nhánh của bài viết
      * @param string $authorId UUID của người tạo bài viết
      * @return Collection Danh sách người dùng nhận thông báo
      */
-    public function getActiveUsersForInternalPost(?string $department, ?string $area, string $authorId): Collection;
+    public function getActiveUsersForInternalPost(?string $department, ?string $branchId, string $authorId): Collection;
 
     /**
      * Tìm người dùng theo số điện thoại.
@@ -112,50 +112,50 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
     ): Collection;
 
     /**
-     * Đếm số lượng nhân viên theo khu vực.
+     * Đếm số lượng nhân viên theo chi nhánh.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @return int
      */
-    public function countEmployees(?string $area): int;
+    public function countEmployees(?string $branchId): int;
 
     /**
-     * Đếm số lượng phòng ban theo khu vực.
+     * Đếm số lượng phòng ban theo chi nhánh.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @return int
      */
-    public function countDepartments(?string $area): int;
+    public function countDepartments(?string $branchId): int;
 
     /**
-     * Đếm số lượng khách hàng theo khu vực.
+     * Đếm số lượng khách hàng theo chi nhánh.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @param int|null $month
      * @param int|null $quarter
      * @param int|null $year
      * @return int
      */
-    public function countCustomers(?string $area, ?int $month, ?int $quarter, ?int $year): int;
+    public function countCustomers(?string $branchId, ?int $month, ?int $quarter, ?int $year): int;
 
     /**
-     * Đếm số lượng điểm KPI theo khu vực.
+     * Đếm số lượng điểm KPI theo chi nhánh.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @return int
      */
-    public function countKpiStars(?string $area): int;
+    public function countKpiStars(?string $branchId): int;
 
     /**
      * Lấy dữ liệu thống kê phòng ban cho dashboard.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @param int|null $month
      * @param int|null $quarter
      * @param int|null $year
      * @return Collection
      */
-    public function getDepartmentStatsForDashboard(?string $area, ?int $month, ?int $quarter, ?int $year): Collection;
+    public function getDepartmentStatsForDashboard(?string $branchId, ?int $month, ?int $quarter, ?int $year): Collection;
 
     /**
      * Thêm điểm thưởng và điểm KPI cho người dùng.

@@ -59,8 +59,12 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
                     $q->where('id', $dto->project_id);
                 }
                 if ($dto->branch !== null) {
-                    $q->where('branch', $dto->branch);
+                    $q->whereHas('branch', function ($qb) use ($dto) {
+                        $qb->where('name', $dto->branch)
+                           ->orWhere('id', $dto->branch);
+                    });
                 }
+
             });
         }
 
@@ -94,7 +98,7 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
                 'lot_deposit_requests.created_at',
                 'lots.price',
                 'users.department',
-                'users.area',
+                'branches.name as area',
                 'users.name as user_name',
                 'users.id as user_id',
                 'areas.name as project_name',
@@ -103,6 +107,7 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
             ->join('lots', 'lot_deposit_requests.lot_id', '=', 'lots.id')
             ->join('areas', 'lots.area_id', '=', 'areas.id')
             ->join('users', 'lot_deposit_requests.user_id', '=', 'users.id')
+            ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
             ->where('lot_deposit_requests.status', 2) // APPROVED
             ->whereNull('lot_deposit_requests.deleted_at');
 
@@ -119,7 +124,11 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
             $query->where('areas.id', $projectId);
         }
         if (!empty($area)) {
-            $query->where('users.area', $area);
+            $branchId = $area;
+            if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $branchId)) {
+                $branchId = \Illuminate\Support\Facades\DB::table('branches')->where('name', $branchId)->value('id');
+            }
+            $query->where('users.branch_id', $branchId);
         }
 
         return $query->get();
@@ -135,8 +144,12 @@ final class LotDepositRequestRepository extends BaseRepository implements LotDep
             ->join('lots', 'lot_deposit_requests.lot_id', '=', 'lots.id');
 
         if (!empty($area)) {
+            $branchId = $area;
+            if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $branchId)) {
+                $branchId = \Illuminate\Support\Facades\DB::table('branches')->where('name', $branchId)->value('id');
+            }
             $query->join('users', 'lot_deposit_requests.user_id', '=', 'users.id')
-                  ->where('users.area', $area);
+                  ->where('users.branch_id', $branchId);
         }
 
         if ($year) {

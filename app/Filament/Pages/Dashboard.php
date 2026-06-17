@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Modules\Area\Models\Area;
+use App\Modules\Branch\Models\Branch;
 use App\Modules\Auth\Models\Enums\UserRole;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Section;
@@ -45,28 +45,28 @@ class Dashboard extends BaseDashboard
                         ->options($this->yearOptions())
                         ->native(false)
                         ->placeholder('Tất cả'),
-                    Select::make('area')
-                        ->label('Khu vực')
-                        ->options(fn (): array => $this->areaOptions())
-                        ->default(fn (): ?string => $this->directorArea())
+                    Select::make('branch')
+                        ->label('Chi nhánh')
+                        ->options(fn (): array => $this->branchOptions())
+                        ->default(fn (): ?string => $this->isDirector() ? $this->directorBranch() : null)
                         ->disabled(fn (): bool => $this->isDirector())
                         ->searchable()
                         ->native(false)
-                        ->placeholder('Toàn công ty'),
+                        ->placeholder('Tất cả chi nhánh'),
                 ])
                 ->columns(4),
         ]);
     }
 
-    private function areaOptions(): array
+    private function branchOptions(): array
     {
         if ($this->isDirector()) {
-            $area = $this->directorArea();
+            $branch = $this->directorBranch();
 
-            return filled($area) ? [$area => $area] : [];
+            return filled($branch) ? [$branch => $branch] : [];
         }
 
-        return Area::query()->orderBy('name')->pluck('name', 'name')->all();
+        return Branch::query()->where('is_active', true)->orderBy('sort')->orderBy('name')->pluck('name', 'name')->all();
     }
 
     private function isDirector(): bool
@@ -74,7 +74,7 @@ class Dashboard extends BaseDashboard
         return Filament::auth()->user()?->role === UserRole::DIRECTOR;
     }
 
-    private function directorArea(): ?string
+    private function directorBranch(): ?string
     {
         $area = Filament::auth()->user()?->area;
 

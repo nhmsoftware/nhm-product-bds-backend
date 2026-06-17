@@ -39,6 +39,9 @@ final class CompanyDashboardService extends BaseService implements CompanyDashbo
             $quarter = $dto->quarter;
             $year = $dto->year;
             $area = $dto->area;
+            if ($area && !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $area)) {
+                $area = \Illuminate\Support\Facades\DB::table('branches')->where('name', $area)->value('id');
+            }
 
             // --- 1. OVERVIEW METRICS ---
             

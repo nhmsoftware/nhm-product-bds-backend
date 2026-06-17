@@ -22,11 +22,62 @@ class InventoryAreaSeeder extends Seeder
         // Seeder chính cho danh sách 6 khu đất/bảng hàng demo trên app nhân viên.
         DB::transaction(function () {
             $now = Carbon::now();
+            
+            // 1. Seed các chi nhánh trước để lấy ID
+            $branches = [
+                ['name' => 'Hà Nội', 'code' => 'HN'],
+                ['name' => 'Hồ Chí Minh', 'code' => 'HCM'],
+                ['name' => 'Đà Nẵng', 'code' => 'DN'],
+                ['name' => 'Quảng Ninh', 'code' => 'QN'],
+                ['name' => 'Lâm Đồng', 'code' => 'LD'],
+                ['name' => 'Bình Thuận', 'code' => 'BT'],
+            ];
+            foreach ($branches as $index => $br) {
+                $existingId = DB::table('branches')->where('code', $br['code'])->value('id');
+                DB::table('branches')->updateOrInsert(
+                    ['code' => $br['code']],
+                    [
+                        'id' => $existingId ?? (string) Str::uuid(),
+                        'name' => $br['name'],
+                        'area' => $br['name'],
+                        'is_active' => true,
+                        'sort' => $index + 1,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]
+                );
+            }
+
+            // 2. Seed các phòng ban trước để lấy ID
+            $depts = [
+                ['name' => 'Kinh doanh', 'code' => 'SALES', 'kpi_quota' => 50],
+                ['name' => 'Marketing', 'code' => 'MKT', 'kpi_quota' => 20],
+                ['name' => 'Đào tạo', 'code' => 'TRAINING', 'kpi_quota' => 10],
+                ['name' => 'Pháp chế', 'code' => 'LEGAL', 'kpi_quota' => 5],
+                ['name' => 'Chăm sóc khách hàng', 'code' => 'CS', 'kpi_quota' => 15],
+                ['name' => 'Nhân sự', 'code' => 'HR', 'kpi_quota' => 5],
+                ['name' => 'Kế toán', 'code' => 'ACCOUNTING', 'kpi_quota' => 0],
+                ['name' => 'Công nghệ', 'code' => 'IT', 'kpi_quota' => 10],
+            ];
+            foreach ($depts as $dept) {
+                $existingId = DB::table('departments')->where('code', $dept['code'])->value('id');
+                DB::table('departments')->updateOrInsert(
+                    ['code' => $dept['code']],
+                    [
+                        'id' => $existingId ?? (string) Str::uuid(),
+                        'name' => $dept['name'],
+                        'kpi_quota' => $dept['kpi_quota'],
+                        'is_active' => true,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]
+                );
+            }
+
             $users = $this->ensureDemoUsers($now);
             $areas = $this->seedAreas($now);
             $this->backfillAreaGoogleMapsUrls($now);
 
-            $this->syncBranchesFromAreas($now);
             $this->seedAreaAssignments($users, $areas, $now);
 
             $this->command?->info('Seeded inventory demo data: ' . count($areas) . ' areas, ' . DB::table('lots')->whereNull('deleted_at')->count() . ' lots.');
@@ -42,9 +93,10 @@ class InventoryAreaSeeder extends Seeder
                 'phone' => '0900000001',
                 'staff_code' => 'TEST-EMP-001',
                 'role' => UserRole::EMPLOYEE->value,
-                'department' => 'HN',
+                'department' => 'Kinh doanh',
                 'job_position' => 'Nhân viên kinh doanh',
                 'area' => 'Hà Nội',
+                'branch' => 'Hà Nội',
             ],
             [
                 'email' => 'employee2@test.com',
@@ -52,9 +104,10 @@ class InventoryAreaSeeder extends Seeder
                 'phone' => '0900000006',
                 'staff_code' => 'TEST-EMP-002',
                 'role' => UserRole::EMPLOYEE->value,
-                'department' => 'HCM',
+                'department' => 'Kinh doanh',
                 'job_position' => 'Nhân viên kinh doanh',
                 'area' => 'Hồ Chí Minh',
+                'branch' => 'Hồ Chí Minh',
             ],
             [
                 'email' => 'candidate@test.com',
@@ -65,6 +118,7 @@ class InventoryAreaSeeder extends Seeder
                 'department' => null,
                 'job_position' => null,
                 'area' => null,
+                'branch' => null,
             ],
             [
                 'email' => 'manager@test.com',
@@ -72,9 +126,10 @@ class InventoryAreaSeeder extends Seeder
                 'phone' => '0900000002',
                 'staff_code' => 'TEST-MGR-001',
                 'role' => UserRole::MANAGER->value,
-                'department' => 'HN',
+                'department' => 'Kinh doanh',
                 'job_position' => 'Trưởng phòng kinh doanh',
                 'area' => 'Hà Nội',
+                'branch' => 'Hà Nội',
             ],
             [
                 'email' => 'director@test.com',
@@ -82,9 +137,10 @@ class InventoryAreaSeeder extends Seeder
                 'phone' => '0900000003',
                 'staff_code' => 'TEST-DIR-001',
                 'role' => UserRole::DIRECTOR->value,
-                'department' => 'HN',
+                'department' => 'Kinh doanh',
                 'job_position' => 'Giám đốc khu vực',
                 'area' => 'Hà Nội',
+                'branch' => 'Hà Nội',
             ],
             [
                 'email' => 'ceo@test.com',
@@ -92,9 +148,10 @@ class InventoryAreaSeeder extends Seeder
                 'phone' => '0900000004',
                 'staff_code' => 'TEST-CEO-001',
                 'role' => UserRole::CEO->value,
-                'department' => 'ALL',
+                'department' => null,
                 'job_position' => 'Tổng giám đốc',
                 'area' => 'Toàn quốc',
+                'branch' => null,
             ],
             [
                 'email' => 'superadmin@test.com',
@@ -102,36 +159,71 @@ class InventoryAreaSeeder extends Seeder
                 'phone' => '0900000005',
                 'staff_code' => 'TEST-SA-001',
                 'role' => UserRole::SUPER_ADMIN->value,
-                'department' => 'SYSTEM',
+                'department' => null,
                 'job_position' => 'Quản trị hệ thống',
                 'area' => 'Toàn quốc',
+                'branch' => null,
             ],
             [
                 'email' => 'customer@test.com',
                 'name' => 'Khách Hàng Demo',
                 'phone' => '0900000007',
-                'staff_code' => 'TEST-CUS-001',
+                'staff_code' => null,
                 'role' => UserRole::BUYER->value,
                 'department' => null,
-                'job_position' => 'Khách hàng',
+                'job_position' => null,
                 'area' => null,
+                'branch' => null,
             ],
+
         ];
 
         $users = [];
 
+        $getJobPositionId = function (?string $name, ?string $deptName) use ($now) {
+            if (empty($name)) return null;
+            $deptId = null;
+            if (!empty($deptName)) {
+                $deptId = DB::table('departments')->where('name', $deptName)->value('id');
+            }
+            $existingId = DB::table('job_positions')->where('name', $name)->value('id');
+            if ($existingId) return $existingId;
+
+            $id = (string) Str::uuid();
+            $code = strtoupper(Str::slug($name, '_'));
+            DB::table('job_positions')->insert([
+                'id' => $id,
+                'name' => $name,
+                'code' => $code,
+                'department_id' => $deptId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            return $id;
+        };
+
         foreach ($usersData as $data) {
             $existing = DB::table('users')->where('email', $data['email'])->first();
             $phone = $this->resolveDemoPhone($data['phone'], $data['email']);
+            $branchId = null;
+            if (!empty($data['branch'])) {
+                $branchId = DB::table('branches')->where('name', $data['branch'])->value('id');
+            }
+            $deptId = null;
+            if (!empty($data['department'])) {
+                $deptId = DB::table('departments')->where('name', $data['department'])->value('id');
+            }
+            $jobPosId = $getJobPositionId($data['job_position'], $data['department']);
+
             $payload = [
                 'staff_code' => $data['staff_code'],
                 'name' => $data['name'],
                 'phone' => $phone,
                 'password' => Hash::make(self::DEMO_PASSWORD),
                 'role' => $data['role'],
-                'department' => $data['department'],
-                'job_position' => $data['job_position'],
-                'area' => $data['area'],
+                'department_id' => $deptId,
+                'job_position_id' => $jobPosId,
+                'branch_id' => $branchId,
                 'is_active' => true,
                 'updated_at' => $now,
                 'deleted_at' => null,
@@ -427,7 +519,7 @@ DESC,
                     'Link tra cứu quy hoạch' => $planningUrl,
                     'Ảnh quy hoạch' => "https://picsum.photos/seed/{$data['image_seed']}-planning-map/1200/800",
                 ]),
-                'branch' => $projectData['branch'],
+                'branch_id' => DB::table('branches')->where('name', $projectData['branch'])->value('id'),
                 'is_featured' => $data['is_featured'],
                 'is_locked' => false,
                 'updated_at' => $now,

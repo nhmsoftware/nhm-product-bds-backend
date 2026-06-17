@@ -53,6 +53,12 @@ class RecruitmentPostService extends BaseService implements RecruitmentPostServi
     public function create(array $data): ServiceReturn
     {
         return $this->execute(function () use ($data) {
+            if (isset($data['branch_name'])) {
+                $branch = \App\Modules\Branch\Models\Branch::where('name', $data['branch_name'])->first();
+                if ($branch) {
+                    $data['branch_id'] = $branch->id;
+                }
+            }
             $post = $this->repository->create($data);
             return $this->success($post, 'Tạo bài tuyển dụng thành công.');
         }, useTransaction: true);
@@ -68,6 +74,13 @@ class RecruitmentPostService extends BaseService implements RecruitmentPostServi
             
             $this->validate($post !== null, 'Không tìm thấy bài tuyển dụng phù hợp.', 404);
 
+            if (isset($data['branch_name'])) {
+                $branch = \App\Modules\Branch\Models\Branch::where('name', $data['branch_name'])->first();
+                if ($branch) {
+                    $data['branch_id'] = $branch->id;
+                }
+            }
+
             $this->repository->updateById($id, $data);
             
             $updatedPost = $this->repository->findById($id);
@@ -75,6 +88,7 @@ class RecruitmentPostService extends BaseService implements RecruitmentPostServi
             return $this->success($updatedPost, 'Cập nhật bài tuyển dụng thành công.');
         }, useTransaction: true);
     }
+
 
     /**
      * Xóa bài tuyển dụng (UC-126)

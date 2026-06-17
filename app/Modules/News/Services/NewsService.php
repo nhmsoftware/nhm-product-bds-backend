@@ -264,6 +264,8 @@ final class NewsService extends BaseService implements NewsServiceInterface
                     'author_name' => $news->author ? $news->author->name : 'Hệ thống',
                     'department' => $news->department,
                     'area' => $news->area,
+                    'branch_id' => $news->branch_id,
+                    'branch_name' => $news->area,
                     'title' => $news->title,
                     'summary' => $news->summary,
                     'content' => $news->content,
@@ -327,7 +329,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
             if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền truy cập bài viết này.', 403);
             } elseif ($user->role === UserRole::DIRECTOR) {
-                $this->validate($news->area === $user->area, 'Bạn không có quyền truy cập bài viết này.', 403);
+                $this->validate($news->branch_id === $user->branch_id, 'Bạn không có quyền truy cập bài viết này.', 403);
             } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
                 // Toàn quyền
             } else {
@@ -374,6 +376,8 @@ final class NewsService extends BaseService implements NewsServiceInterface
                 'category' => $news->category,
                 'department' => $news->department,
                 'area' => $news->area,
+                'branch_id' => $news->branch_id,
+                'branch_name' => $news->area,
                 'likes_count' => (int) $news->likes_count,
                 'comments_count' => $comments->count(),
                 'is_liked' => $isLiked,
@@ -420,7 +424,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
             if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền bình luận bài viết này.', 403);
             } elseif ($user->role === UserRole::DIRECTOR) {
-                $this->validate($news->area === $user->area, 'Bạn không có quyền bình luận bài viết này.', 403);
+                $this->validate($news->branch_id === $user->branch_id, 'Bạn không có quyền bình luận bài viết này.', 403);
             } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
                 // Toàn quyền
             } else {
@@ -519,18 +523,18 @@ final class NewsService extends BaseService implements NewsServiceInterface
 
             // 5. Xác định phạm vi hiển thị dựa trên vai trò
             $department = null;
-            $area = null;
+            $branchId = null;
 
             if (in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
-                // Director, CEO, SuperAdmin: Xem bài viết của khu vực hoặc toàn bộ
-                $area = $user->area;
+                // Director, CEO, SuperAdmin: Xem bài viết của chi nhánh hoặc toàn bộ
+                $branchId = $user->branch_id;
                 if ($user->role === UserRole::DIRECTOR) {
-                    $this->validate(!empty($area), 'Khu vực quản lý của giám đốc không xác định.', 400);
+                    $this->validate(!empty($branchId), 'Chi nhánh quản lý của giám đốc không xác định.', 400);
                 }
             } else {
                 // Employee & Manager: Xem bài viết của phòng ban
                 $department = $user->department;
-                $area = $user->area;
+                $branchId = $user->branch_id;
                 $this->validate(!empty($department), 'Phòng ban của nhân viên không xác định.', 400);
             }
 
@@ -544,7 +548,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
                 'attachments' => $attachments,
                 'category' => 'internal',
                 'department' => $department,
-                'area' => $area,
+                'branch_id' => $branchId,
                 'author_id' => $user->id,
                 'is_published' => true,
                 'is_featured' => false,
@@ -670,7 +674,7 @@ final class NewsService extends BaseService implements NewsServiceInterface
             if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền tương tác bài viết này.', 403);
             } elseif ($user->role === UserRole::DIRECTOR) {
-                $this->validate($news->area === $user->area, 'Bạn không có quyền tương tác bài viết này.', 403);
+                $this->validate($news->branch_id === $user->branch_id, 'Bạn không có quyền tương tác bài viết này.', 403);
             } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
                 // Toàn quyền
             } else {

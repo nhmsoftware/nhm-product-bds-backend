@@ -67,4 +67,19 @@ class ConsultationSetting extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function ($model) {
+            if ($model->is_active) {
+                $query = static::where('is_active', true);
+                if ($model->id) {
+                    $query->where('id', '!=', $model->id);
+                }
+                $query->update(['is_active' => false]);
+            }
+        });
+    }
+
 }
+

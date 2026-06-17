@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property string $id
  * @property string $title
  * @property string|null $image
- * @property string $branch_name
+ * @property string|null $branch_id
  * @property string $job_position
  * @property string $department
  * @property string|null $short_description
@@ -39,7 +39,7 @@ class RecruitmentPost extends Model
     protected $fillable = [
         'title',
         'image',
-        'branch_name',
+        'branch_id',
         'job_position',
         'department',
         'short_description',
@@ -57,7 +57,18 @@ class RecruitmentPost extends Model
         'deleted_at' => 'datetime',
     ];
 
+    // ─── Relationships ───────────────────────────────────────────
+
+    /**
+     * Chi nhánh của bài tuyển dụng.
+     */
+    public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Branch\Models\Branch::class, 'branch_id');
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────
+
 
     /**
      * Kiểm tra xem bài viết có đang hiển thị không.

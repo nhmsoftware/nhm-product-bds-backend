@@ -36,7 +36,10 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     {
         return $this->model->where('is_active', true)
             ->where('role', UserRole::EMPLOYEE->value)
-            ->where('department', $departmentName)
+            ->whereNotNull('job_position_id')
+            ->where('department_id', function ($q) use ($departmentName) {
+                $q->select('id')->from('departments')->where('name', $departmentName);
+            })
             ->with('employeeProfile')
             ->get();
     }
@@ -44,7 +47,9 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     public function getScopedActiveEmployees(User $user, bool $withEmployeeProfile = false): Collection
     {
         $query = $this->applyTeamScope(
-            $this->model->where('is_active', true)->where('role', UserRole::EMPLOYEE->value),
+            $this->model->where('is_active', true)
+                ->where('role', UserRole::EMPLOYEE->value)
+                ->whereNotNull('job_position_id'),
             $user
         );
 
@@ -62,7 +67,9 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
         bool $withEmployeeProfile = false
     ): Collection {
         $query = $this->applyTeamScope(
-            $this->model->where('is_active', true)->where('role', UserRole::EMPLOYEE->value),
+            $this->model->where('is_active', true)
+                ->where('role', UserRole::EMPLOYEE->value)
+                ->whereNotNull('job_position_id'),
             $user
         );
 
@@ -74,7 +81,13 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
         }
 
         if ($jobPosition) {
-            $query->where('job_position', $jobPosition);
+            if (is_numeric($jobPosition)) {
+                $query->where('job_position_id', $jobPosition);
+            } else {
+                $query->whereIn('job_position_id', function ($q) use ($jobPosition) {
+                    $q->select('id')->from('job_positions')->where('name', $jobPosition)->orWhere('code', $jobPosition);
+                });
+            }
         }
 
         if ($withEmployeeProfile) {
@@ -88,21 +101,21 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     {
         return $this->model->where('is_active', true)
             ->where('role', UserRole::EMPLOYEE->value)
-            ->whereNotNull('department')
-            ->where('department', '<>', '')
+            ->whereNotNull('job_position_id')
+            ->whereNotNull('department_id')
             ->exists();
     }
 
-    public function getActiveEmployeesWithDepartment(?string $area = null): Collection
+    public function getActiveEmployeesWithDepartment(?string $branchId = null): Collection
     {
         $query = $this->model->where('is_active', true)
             ->where('role', UserRole::EMPLOYEE->value)
-            ->whereNotNull('department')
-            ->where('department', '<>', '')
+            ->whereNotNull('job_position_id')
+            ->whereNotNull('department_id')
             ->with('employeeProfile');
 
-        if ($area) {
-            $query->where('area', $area);
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
         }
 
         return $query->get();
@@ -111,18 +124,19 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     public function getActiveDepartmentNames(): array
     {
         return $this->model
-            ->where('is_active', true)
-            ->whereIn('role', [
+            ->where('users.is_active', true)
+            ->whereIn('users.role', [
                 UserRole::EMPLOYEE->value,
                 UserRole::MANAGER->value,
                 UserRole::DIRECTOR->value,
                 UserRole::CEO->value,
                 UserRole::SUPER_ADMIN->value,
             ])
-            ->whereNotNull('department')
-            ->where('department', '<>', '')
-            ->orderBy('department', 'asc')
-            ->pluck('department')
+            ->where(fn ($query) => $query->where('users.role', '!=', UserRole::EMPLOYEE->value)->orWhere(fn ($sub) => $sub->whereNotNull('users.job_position_id')))
+            ->join('departments', 'users.department_id', '=', 'departments.id')
+            ->whereNotNull('users.department_id')
+            ->orderBy('departments.name', 'asc')
+            ->pluck('departments.name')
             ->map(fn ($department) => trim((string) $department))
             ->filter()
             ->unique()
@@ -134,19 +148,21 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
      * Lấy danh sách người dùng đang hoạt động cần nhận thông báo khi có bài viết nội bộ mới.
      *
      * @param string|null $department Phòng ban của bài viết
-     * @param string|null $area Khu vực của bài viết
+     * @param string|null $branchId ID chi nhánh của bài viết
      * @param string $authorId UUID của người tạo bài viết
      * @return Collection Danh sách người dùng nhận thông báo
      */
-    public function getActiveUsersForInternalPost(?string $department, ?string $area, string $authorId): Collection
+    public function getActiveUsersForInternalPost(?string $department, ?string $branchId, string $authorId): Collection
     {
         $query = $this->model->where('is_active', true)
             ->where('id', '!=', $authorId);
 
         if (!empty($department)) {
-            $query->where('department', $department);
-        } elseif (!empty($area)) {
-            $query->where('area', $area);
+            $query->where('department_id', function ($q) use ($department) {
+                $q->select('id')->from('departments')->where('name', $department);
+            });
+        } elseif (!empty($branchId)) {
+            $query->where('branch_id', $branchId);
         } else {
             $query->whereRaw('1 = 0');
         }
@@ -208,7 +224,13 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
         }
 
         if ($jobPosition) {
-            $query->where('job_position', $jobPosition);
+            if (is_numeric($jobPosition)) {
+                $query->where('job_position_id', $jobPosition);
+            } else {
+                $query->whereIn('job_position_id', function ($q) use ($jobPosition) {
+                    $q->select('id')->from('job_positions')->where('name', $jobPosition)->orWhere('code', $jobPosition);
+                });
+            }
         }
 
         return $query->orderBy('name', 'asc')->paginate($perPage);
@@ -221,11 +243,11 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
             ->where('role', '!=', UserRole::BUYER->value);
 
         if ($user->role === UserRole::MANAGER) {
-            return $query->where('department', $user->department);
+            return $query->where('department_id', $user->department_id);
         }
 
         if ($user->role === UserRole::DIRECTOR) {
-            return $query->where('area', $user->area);
+            return $query->where('branch_id', $user->branch_id);
         }
 
         return $query;
@@ -250,12 +272,12 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     ): Collection {
         $query = $this->model->where(function ($q) use ($director) {
             $hasCondition = false;
-            if (!empty($director->department)) {
-                $q->orWhere('department', $director->department);
+            if (!empty($director->department_id)) {
+                $q->orWhere('department_id', $director->department_id);
                 $hasCondition = true;
             }
-            if (!empty($director->area)) {
-                $q->orWhere('area', $director->area);
+            if (!empty($director->branch_id)) {
+                $q->orWhere('branch_id', $director->branch_id);
                 $hasCondition = true;
             }
             if (!$hasCondition) {
@@ -264,7 +286,9 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
         });
 
         if (!empty($department)) {
-            $query->where('department', $department);
+            $query->where('department_id', function ($q) use ($department) {
+                $q->select('id')->from('departments')->where('name', $department);
+            });
         }
 
         if (!empty($employeeId)) {
@@ -274,7 +298,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
         $query->with('employeeProfile')
             ->withCount([
                 'lotDepositRequests as successful_transactions' => function ($q) use ($startDate, $endDate) {
-                    $q->where('status', 2); // APPROVED
+                    $q->whereIn('status', [2, 4]); // APPROVED or COMPLETED
                     if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
                     if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
                 },
@@ -321,15 +345,18 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
         ?string $startDate,
         ?string $endDate
     ): Collection {
-        $query = $this->model->whereNotNull('department')
+        $query = $this->model->whereNotNull('department_id')
+            ->whereNotIn('department_id', function ($q) {
+                $q->select('id')->from('departments')->whereIn('code', ['ALL', 'SYSTEM']);
+            })
             ->where(function ($q) use ($director) {
                 $hasCondition = false;
-                if (!empty($director->department)) {
-                    $q->orWhere('department', $director->department);
+                if (!empty($director->department_id)) {
+                    $q->orWhere('department_id', $director->department_id);
                     $hasCondition = true;
                 }
-                if (!empty($director->area)) {
-                    $q->orWhere('area', $director->area);
+                if (!empty($director->branch_id)) {
+                    $q->orWhere('branch_id', $director->branch_id);
                     $hasCondition = true;
                 }
                 if (!$hasCondition) {
@@ -338,13 +365,15 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
             });
 
         if (!empty($department)) {
-            $query->where('department', $department);
+            $query->where('department_id', function ($q) use ($department) {
+                $q->select('id')->from('departments')->where('name', $department);
+            });
         }
 
         $query->with('employeeProfile')
             ->withCount([
                 'lotDepositRequests as successful_transactions' => function ($q) use ($startDate, $endDate) {
-                    $q->where('status', 2);
+                    $q->whereIn('status', [2, 4]);
                     if (!empty($startDate)) $q->whereDate('created_at', '>=', $startDate);
                     if (!empty($endDate)) $q->whereDate('created_at', '<=', $endDate);
                 },
@@ -377,45 +406,50 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     }
 
     /**
-     * Đếm số lượng nhân viên theo khu vực.
+     * Đếm số lượng nhân viên theo chi nhánh.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @return int
      */
-    public function countEmployees(?string $area): int
+    public function countEmployees(?string $branchId): int
     {
         $query = $this->model->whereIn('role', [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value])
-            ->where('is_active', true);
-        if (!empty($area)) $query->where('area', $area);
+            ->where('is_active', true)
+            ->where(fn ($q) => $q->where('role', '!=', UserRole::EMPLOYEE->value)->orWhere(fn ($sub) => $sub->whereNotNull('job_position_id')));
+        if (!empty($branchId)) $query->where('branch_id', $branchId);
         return $query->count();
     }
 
     /**
-     * Đếm số lượng phòng ban theo khu vực.
+     * Đếm số lượng phòng ban theo chi nhánh.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @return int
      */
-    public function countDepartments(?string $area): int
+    public function countDepartments(?string $branchId): int
     {
-        $query = $this->model->whereNotNull('department')->where('is_active', true);
-        if (!empty($area)) $query->where('area', $area);
-        return $query->distinct('department')->count('department');
+        $query = $this->model->whereNotNull('department_id')
+            ->whereNotIn('department_id', function ($q) {
+                $q->select('id')->from('departments')->whereIn('code', ['ALL', 'SYSTEM']);
+            })
+            ->where('is_active', true);
+        if (!empty($branchId)) $query->where('branch_id', $branchId);
+        return $query->distinct('department_id')->count('department_id');
     }
 
     /**
-     * Đếm số lượng khách hàng theo khu vực.
+     * Đếm số lượng khách hàng theo chi nhánh.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @param int|null $month
      * @param int|null $quarter
      * @param int|null $year
      * @return int
      */
-    public function countCustomers(?string $area, ?int $month, ?int $quarter, ?int $year): int
+    public function countCustomers(?string $branchId, ?int $month, ?int $quarter, ?int $year): int
     {
         $query = $this->model->where('role', UserRole::BUYER->value);
-        if (!empty($area)) $query->where('area', $area);
+        if (!empty($branchId)) $query->where('branch_id', $branchId);
 
         if ($year) {
             $query->whereYear('created_at', $year);
@@ -433,35 +467,42 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     }
 
     /**
-     * Đếm tổng số điểm KPI theo khu vực.
+     * Đếm tổng số điểm KPI theo chi nhánh.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @return int
      */
-    public function countKpiStars(?string $area): int
+    public function countKpiStars(?string $branchId): int
     {
-        $query = $this->model->whereNotNull('department')->where('is_active', true)
+        $query = $this->model->whereNotNull('department_id')
+            ->whereNotIn('department_id', function ($q) {
+                $q->select('id')->from('departments')->whereIn('code', ['ALL', 'SYSTEM']);
+            })
+            ->where('is_active', true)
             ->join('employee_profiles', 'users.id', '=', 'employee_profiles.user_id');
-        if (!empty($area)) $query->where('users.area', $area);
+        if (!empty($branchId)) $query->where('users.branch_id', $branchId);
         return (int) $query->sum('employee_profiles.kpi_stars');
     }
 
     /**
-     * Lấy thống kê phòng ban theo khu vực.
+     * Lấy thống kê phòng ban theo chi nhánh.
      *
-     * @param string|null $area
+     * @param string|null $branchId
      * @param int|null $month
      * @param int|null $quarter
      * @param int|null $year
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getDepartmentStatsForDashboard(?string $area, ?int $month, ?int $quarter, ?int $year): Collection
+    public function getDepartmentStatsForDashboard(?string $branchId, ?int $month, ?int $quarter, ?int $year): Collection
     {
-        $deptUsersQuery = $this->model->whereNotNull('department')
+        $deptUsersQuery = $this->model->whereNotNull('department_id')
+            ->whereNotIn('department_id', function ($q) {
+                $q->select('id')->from('departments')->whereIn('code', ['ALL', 'SYSTEM']);
+            })
             ->whereIn('role', [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value]);
 
-        if (!empty($area)) {
-            $deptUsersQuery->where('area', $area);
+        if (!empty($branchId)) {
+            $deptUsersQuery->where('branch_id', $branchId);
         }
 
         $applyDateFilter = function ($q) use ($month, $quarter, $year) {
@@ -481,12 +522,12 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
         $deptUsersQuery->with('employeeProfile')
             ->withCount([
                 'lotDepositRequests as successful_transactions' => function ($q) use ($applyDateFilter) {
-                    $q->where('status', 2);
+                    $q->whereIn('status', [2, 4]);
                     $applyDateFilter($q);
                 }
             ]);
         $deptUsersQuery->with(['lotDepositRequests' => function ($q) use ($applyDateFilter) {
-            $q->where('status', 2)->with('lot');
+            $q->whereIn('status', [2, 4])->with('lot');
             $applyDateFilter($q);
         }]);
 

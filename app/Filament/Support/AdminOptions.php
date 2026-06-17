@@ -35,9 +35,6 @@ final class AdminOptions
     public static function departments(): array
     {
         return [
-            'HN' => 'Hà Nội',
-            'HCM' => 'Hồ Chí Minh',
-            'DN' => 'Đà Nẵng',
             'Kinh doanh' => 'Kinh doanh',
             'Marketing' => 'Marketing',
             'Đào tạo' => 'Đào tạo',
@@ -46,8 +43,6 @@ final class AdminOptions
             'Nhân sự' => 'Nhân sự',
             'Kế toán' => 'Kế toán',
             'Công nghệ' => 'Công nghệ',
-            'ALL' => 'Toàn bộ',
-            'SYSTEM' => 'Hệ thống',
         ];
     }
 

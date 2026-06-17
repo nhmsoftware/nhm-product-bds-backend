@@ -83,7 +83,7 @@ class News extends Model
         'quote',
         'category',
         'department',
-        'area',
+        'branch_id',
         'author_id',
         'is_published',
         'is_featured',
@@ -101,6 +101,7 @@ class News extends Model
         'attachments' => 'array',
         'quote' => 'array',
         'published_at' => 'datetime',
+        'branch_id' => 'string',
     ];
 
    // ─── Relationships ───────────────────────────────────────────
@@ -108,6 +109,11 @@ class News extends Model
     public function author(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(\App\Modules\Auth\Models\User::class, 'author_id');
+    }
+
+    public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Branch\Models\Branch::class, 'branch_id');
     }
 
     public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
@@ -118,5 +124,19 @@ class News extends Model
     public function likes(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(NewsLike::class, 'news_id');
+    }
+
+    public function getAreaAttribute(): ?string
+    {
+        return $this->branch?->name;
+    }
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        $array['area'] = $this->area;
+        $array['branch_id'] = $this->branch_id;
+        $array['branch'] = $this->branch?->toArray();
+        return $array;
     }
 }
