@@ -27,27 +27,22 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
     private function assignmentScope(string $userId): \Closure
     {
         $user = User::query()->find($userId);
-        $department = $user?->department;
-        $branch = $user?->branch_id;
+        $role = $user?->role;
 
-        return function ($query) use ($userId, $department, $branch): void {
+        return function ($query) use ($userId, $role): void {
             $query->where('area_assignments.user_id', $userId)
                 ->orWhere(function ($q) use ($userId): void {
                     $q->where('area_assignments.assignable_type', 'user')
                         ->where('area_assignments.assignable_id', $userId);
                 });
 
-            if (!empty($department)) {
-                $query->orWhere(function ($q) use ($department): void {
-                    $q->where('area_assignments.assignable_type', 'department')
-                        ->where('area_assignments.assignable_id', $department);
-                });
-            }
-
-            if (!empty($branch)) {
-                $query->orWhere(function ($q) use ($branch): void {
-                    $q->where('area_assignments.assignable_type', 'branch')
-                        ->where('area_assignments.assignable_id', $branch);
+            if ($role !== null) {
+                $roleValue = $role instanceof \App\Modules\Auth\Models\Enums\UserRole
+                    ? (string) $role->value
+                    : (string) $role;
+                $query->orWhere(function ($q) use ($roleValue): void {
+                    $q->where('area_assignments.assignable_type', 'role')
+                        ->where('area_assignments.assignable_id', $roleValue);
                 });
             }
         };
@@ -73,12 +68,22 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
     public function getAssignedAreas(string $userId, FilterDTO $filter): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->whereExists(function ($subQuery) use ($userId): void {
-                $subQuery->selectRaw('1')
-                    ->from('area_assignments')
-                    ->whereColumn('area_assignments.area_id', 'areas.id')
-                    ->where($this->assignmentScope($userId))
-                    ->whereNull('area_assignments.deleted_at');
+            ->where(function ($q) use ($userId): void {
+                // User/role has an explicit assignment
+                $q->whereExists(function ($subQuery) use ($userId): void {
+                    $subQuery->selectRaw('1')
+                        ->from('area_assignments')
+                        ->whereColumn('area_assignments.area_id', 'areas.id')
+                        ->where($this->assignmentScope($userId))
+                        ->whereNull('area_assignments.deleted_at');
+                })
+                // OR area has no assignments at all → public
+                ->orWhereNotExists(function ($subQuery): void {
+                    $subQuery->selectRaw('1')
+                        ->from('area_assignments')
+                        ->whereColumn('area_assignments.area_id', 'areas.id')
+                        ->whereNull('area_assignments.deleted_at');
+                });
             });
 
         $filters = $filter->getFilters();
@@ -105,12 +110,20 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
     {
         return $this->model->newQuery()
             ->where('areas.id', $areaId)
-            ->whereExists(function ($subQuery) use ($userId): void {
-                $subQuery->selectRaw('1')
-                    ->from('area_assignments')
-                    ->whereColumn('area_assignments.area_id', 'areas.id')
-                    ->where($this->assignmentScope($userId))
-                    ->whereNull('area_assignments.deleted_at');
+            ->where(function ($q) use ($userId): void {
+                $q->whereExists(function ($subQuery) use ($userId): void {
+                    $subQuery->selectRaw('1')
+                        ->from('area_assignments')
+                        ->whereColumn('area_assignments.area_id', 'areas.id')
+                        ->where($this->assignmentScope($userId))
+                        ->whereNull('area_assignments.deleted_at');
+                })
+                ->orWhereNotExists(function ($subQuery): void {
+                    $subQuery->selectRaw('1')
+                        ->from('area_assignments')
+                        ->whereColumn('area_assignments.area_id', 'areas.id')
+                        ->whereNull('area_assignments.deleted_at');
+                });
             })
             ->exists();
     }
@@ -128,12 +141,20 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
         $query = $this->model->newQuery();
 
         if (!$isAdmin) {
-            $query->whereExists(function ($subQuery) use ($userId): void {
-                $subQuery->selectRaw('1')
-                    ->from('area_assignments')
-                    ->whereColumn('area_assignments.area_id', 'areas.id')
-                    ->where($this->assignmentScope($userId))
-                    ->whereNull('area_assignments.deleted_at');
+            $query->where(function ($q) use ($userId): void {
+                $q->whereExists(function ($subQuery) use ($userId): void {
+                    $subQuery->selectRaw('1')
+                        ->from('area_assignments')
+                        ->whereColumn('area_assignments.area_id', 'areas.id')
+                        ->where($this->assignmentScope($userId))
+                        ->whereNull('area_assignments.deleted_at');
+                })
+                ->orWhereNotExists(function ($subQuery): void {
+                    $subQuery->selectRaw('1')
+                        ->from('area_assignments')
+                        ->whereColumn('area_assignments.area_id', 'areas.id')
+                        ->whereNull('area_assignments.deleted_at');
+                });
             });
         }
 

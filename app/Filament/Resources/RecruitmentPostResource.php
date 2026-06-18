@@ -86,6 +86,20 @@ class RecruitmentPostResource extends Resource
         ]);
     }
 
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        // Director chỉ xem bài tuyển dụng chi nhánh của bản thân
+        if ($user && $user->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $user->branch_id) {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        return $query;
+    }
+
     public static function getPages(): array
     {
         return [

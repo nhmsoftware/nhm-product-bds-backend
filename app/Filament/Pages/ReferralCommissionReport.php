@@ -46,7 +46,8 @@ class ReferralCommissionReport extends Page implements HasForms
         $this->form->fill([
             'start_date' => now()->startOfMonth()->format('Y-m-d'),
             'end_date' => now()->endOfMonth()->format('Y-m-d'),
-            'area' => $user->role === UserRole::DIRECTOR ? $user->area : null,
+            // Director tự động lọc theo branch_id của bản thân
+            'branch_id' => $user->role === UserRole::DIRECTOR ? $user->branch_id : null,
         ]);
     }
 
@@ -73,19 +74,37 @@ class ReferralCommissionReport extends Page implements HasForms
                     ]),
                 Select::make('referrer_id')
                     ->label('Nhân viên giới thiệu')
-                    ->options(fn () => User::query()
-                        ->where('role', UserRole::EMPLOYEE->value)
-                        ->whereNotNull('job_position')
-                        ->where('job_position', '!=', '')
-                        ->pluck('name', 'id')
-                    )
+                    ->options(function () {
+                        $currentUser = auth()->user();
+                        if (!$currentUser) return [];
+
+                        $query = User::query()
+                            ->where('is_active', true)
+                            ->where('role', UserRole::EMPLOYEE->value)
+                            ->whereNotNull('job_position_id');
+
+                        if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                            $query->where('branch_id', $currentUser->branch_id);
+                        }
+
+                        if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                            $query->where('department_id', $currentUser->department_id);
+                        }
+
+                        return $query->pluck('name', 'id');
+                    })
                     ->placeholder('Tất cả nhân viên')
                     ->searchable()
                     ->native(false),
-                Select::make('area')
-                    ->label('Khu vực / Chi nhánh')
-                    ->options(AdminOptions::areas())
-                    ->placeholder('Tất cả khu vực')
+                Select::make('branch_id')
+                    ->label('Chi nhánh')
+                    ->options(function () {
+                        return \App\Modules\Branch\Models\Branch::where('is_active', true)
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                            ->toArray();
+                    })
+                    ->placeholder('Tất cả chi nhánh')
                     ->disabled($user && $user->role === UserRole::DIRECTOR)
                     ->native(false),
             ])
@@ -113,7 +132,7 @@ class ReferralCommissionReport extends Page implements HasForms
         $startDate = $this->data['start_date'] ?? null;
         $endDate = $this->data['end_date'] ?? null;
         $referrerId = $this->data['referrer_id'] ?? null;
-        $area = $this->data['area'] ?? null;
+        $branchId = $this->data['branch_id'] ?? null;
 
         $user = Filament::auth()->user();
 
@@ -134,8 +153,9 @@ class ReferralCommissionReport extends Page implements HasForms
             ->leftJoin('departments', 'departments.id', '=', 'users.department_id')
             ->leftJoin('branches', 'branches.id', '=', 'users.branch_id');
 
-        if ($user->role === UserRole::DIRECTOR) {
-            $query->where('branches.name', $user->area);
+        // Director chỉ được xem báo cáo chi nhánh của mình
+        if ($user->role === UserRole::DIRECTOR && $user->branch_id) {
+            $query->where('users.branch_id', $user->branch_id);
         }
 
         if ($startDate) {
@@ -147,8 +167,9 @@ class ReferralCommissionReport extends Page implements HasForms
         if ($referrerId) {
             $query->where('referral_commissions.referrer_id', $referrerId);
         }
-        if ($area) {
-            $query->where('branches.name', $area);
+        // Filter theo chi nhánh (chỉ SUPER_ADMIN/CEO mới dùng được filter này)
+        if ($branchId && $user->role !== UserRole::DIRECTOR) {
+            $query->where('users.branch_id', $branchId);
         }
 
         $commissions = $query->get();

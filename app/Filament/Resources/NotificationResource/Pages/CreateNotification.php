@@ -26,7 +26,8 @@ class CreateNotification extends CreateRecord
                 $q->select('id')->from('departments')->where('name', $data['target_department']);
             });
         } elseif ($data['target_type'] === 'area') {
-            $usersQuery->where('area', $data['target_area']);
+            // target_area lưu branch_id (UUID)
+            $usersQuery->where('branch_id', $data['target_area']);
         } elseif ($data['target_type'] === 'users') {
             $usersQuery->whereIn('id', $data['target_users']);
         }

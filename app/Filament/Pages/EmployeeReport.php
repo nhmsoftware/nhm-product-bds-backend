@@ -86,11 +86,25 @@ class EmployeeReport extends Page implements HasForms
                     ->native(false),
                 Select::make('employee_id')
                     ->label('Nhân viên')
-                    ->options(fn () => User::query()
-                        ->where('role', UserRole::EMPLOYEE->value)
-                        ->whereNotNull('job_position_id')
-                        ->pluck('name', 'id')
-                    )
+                    ->options(function () {
+                        $currentUser = auth()->user();
+                        if (!$currentUser) return [];
+
+                        $query = User::query()
+                            ->where('is_active', true)
+                            ->where('role', UserRole::EMPLOYEE->value)
+                            ->whereNotNull('job_position_id');
+
+                        if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                            $query->where('branch_id', $currentUser->branch_id);
+                        }
+
+                        if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                            $query->where('department_id', $currentUser->department_id);
+                        }
+
+                        return $query->pluck('name', 'id');
+                    })
                     ->placeholder('Tất cả nhân viên')
                     ->searchable()
                     ->native(false),

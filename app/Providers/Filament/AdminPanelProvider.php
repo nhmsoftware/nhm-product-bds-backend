@@ -28,6 +28,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
+use Filament\Navigation\NavigationGroup;
+
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -50,6 +52,28 @@ class AdminPanelProvider extends PanelProvider
                 EmployeeReport::class,
                 DepartmentReport::class,
                 ReferralCommissionReport::class,
+            ])
+            ->navigationGroups([
+                NavigationGroup::make()
+                    ->label('Kho hàng'),
+                NavigationGroup::make()
+                    ->label('Giao dịch'),
+                NavigationGroup::make()
+                    ->label('Nhân sự'),
+                NavigationGroup::make()
+                    ->label('Bình luận'),
+                NavigationGroup::make()
+                    ->label('Giới thiệu'),
+                NavigationGroup::make()
+                    ->label('Nội dung'),
+                NavigationGroup::make()
+                    ->label('Đào tạo'),
+                NavigationGroup::make()
+                    ->label('CRM/Tư vấn'),
+                NavigationGroup::make()
+                    ->label('Hệ thống'),
+                NavigationGroup::make()
+                    ->label('Cấu hình'),
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([

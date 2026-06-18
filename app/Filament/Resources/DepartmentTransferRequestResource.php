@@ -37,12 +37,25 @@ class DepartmentTransferRequestResource extends Resource
                     ->relationship('user', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
                         $currentUser = auth()->user();
                         if (!$currentUser) return $query;
-                        return $query
-                            ->where('id', '!=', $currentUser->id)
+
+                        $query->where('id', '!=', $currentUser->id)
                             ->where('role', '!=', UserRole::BUYER->value)
                             ->where('role', '!=', UserRole::SUPER_ADMIN->value)
-                            ->where('role', '<=', $currentUser->role->value)
                             ->whereNotNull('job_position_id');
+
+                        if ($currentUser->role !== UserRole::SUPER_ADMIN) {
+                            $query->where('role', '<=', $currentUser->role->value);
+                        }
+
+                        if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                            $query->where('branch_id', $currentUser->branch_id);
+                        }
+
+                        if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                            $query->where('department_id', $currentUser->department_id);
+                        }
+
+                        return $query;
                     })
                     ->searchable()
                     ->preload()

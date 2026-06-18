@@ -19,7 +19,29 @@ class EnrollmentsRelationManager extends RelationManager
     public function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Select::make('user_id')->label('Nhân viên')->relationship('user', 'name')->searchable()->preload()->required(),
+            Forms\Components\Select::make('user_id')
+                ->label('Nhân viên')
+                ->relationship('user', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
+                    $currentUser = auth()->user();
+                    if (!$currentUser) return $query;
+                    $query->where('id', '!=', $currentUser->id)
+                          ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::BUYER->value)
+                          ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value)
+                          ->whereNotNull('job_position_id');
+                    if ($currentUser->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
+                        $query->where('role', '<=', $currentUser->role->value);
+                    }
+                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $currentUser->branch_id) {
+                        $query->where('branch_id', $currentUser->branch_id);
+                    }
+                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER && $currentUser->department_id) {
+                        $query->where('department_id', $currentUser->department_id);
+                    }
+                    return $query;
+                })
+                ->searchable()
+                ->preload()
+                ->required(),
             Forms\Components\Select::make('status')->label('Trạng thái học')->options($this->enumOptions(CourseEnrollmentStatus::class))->required(),
             Forms\Components\TextInput::make('progress_percent')->label('Tiến độ (%)')->numeric()->minValue(0)->maxValue(100)->default(0),
             Forms\Components\DateTimePicker::make('completed_at')->label('Hoàn thành lúc'),

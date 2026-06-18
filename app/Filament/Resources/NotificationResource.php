@@ -66,8 +66,15 @@ class NotificationResource extends Resource
                         ->required(fn (Forms\Get $get): bool => $get('target_type') === 'department'),
 
                     Forms\Components\Select::make('target_area')
-                        ->label('Chọn chi nhánh / khu vực')
-                        ->options(AdminOptions::areas())
+                        ->label('Chọn chi nhánh')
+                        ->options(function () {
+                            return \App\Modules\Branch\Models\Branch::where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->toArray();
+                        })
+                        ->searchable()
+                        ->preload()
                         ->visible(fn (Forms\Get $get): bool => $get('target_type') === 'area')
                         ->required(fn (Forms\Get $get): bool => $get('target_type') === 'area'),
 
@@ -76,13 +83,30 @@ class NotificationResource extends Resource
                         ->multiple()
                         ->searchable()
                         ->preload()
-                        ->options(fn () => \App\Modules\Auth\Models\User::query()
-                            ->where('is_active', true)
-                            ->where('role', '!=', UserRole::BUYER->value)
-                            ->where(fn ($query) => $query->where('role', '!=', UserRole::EMPLOYEE->value)->orWhere(fn ($sub) => $sub->whereNotNull('job_position')->where('job_position', '!=', '')))
-                            ->pluck('name', 'id')
-                            ->toArray()
-                        )
+                        ->options(function () {
+                            $currentUser = auth()->user();
+                            if (!$currentUser) return [];
+                            $query = \App\Modules\Auth\Models\User::query()
+                                ->where('is_active', true)
+                                ->where('id', '!=', $currentUser->id)
+                                ->where('role', '!=', UserRole::BUYER->value)
+                                ->where('role', '!=', UserRole::SUPER_ADMIN->value)
+                                ->whereNotNull('job_position_id');
+
+                            if ($currentUser->role !== UserRole::SUPER_ADMIN) {
+                                $query->where('role', '<=', $currentUser->role->value);
+                            }
+
+                            if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                                $query->where('branch_id', $currentUser->branch_id);
+                            }
+
+                            if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                                $query->where('department_id', $currentUser->department_id);
+                            }
+
+                            return $query->pluck('name', 'id')->toArray();
+                        })
                         ->visible(fn (Forms\Get $get): bool => $get('target_type') === 'users')
                         ->required(fn (Forms\Get $get): bool => $get('target_type') === 'users'),
                 ])

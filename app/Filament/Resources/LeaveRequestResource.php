@@ -18,11 +18,24 @@ class LeaveRequestResource extends Resource
                     $currentUser = auth()->user();
                     if (!$currentUser) return $query;
 
-                    return $query->where('id', '!=', $currentUser->id)
+                    $query->where('id', '!=', $currentUser->id)
                         ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::BUYER->value)
                         ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value)
-                        ->where('role', '<=', $currentUser->role->value)
                         ->whereNotNull('job_position_id');
+
+                    if ($currentUser->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
+                        $query->where('role', '<=', $currentUser->role->value);
+                    }
+
+                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $currentUser->branch_id) {
+                        $query->where('branch_id', $currentUser->branch_id);
+                    }
+
+                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER && $currentUser->department_id) {
+                        $query->where('department_id', $currentUser->department_id);
+                    }
+
+                    return $query;
                 })
                 ->searchable()
                 ->preload()

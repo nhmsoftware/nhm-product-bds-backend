@@ -33,7 +33,8 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b1234567'),
         new OA\Property(property: 'lot_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b2234567'),
         new OA\Property(property: 'user_id', type: 'string', format: 'uuid', example: 'd3b07384-d113-4ec2-a5d6-c734b3234567'),
-        new OA\Property(property: 'reason', type: 'string', nullable: true, example: 'Khách hàng hẹn cọc ngày mai.'),
+        new OA\Property(property: 'customer_name', type: 'string', nullable: true, example: 'Nguyễn Văn A'),
+        new OA\Property(property: 'reason', type: 'string', nullable: true, example: 'Khách hàng hẹn cọ ngày mai.'),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
         new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
     ]
@@ -47,6 +48,7 @@ class LotLockRequest extends Model
     protected $fillable = [
         'lot_id',
         'user_id',
+        'customer_name',
         'reason',
         'status',
         'expires_at',

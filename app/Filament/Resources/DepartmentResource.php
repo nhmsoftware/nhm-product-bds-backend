@@ -40,10 +40,17 @@ class DepartmentResource extends Resource
                     ->unique(ignoreRecord: true),
                 Forms\Components\Select::make('manager_id')
                     ->label('Trưởng phòng')
-                    ->options(fn () => User::query()
-                        ->where('role', UserRole::MANAGER->value)
-                        ->pluck('name', 'id')
-                    )
+                    ->options(function () {
+                        $currentUser = auth()->user();
+                        $query = User::query()
+                            ->where('is_active', true)
+                            ->where('role', UserRole::MANAGER->value)
+                            ->whereNotNull('job_position_id');
+                        if ($currentUser && $currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                            $query->where('branch_id', $currentUser->branch_id);
+                        }
+                        return $query->pluck('name', 'id');
+                    })
                     ->searchable()
                     ->preload()
                     ->nullable(),
