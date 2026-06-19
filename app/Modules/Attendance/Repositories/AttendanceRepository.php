@@ -24,13 +24,13 @@ final class AttendanceRepository extends BaseRepository implements AttendanceRep
      * @param array|string $userIds ID của nhân viên (UUID hoặc mảng ID)
      * @param string|null $fromDate Ngày bắt đầu (Y-m-d)
      * @param string|null $toDate Ngày kết thúc (Y-m-d)
-     * @return int Số ngày làm việc trong khoảng thời gian
+     * @return float Số ngày làm việc trong khoảng thời gian
      */
-    public function countWorkDays(array|string $userIds, ?string $fromDate, ?string $toDate): int
+    public function countWorkDays(array|string $userIds, ?string $fromDate, ?string $toDate): float
     {
         $userIdsArray = is_array($userIds) ? $userIds : [$userIds];
         $query = $this->model->whereIn('user_id', $userIdsArray)
-            ->whereIn('status', [1, 2, 4]); // WORK, LATE, OVERTIME
+            ->whereIn('status', [1, 2, 4]); // WORK, LATE, HALF_DAY
 
         if ($fromDate) {
             $query->whereDate('work_date', '>=', $fromDate);
@@ -39,7 +39,7 @@ final class AttendanceRepository extends BaseRepository implements AttendanceRep
             $query->whereDate('work_date', '<=', $toDate);
         }
 
-        return $query->count();
+        return (float) $query->sum(\DB::raw('CASE WHEN status = 4 THEN 0.5 ELSE 1.0 END'));
     }
 
     public function countWorkDaysByUsers(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection
@@ -54,9 +54,10 @@ final class AttendanceRepository extends BaseRepository implements AttendanceRep
             $query->whereDate('work_date', '<=', $toDate);
         }
 
-        return $query->selectRaw('user_id, count(*) as count')
+        return $query->selectRaw('user_id, SUM(CASE WHEN status = 4 THEN 0.5 ELSE 1.0 END) as count')
             ->groupBy('user_id')
-            ->pluck('count', 'user_id');
+            ->pluck('count', 'user_id')
+            ->map(fn($v) => (float) $v);
     }
 
     /**

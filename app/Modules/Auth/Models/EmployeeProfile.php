@@ -81,7 +81,6 @@ class EmployeeProfile extends Model
         'experience',
         'attachments',
         'reward_points',
-        'kpi_stars',
     ];
 
     protected $casts = [
@@ -97,5 +96,32 @@ class EmployeeProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Sinh câu lệnh SQL SELECT RAW tính toán điểm KPI động của nhân viên.
+     *
+     * @param string $userIdColumn Tên cột user id dùng để so khớp (mặc định: 'employee_profiles.user_id')
+     * @return string
+     */
+    public static function getKpiPointsSelectRaw(string $userIdColumn = 'employee_profiles.user_id'): string
+    {
+        $settings = \App\Modules\Area\Models\InventorySetting::pluck('value', 'key');
+        $successfulTransactionPoints = (float) data_get($settings->get('kpi_points_successful_transaction'), 'points', 10);
+        $siteTourPoints = (float) data_get($settings->get('kpi_points_site_tour'), 'points', 1);
+        $customerMeetingPoints = (float) data_get($settings->get('kpi_points_customer_meeting'), 'points', 0.5);
+        $successfulReferralPoints = (float) data_get($settings->get('kpi_points_successful_referral'), 'points', 1);
+        $workDayPoints = (float) data_get($settings->get('kpi_points_work_day_rate'), 'points', 1);
+        $workDaysStep = (int) data_get($settings->get('kpi_points_work_day_rate'), 'days', 5);
+        $absencePenalty = (float) data_get($settings->get('kpi_points_absence_penalty'), 'points', 0.5);
+
+        return "(
+            (SELECT COALESCE(COUNT(*), 0) FROM lot_deposit_requests WHERE lot_deposit_requests.user_id = {$userIdColumn} AND lot_deposit_requests.status IN (2, 4)) * {$successfulTransactionPoints}
+            + (SELECT COALESCE(COUNT(*), 0) FROM site_tours WHERE site_tours.user_id = {$userIdColumn}) * {$siteTourPoints}
+            + (SELECT COALESCE(COUNT(*), 0) FROM customer_meetings WHERE customer_meetings.user_id = {$userIdColumn}) * {$customerMeetingPoints}
+            + (SELECT COALESCE(COUNT(*), 0) FROM referral_histories WHERE referral_histories.referrer_id = {$userIdColumn} AND referral_histories.referral_type = 1 AND referral_histories.status = 2) * {$successfulReferralPoints}
+            + (CASE WHEN {$workDaysStep} > 0 THEN FLOOR((SELECT COALESCE(COUNT(*), 0) FROM attendances WHERE attendances.user_id = {$userIdColumn} AND attendances.status IN (1, 2)) / {$workDaysStep}) * {$workDayPoints} ELSE 0 END)
+            - (SELECT COALESCE(COUNT(*), 0) FROM attendances WHERE attendances.user_id = {$userIdColumn} AND attendances.status = 3) * {$absencePenalty}
+        )";
     }
 }

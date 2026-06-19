@@ -91,7 +91,6 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'job_position',
         'department_id',
         'job_position_id',
-        'area',
         'branch_id',
         'fcm_token',
         'is_active',
@@ -111,12 +110,21 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'job_position_id' => 'integer',
     ];
 
+    /**
+     * Các accessor được tự động thêm vào JSON serialization (toArray / toJson).
+     * Đảm bảo mobile app nhận được tên phòng ban, chi nhánh và vị trí công việc
+     * thay vì chỉ nhận UUID / null.
+     */
+    protected $appends = [
+        'department',   // getDepartmentAttribute() → tên phòng ban
+        'branch',       // getBranchAttribute()     → tên chi nhánh
+        'job_position', // getJobPositionAttribute() → tên vị trí
+    ];
+
 
     public function canAccessPanel(Panel $panel): bool
     {
         return in_array($this->role, [
-            UserRole::MANAGER,
-            UserRole::DIRECTOR,
             UserRole::CEO,
             UserRole::SUPER_ADMIN,
         ], true);
@@ -274,6 +282,9 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         $dept = Department::where('name', $value)->first();
         if ($dept) {
             $this->attributes['department_id'] = $dept->id;
+            if ($dept->branch_id) {
+                $this->attributes['branch_id'] = $dept->branch_id;
+            }
         }
     }
 
@@ -318,7 +329,6 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         $array['branch'] = $this->branch;
         $array['branch_name'] = $this->branch;
         $array['branch_id'] = $this->branch_id;
-        $array['area'] = $this->branch;
         $array['department'] = $this->department;
         $array['job_position'] = $this->job_position;
         return $array;

@@ -158,30 +158,11 @@ class NotificationResource extends Resource
                     ),
             ])
             ->actions([
-                Tables\Actions\Action::make('mark_read')
-                    ->label('Đọc')
-                    ->icon('heroicon-o-envelope-open')
-                    ->color('success')
-                    ->visible(fn ($record) => $record->read_at === null && $record->notifiable_id === auth()->id())
-                    ->action(function ($record) {
-                        $record->markAsRead();
-                        FilamentNotification::make()->title('Đã đánh dấu thông báo là đã đọc.')->success()->send();
-                    }),
                 Tables\Actions\EditAction::make()->label('Xem chi tiết'),
                 Tables\Actions\DeleteAction::make()->label('Xóa'),
             ])
             ->headerActions([
-                Tables\Actions\Action::make('mark_all_read')
-                    ->label('Đọc tất cả của tôi')
-                    ->icon('heroicon-o-check-badge')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->action(function () {
-                        Notification::where('notifiable_id', auth()->id())
-                            ->whereNull('read_at')
-                            ->update(['read_at' => now()]);
-                        FilamentNotification::make()->title('Đã đánh dấu tất cả thông báo của bạn là đã đọc.')->success()->send();
-                    }),
+                //
             ]);
     }
 

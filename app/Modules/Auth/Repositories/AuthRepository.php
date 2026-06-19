@@ -121,23 +121,32 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
         return $query->get();
     }
 
-    public function getActiveDepartmentNames(): array
+    public function getActiveDepartmentNames(?string $branchId = null): array
     {
-        return $this->model
-            ->where('users.is_active', true)
-            ->whereIn('users.role', [
-                UserRole::EMPLOYEE->value,
-                UserRole::MANAGER->value,
-                UserRole::DIRECTOR->value,
-                UserRole::CEO->value,
-                UserRole::SUPER_ADMIN->value,
-            ])
-            ->where(fn ($query) => $query->where('users.role', '!=', UserRole::EMPLOYEE->value)->orWhere(fn ($sub) => $sub->whereNotNull('users.job_position_id')))
-            ->join('departments', 'users.department_id', '=', 'departments.id')
-            ->whereNotNull('users.department_id')
-            ->orderBy('departments.name', 'asc')
-            ->pluck('departments.name')
-            ->map(fn ($department) => trim((string) $department))
+        // Query thẳng từ bảng departments — không phụ thuộc vào việc
+        // có nhân viên active trong phòng ban hay không.
+        // Loại bỏ các phòng ban hệ thống (ALL, SYSTEM) và phòng ban khách hàng.
+        $hiddenCodes = ['ALL', 'SYSTEM', 'CUSTOMER', 'KHACH_HANG'];
+        $hiddenNames = ['tất cả', 'hệ thống', 'khách hàng', 'phòng khách hàng'];
+
+        $query = \App\Modules\Auth\Models\Department::query()
+            ->whereNotIn('code', $hiddenCodes)
+            ->where(function ($q) use ($hiddenNames) {
+                foreach ($hiddenNames as $name) {
+                    $q->whereRaw('LOWER(name) != ?', [$name]);
+                }
+            });
+
+        if ($branchId) {
+            $query->where(function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId)
+                  ->orWhereNull('branch_id');
+            });
+        }
+
+        return $query->orderBy('name', 'asc')
+            ->pluck('name')
+            ->map(fn (string $department) => trim($department))
             ->filter()
             ->unique()
             ->values()
@@ -472,27 +481,6 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
      * @param string|null $branchId
      * @return int
      */
-    public function countKpiStars(?string $branchId): int
-    {
-        $query = $this->model->whereNotNull('department_id')
-            ->whereNotIn('department_id', function ($q) {
-                $q->select('id')->from('departments')->whereIn('code', ['ALL', 'SYSTEM']);
-            })
-            ->where('is_active', true)
-            ->join('employee_profiles', 'users.id', '=', 'employee_profiles.user_id');
-        if (!empty($branchId)) $query->where('users.branch_id', $branchId);
-        return (int) $query->sum('employee_profiles.kpi_stars');
-    }
-
-    /**
-     * Lấy thống kê phòng ban theo chi nhánh.
-     *
-     * @param string|null $branchId
-     * @param int|null $month
-     * @param int|null $quarter
-     * @param int|null $year
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
     public function getDepartmentStatsForDashboard(?string $branchId, ?int $month, ?int $quarter, ?int $year): Collection
     {
         $deptUsersQuery = $this->model->whereNotNull('department_id')
@@ -535,19 +523,17 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     }
 
     /**
-     * Thêm điểm thưởng và điểm KPI cho người dùng.
+     * Thêm điểm thưởng cho người dùng.
      *
      * @param string $userId
      * @param int $points
-     * @param int $stars
      * @return void
      */
-    public function addRewardPointsAndStars(string $userId, int $points, int $stars): void
+    public function addRewardPoints(string $userId, int $points): void
     {
         $user = $this->model->with('employeeProfile')->find($userId);
         if ($user && $user->employeeProfile) {
             $user->employeeProfile->reward_points += $points;
-            $user->employeeProfile->kpi_stars += $stars;
             $user->employeeProfile->save();
         }
     }

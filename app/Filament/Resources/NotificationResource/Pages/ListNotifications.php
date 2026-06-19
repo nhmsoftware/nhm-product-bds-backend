@@ -18,15 +18,4 @@ class ListNotifications extends ListRecords
             Actions\CreateAction::make()->label('Gửi thông báo mới'),
         ];
     }
-
-    public function getTabs(): array
-    {
-        return [
-            'all' => Tab::make('Tất cả thông báo hệ thống')
-                ->icon('heroicon-m-globe-alt'),
-            'mine' => Tab::make('Thông báo của tôi')
-                ->icon('heroicon-m-user')
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('notifiable_id', auth()->id())),
-        ];
-    }
 }

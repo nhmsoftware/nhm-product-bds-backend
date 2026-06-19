@@ -15,7 +15,6 @@ use OpenApi\Attributes as OA;
  * @property string $id
  * @property string $user_id
  * @property int $points_changed
- * @property int $stars_changed
  * @property string|null $reason
  * @property string|null $related_id
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -30,7 +29,6 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'id', type: 'string', format: 'uuid'),
         new OA\Property(property: 'user_id', type: 'string', format: 'uuid'),
         new OA\Property(property: 'points_changed', type: 'integer'),
-        new OA\Property(property: 'stars_changed', type: 'integer'),
         new OA\Property(property: 'reason', type: 'string', nullable: true),
         new OA\Property(property: 'related_id', type: 'string', format: 'uuid', nullable: true),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
@@ -46,7 +44,6 @@ class RewardPointHistory extends Model
     protected $fillable = [
         'user_id',
         'points_changed',
-        'stars_changed',
         'reason',
         'related_id',
     ];

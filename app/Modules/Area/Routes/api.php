@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->prefix('v1')->group(function () {
+Route::middleware(['auth:api', 'onboarding'])->prefix('v1')->group(function () {
     Route::get('/areas', [AreaController::class, 'index'])->name('index');
     Route::get('/areas/search', [AreaController::class, 'search'])->name('areas.search');
     Route::get('/areas/{id}/inventory-map', [AreaController::class, 'inventoryMap'])->name('areas.inventory_map');

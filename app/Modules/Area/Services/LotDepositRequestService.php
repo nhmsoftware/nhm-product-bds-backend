@@ -189,7 +189,7 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             $activeLockRequest = $this->lotLockRequestRepository->findActiveByLotId((string) $lot->id);
             if ($activeLockRequest !== null && (string) $activeLockRequest->user_id === (string) $model->user_id) {
                 $this->lotLockRequestRepository->updateById((string) $activeLockRequest->id, [
-                    'status' => LotLockRequestStatus::CANCELLED->value,
+                    'status' => LotLockRequestStatus::REJECTED->value,
                     'rejected_by' => $user->id,
                     'rejected_at' => now(),
                     'reject_reason' => $reason,
@@ -241,13 +241,12 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             ]);
 
             // Add points to employee
-            $this->authRepository->addRewardPointsAndStars($model->user_id, 10, 1);
+            $this->authRepository->addRewardPoints($model->user_id, 10);
 
             // Save history
             $this->rewardPointHistoryRepository->create([
                 'user_id' => $model->user_id,
                 'points_changed' => 10,
-                'stars_changed' => 1,
                 'reason' => 'Thưởng giao dịch thành công lô đất ' . $lot->code,
                 'related_id' => $id,
             ]);

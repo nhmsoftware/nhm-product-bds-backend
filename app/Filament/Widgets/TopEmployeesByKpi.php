@@ -22,6 +22,7 @@ class TopEmployeesByKpi extends TableWidget
     {
         return $table
             ->query(fn (): Builder => EmployeeProfile::query()
+                ->selectRaw('employee_profiles.*, ' . EmployeeProfile::getKpiPointsSelectRaw() . ' as total_kpi')
                 ->with('user')
                 ->whereHas('user', fn (Builder $query) => $query
                     ->whereNull('deleted_at')
@@ -34,13 +35,13 @@ class TopEmployeesByKpi extends TableWidget
                             $qb->select('id')->from('branches')->where('name', $area);
                         });
                     }))
-                ->orderByDesc('kpi_stars')
+                ->orderByDesc('total_kpi')
                 ->orderByDesc('reward_points')
                 ->limit(5))
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')->label('Nhân viên'),
                 Tables\Columns\TextColumn::make('user.departmentRel.name')->label('Phòng ban')->placeholder('Chưa cập nhật'),
-                Tables\Columns\TextColumn::make('kpi_stars')->label('Tổng KPI')->numeric(),
+                Tables\Columns\TextColumn::make('total_kpi')->label('Tổng KPI')->numeric(),
                 Tables\Columns\TextColumn::make('reward_points')->label('Điểm thưởng')->numeric(),
             ])
             ->paginated(false);

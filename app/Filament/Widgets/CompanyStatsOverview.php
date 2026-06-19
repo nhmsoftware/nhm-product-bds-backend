@@ -32,7 +32,7 @@ class CompanyStatsOverview extends StatsOverviewWidget
         $referrals = $this->referralQuery()->count();
         $totalKpi = (int) $this->employeeQuery()
             ->join('employee_profiles', 'users.id', '=', 'employee_profiles.user_id')
-            ->sum('employee_profiles.kpi_stars');
+            ->sum(\Illuminate\Support\Facades\DB::raw(\App\Modules\Auth\Models\EmployeeProfile::getKpiPointsSelectRaw('users.id')));
 
         return [
             Stat::make('Tổng nhân sự', number_format($employees, 0, ',', '.'))

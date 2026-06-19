@@ -17,7 +17,8 @@ class BranchResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
     protected static ?string $navigationGroup = 'Nhân sự';
     protected static ?string $modelLabel = 'Chi nhánh';
-    protected static ?string $pluralModelLabel = 'Chi nhánh';
+    protected static ?string $pluralModelLabel = 'Quản lý chi nhánh';
+    protected static ?string $navigationLabel = 'Quản lý chi nhánh';
 
     public static function form(Form $form): Form
     {

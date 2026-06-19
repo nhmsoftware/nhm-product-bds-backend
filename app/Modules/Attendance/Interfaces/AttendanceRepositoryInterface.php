@@ -18,7 +18,7 @@ interface AttendanceRepositoryInterface extends BaseRepositoryInterface
     /**
      * Đếm số ngày đi làm của danh sách userIds trong khoảng thời gian.
      */
-    public function countWorkDays(array|string $userIds, ?string $fromDate, ?string $toDate): int;
+    public function countWorkDays(array|string $userIds, ?string $fromDate, ?string $toDate): float;
 
     public function countWorkDaysByUsers(array $userIds, ?string $fromDate, ?string $toDate): \Illuminate\Support\Collection;
 

@@ -21,4 +21,6 @@ interface QuizAttemptRepositoryInterface extends BaseRepositoryInterface
     public function countByQuizIds(array $quizIds): int;
 
     public function findByUserAndQuiz(string $userId, string $quizId);
+
+    public function countUngradedEssaysByUserAndQuizIds(string $userId, array $quizIds): int;
 }

@@ -63,7 +63,48 @@ final class DashboardService extends BaseService implements DashboardServiceInte
                     'latest_news' => $latestNews,
                     'kpi' => [
                         'points' => $totalPoints,
-                        'kpi_stars' => (int) ($user->employeeProfile?->kpi_stars ?? 0),
+                        'kpi_stars' => (int) (function() use ($user) {
+                            $userId = $user->id;
+                            $userTransactions = \Illuminate\Support\Facades\DB::table('lot_deposit_requests')
+                                ->where('user_id', $userId)
+                                ->whereIn('status', [2, 4])
+                                ->count();
+                            $userTours = \Illuminate\Support\Facades\DB::table('site_tours')
+                                ->where('user_id', $userId)
+                                ->count();
+                            $userMeetings = \Illuminate\Support\Facades\DB::table('customer_meetings')
+                                ->where('user_id', $userId)
+                                ->count();
+                            $userReferrals = \Illuminate\Support\Facades\DB::table('referral_histories')
+                                ->where('referrer_id', $userId)
+                                ->where('referral_type', 1)
+                                ->where('status', 2)
+                                ->count();
+                            $userWorkDays = \Illuminate\Support\Facades\DB::table('attendances')
+                                ->where('user_id', $userId)
+                                ->whereIn('status', [1, 2])
+                                ->count();
+                            $userAbsences = \Illuminate\Support\Facades\DB::table('attendances')
+                                ->where('user_id', $userId)
+                                ->where('status', 3)
+                                ->count();
+
+                            $settings = \App\Modules\Area\Models\InventorySetting::pluck('value', 'key');
+                            $successfulTransactionPoints = (float) data_get($settings->get('kpi_points_successful_transaction'), 'points', 10);
+                            $siteTourPoints = (float) data_get($settings->get('kpi_points_site_tour'), 'points', 1);
+                            $customerMeetingPoints = (float) data_get($settings->get('kpi_points_customer_meeting'), 'points', 0.5);
+                            $successfulReferralPoints = (float) data_get($settings->get('kpi_points_successful_referral'), 'points', 1);
+                            $workDayPoints = (float) data_get($settings->get('kpi_points_work_day_rate'), 'points', 1);
+                            $workDaysStep = (int) data_get($settings->get('kpi_points_work_day_rate'), 'days', 5);
+                            $absencePenalty = (float) data_get($settings->get('kpi_points_absence_penalty'), 'points', 0.5);
+
+                            return ($userTransactions * $successfulTransactionPoints)
+                                + ($userTours * $siteTourPoints)
+                                + ($userMeetings * $customerMeetingPoints)
+                                + ($userReferrals * $successfulReferralPoints)
+                                + ($workDaysStep > 0 ? floor($userWorkDays / $workDaysStep) * $workDayPoints : 0)
+                                - ($userAbsences * abs($absencePenalty));
+                        })()),
                         'rank' => $rank,
                         'next_rank_points' => $this->getNextRankPoints($totalPoints),
                     ],

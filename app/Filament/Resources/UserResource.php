@@ -40,7 +40,8 @@ class UserResource extends Resource
                 Forms\Components\Select::make('role')
                     ->label('Vai trò')
                     ->options(self::enumOptions(UserRole::class))
-                    ->required(),
+                    ->required()
+                    ->live(),
                 Forms\Components\Toggle::make('is_active')->label('Đang hoạt động')->default(true),
             ])->columns(2),
             Forms\Components\Section::make('Phân quyền và phòng ban')->schema([
@@ -53,7 +54,8 @@ class UserResource extends Resource
                     ->label('Chi nhánh')
                     ->relationship('branch', 'name')
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->required(fn (Forms\Get $get): bool => (int) $get('role') === UserRole::DIRECTOR->value),
                 Forms\Components\Select::make('job_position_id')
                     ->label('Chức danh')
                     ->relationship('jobPosition', 'name')

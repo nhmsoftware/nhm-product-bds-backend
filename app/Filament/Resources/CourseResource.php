@@ -5,7 +5,7 @@ use App\Filament\Resources\CourseResource\Pages;
 use App\Filament\Resources\CourseResource\RelationManagers\EnrollmentsRelationManager;
 use App\Filament\Resources\CourseResource\RelationManagers\LessonsRelationManager;
 use App\Modules\Learning\Models\Course;
-use App\Filament\Support\AdminOptions;
+use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminUploads;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -18,6 +18,7 @@ class CourseResource extends Resource
     protected static ?string $model = Course::class;
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
     protected static ?string $navigationGroup = 'Đào tạo';
+    protected static ?string $navigationLabel = 'Quản lý khóa học';
     protected static ?string $modelLabel = 'Khóa học';
     protected static ?string $pluralModelLabel = 'Khóa học';
 
@@ -28,9 +29,7 @@ class CourseResource extends Resource
                 Forms\Components\TextInput::make('title')->label('Tên khóa học')->required()->maxLength(255),
                 AdminUploads::image('thumbnail', 'Ảnh khóa học', 'admin/courses')->columnSpanFull(),
                 Forms\Components\Textarea::make('description')->label('Mô tả')->rows(4)->columnSpanFull(),
-                Forms\Components\Toggle::make('is_required')->label('Khóa học bắt buộc')->helperText('Mobile dùng trường này để hiển thị khóa bắt buộc cho nhân viên.')->default(true),
-                Forms\Components\Select::make('department')->label('Phòng ban phân bổ')->options(AdminOptions::departments())->searchable()->helperText('Để trống nếu áp dụng toàn bộ nhân viên.'),
-                Forms\Components\TextInput::make('job_position')->label('Vị trí công việc phân bổ')->helperText('Để trống nếu áp dụng toàn bộ vị trí.'),
+                Forms\Components\Toggle::make('is_required')->label('Khóa học bắt buộc')->helperText('Chỉ được có 1 khóa học bắt buộc trong hệ thống.')->default(false),
                 Forms\Components\TextInput::make('order')->label('Thứ tự hiển thị')->numeric()->default(0),
                 Forms\Components\Toggle::make('is_active')->label('Mở khóa học')->default(true),
                 Forms\Components\Toggle::make('has_certificate')->label('Cấp chứng chỉ khi hoàn thành')->default(true),
@@ -45,15 +44,13 @@ class CourseResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            Tables\Columns\ImageColumn::make('thumbnail')->label('Ảnh')->square(),
+            AdminImageColumn::make('thumbnail')->label('Ảnh')->square(),
             Tables\Columns\TextColumn::make('title')->label('Khóa học')->searchable()->sortable()->limit(45),
-            Tables\Columns\IconColumn::make('is_required')->label('Bắt buộc')->boolean(),
-            Tables\Columns\TextColumn::make('department')->label('Phòng ban')->placeholder('Toàn bộ'),
-            Tables\Columns\TextColumn::make('job_position')->label('Vị trí')->placeholder('Toàn bộ'),
-            Tables\Columns\IconColumn::make('is_active')->label('Mở')->boolean(),
-            Tables\Columns\IconColumn::make('has_certificate')->label('Chứng chỉ')->boolean(),
-            Tables\Columns\TextColumn::make('lessons_count')->label('Bài học')->counts('lessons'),
-            Tables\Columns\TextColumn::make('enrollments_count')->label('Nhân viên học')->counts('enrollments'),
+            Tables\Columns\IconColumn::make('is_required')->label('Bắt buộc')->boolean()->alignCenter(),
+            Tables\Columns\IconColumn::make('is_active')->label('Mở')->boolean()->alignCenter(),
+            Tables\Columns\IconColumn::make('has_certificate')->label('Chứng chỉ')->boolean()->alignCenter(),
+            Tables\Columns\TextColumn::make('lessons_count')->label('Bài học')->counts('lessons')->alignCenter(),
+            Tables\Columns\TextColumn::make('enrollments_count')->label('Nhân viên đã học')->counts('enrollments')->alignCenter(),
         ])->filters([
             Tables\Filters\TernaryFilter::make('is_required')->label('Bắt buộc'),
             Tables\Filters\TernaryFilter::make('is_active')->label('Đang mở'),

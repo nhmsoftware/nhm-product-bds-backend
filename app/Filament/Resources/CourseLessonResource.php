@@ -3,6 +3,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CourseLessonResource\Pages;
 use App\Filament\Resources\CourseLessonResource\RelationManagers\QuizzesRelationManager;
+use App\Filament\Support\AdminUploads;
 use App\Modules\Learning\Models\CourseLesson;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -29,8 +30,8 @@ class CourseLessonResource extends Resource
             Forms\Components\Select::make('course_id')->label('Khóa học')->relationship('course', 'title')->searchable()->preload()->required(),
             Forms\Components\TextInput::make('title')->label('Tên bài học')->required()->maxLength(255),
             Forms\Components\RichEditor::make('content')->label('Mô tả/Nội dung bài học')->columnSpanFull(),
-            Forms\Components\TextInput::make('video_url')->label('Video đào tạo')->url()->columnSpanFull(),
-            Forms\Components\TextInput::make('duration_seconds')->label('Thời lượng video (giây)')->numeric()->minValue(0)->default(0),
+            AdminUploads::video('video_url', 'Video đào tạo', 'admin/lessons/videos')->columnSpanFull(),
+            Forms\Components\TextInput::make('duration_seconds')->label('Thời lượng video (giây)')->numeric()->minValue(0)->default(0)->helperText('Nhập thủ công thời lượng video tính bằng giây.'),
             Forms\Components\TextInput::make('order')->label('Thứ tự')->numeric()->default(0),
             Forms\Components\Toggle::make('is_active')->label('Mở khóa bài học')->default(true),
             Forms\Components\Repeater::make('attachments')

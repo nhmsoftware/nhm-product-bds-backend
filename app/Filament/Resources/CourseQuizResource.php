@@ -1,9 +1,11 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CourseQuizResource\Pages;
-use App\Modules\Learning\Models\CourseQuiz;
-use App\Filament\Support\AdminUploads;
+use App\Modules\Learning\Models\Course;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -12,26 +14,113 @@ use Filament\Tables\Table;
 
 class CourseQuizResource extends Resource
 {
-    protected static ?string $model = CourseQuiz::class;
+    protected static ?string $model = Course::class;
     protected static ?string $navigationIcon = 'heroicon-o-question-mark-circle';
     protected static ?string $navigationGroup = 'Đào tạo';
-    protected static ?string $modelLabel = 'Câu hỏi quiz';
-    protected static ?string $pluralModelLabel = 'Câu hỏi quiz';
+    protected static ?string $navigationLabel = 'Quản lý quiz';
+    protected static ?string $modelLabel = 'Quiz';
+    protected static ?string $pluralModelLabel = 'Quản lý quiz';
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
-        return $form->schema(self::quizFormSchema())->columns(2);
+        return $form->schema([
+            Forms\Components\TextInput::make('title')
+                ->label('Tên khóa học')
+                ->disabled(),
+            Forms\Components\Textarea::make('description')
+                ->label('Mô tả khóa học')
+                ->disabled()
+                ->columnSpanFull(),
+        ])->columns(2);
     }
 
-    public static function quizFormSchema(): array
+    public static function table(Table $table): Table
+    {
+        return $table->columns([
+            Tables\Columns\TextColumn::make('title')
+                ->label('Khóa học')
+                ->searchable()
+                ->sortable()
+                ->limit(60),
+            Tables\Columns\TextColumn::make('quizzes_count')
+                ->label('Số câu hỏi')
+                ->counts('quizzes')
+                ->badge(),
+        ])
+        ->defaultSort('order')
+        ->actions([
+            Tables\Actions\EditAction::make()
+                ->label('Quản lý câu hỏi')
+                ->icon('heroicon-o-pencil-square'),
+        ]);
+    }
+
+    public static function getRelations(): array
     {
         return [
-            Forms\Components\Select::make('lesson_id')->label('Bài học')->relationship('lesson', 'title')->searchable()->preload()->required(),
-            Forms\Components\Select::make('type')->label('Loại câu hỏi')->options(['multiple_choice' => 'Trắc nghiệm', 'essay' => 'Tự luận'])->required()->live()->default('multiple_choice'),
-            Forms\Components\TextInput::make('order')->label('Thứ tự')->numeric()->default(0),
-            Forms\Components\TextInput::make('title')->label('Tiêu đề')->maxLength(255),
-            Forms\Components\Textarea::make('question')->label('Nội dung câu hỏi')->required()->columnSpanFull(),
-            AdminUploads::image('image_url', 'Ảnh minh họa', 'admin/course-quizzes')->columnSpanFull(),
+            CourseLessonResource\RelationManagers\QuizzesRelationManager::class,
+        ];
+    }
+
+    public static function quizFormSchema(mixed $context = null): array
+    {
+        $schema = [];
+        if ($context instanceof \Filament\Resources\RelationManagers\RelationManager) {
+            $schema[] = Forms\Components\Select::make('lesson_id')
+                ->label('Bài học')
+                ->options(function () use ($context): array {
+                    $courseId = $context->getOwnerRecord()->id;
+                    return \App\Modules\Learning\Models\CourseLesson::where('course_id', $courseId)
+                        ->orderBy('order')
+                        ->pluck('title', 'id')
+                        ->toArray();
+                })
+                ->searchable()
+                ->preload()
+                ->required();
+        } elseif ($context === true || $context === false) {
+            if (!$context) {
+                $schema[] = Forms\Components\Select::make('lesson_id')
+                    ->label('Bài học')
+                    ->relationship('lesson', 'title')
+                    ->searchable()
+                    ->preload()
+                    ->required();
+            }
+        } else {
+            $schema[] = Forms\Components\Select::make('lesson_id')
+                ->label('Bài học')
+                ->relationship('lesson', 'title')
+                ->searchable()
+                ->preload()
+                ->required();
+        }
+
+        return array_merge($schema, [
+            Forms\Components\Select::make('type')
+                ->label('Loại câu hỏi')
+                ->options(['multiple_choice' => 'Trắc nghiệm', 'essay' => 'Tự luận'])
+                ->required()
+                ->live()
+                ->default('multiple_choice'),
+            Forms\Components\TextInput::make('order')
+                ->label('Thứ tự')
+                ->numeric()
+                ->default(0),
+            Forms\Components\TextInput::make('title')
+                ->label('Tiêu đề (không bắt buộc)')
+                ->maxLength(255),
+            Forms\Components\Textarea::make('question')
+                ->label('Nội dung câu hỏi')
+                ->required()
+                ->columnSpanFull(),
+            \App\Filament\Support\AdminUploads::image('image_url', 'Ảnh minh họa', 'admin/course-quizzes')
+                ->columnSpanFull(),
             Forms\Components\Repeater::make('options')
                 ->label('Đáp án trắc nghiệm')
                 ->schema([
@@ -43,29 +132,21 @@ class CourseQuizResource extends Resource
                 ->visible(fn (Forms\Get $get): bool => $get('type') === 'multiple_choice')
                 ->columnSpanFull(),
             Forms\Components\TextInput::make('correct_option')
-                ->label('Mã đáp án đúng')
+                ->label('Mã đáp án đúng (ví dụ: 0 cho đáp án 1, 1 cho đáp án 2)')
                 ->numeric()
                 ->visible(fn (Forms\Get $get): bool => $get('type') === 'multiple_choice'),
             Forms\Components\TextInput::make('placeholder')
                 ->label('Gợi ý nhập câu tự luận')
                 ->visible(fn (Forms\Get $get): bool => $get('type') === 'essay')
                 ->columnSpanFull(),
-        ];
-    }
-
-    public static function table(Table $table): Table
-    {
-        return $table->columns([
-            Tables\Columns\TextColumn::make('lesson.course.title')->label('Khóa học')->limit(35),
-            Tables\Columns\TextColumn::make('lesson.title')->label('Bài học')->searchable()->limit(35),
-            Tables\Columns\TextColumn::make('order')->label('Thứ tự')->sortable(),
-            Tables\Columns\TextColumn::make('type')->label('Loại')->formatStateUsing(fn (?string $state) => $state === 'essay' ? 'Tự luận' : 'Trắc nghiệm')->badge(),
-            Tables\Columns\TextColumn::make('question')->label('Câu hỏi')->searchable()->limit(60),
-        ])->defaultSort('order')->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()]);
+        ]);
     }
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListCourseQuizzes::route('/'), 'create' => Pages\CreateCourseQuiz::route('/create'), 'edit' => Pages\EditCourseQuiz::route('/{record}/edit')];
+        return [
+            'index' => Pages\ListCourseQuizzes::route('/'),
+            'edit' => Pages\EditCourseQuiz::route('/{record}/edit'),
+        ];
     }
 }

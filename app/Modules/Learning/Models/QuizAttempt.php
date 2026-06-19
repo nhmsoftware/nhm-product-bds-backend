@@ -21,9 +21,12 @@ use OpenApi\Attributes as OA;
  * @property string|null $essay_answer
  * @property bool|null $is_correct
  * @property bool $is_draft
+ * @property string|null $graded_by
+ * @property \Illuminate\Support\Carbon|null $graded_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read User|null $user
+ * @property-read User|null $grader
  * @property-read Quiz|null $quiz
  * @mixin \Eloquent
  */
@@ -54,6 +57,8 @@ class QuizAttempt extends Model
         'essay_answer',
         'is_correct',
         'is_draft',
+        'graded_by',
+        'graded_at',
     ];
 
     protected $casts = [
@@ -63,6 +68,8 @@ class QuizAttempt extends Model
         'selected_option' => 'integer',
         'is_correct' => 'boolean',
         'is_draft' => 'boolean',
+        'graded_by' => 'string',
+        'graded_at' => 'datetime',
     ];
 
     // ─── Relationships ───────────────────────────────────────────
@@ -85,5 +92,15 @@ class QuizAttempt extends Model
     public function quiz(): BelongsTo
     {
         return $this->belongsTo(CourseQuiz::class, 'quiz_id');
+    }
+
+    /**
+     * Admin chấm bài.
+     *
+     * @return BelongsTo
+     */
+    public function grader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'graded_by');
     }
 }

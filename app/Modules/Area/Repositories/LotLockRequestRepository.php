@@ -25,7 +25,7 @@ final class LotLockRequestRepository extends BaseRepository implements LotLockRe
     {
         return $this->model
             ->where('lot_id', $lotId)
-            ->whereIn('status', [LotLockRequestStatus::PENDING->value, LotLockRequestStatus::APPROVED->value])
+            ->where('status', LotLockRequestStatus::APPROVED->value)
             ->latest('created_at')
             ->first();
     }

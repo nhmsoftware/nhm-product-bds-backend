@@ -18,12 +18,12 @@ class DatabaseSeeder extends Seeder
         $this->cleanOldSeedData();
 
         $this->call([
-            InventoryAreaSeeder::class,
             DepartmentSeeder::class,
+            InventoryAreaSeeder::class,
             ConsultationSettingSeeder::class,
+            KpiSettingSeeder::class,
             LegalVideoSeeder::class,
             BdsCourseSeeder::class,
-            LearningFakeDataSeeder::class,
             LearningPathDemoSeeder::class,
             NewsDemoSeeder::class,
             AreaCommentSeeder::class,

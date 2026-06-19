@@ -16,7 +16,7 @@ use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\RevenueReport;
 use App\Filament\Pages\EmployeeReport;
 use App\Filament\Pages\DepartmentReport;
-use App\Filament\Pages\ReferralCommissionReport;
+use App\Filament\Pages\ManageSettings;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -51,7 +51,7 @@ class AdminPanelProvider extends PanelProvider
                 RevenueReport::class,
                 EmployeeReport::class,
                 DepartmentReport::class,
-                ReferralCommissionReport::class,
+                ManageSettings::class,
             ])
             ->navigationGroups([
                 NavigationGroup::make()

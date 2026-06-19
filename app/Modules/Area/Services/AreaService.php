@@ -459,35 +459,45 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 $this->throw('Lô đất không ở trạng thái còn hàng.', 400);
             }
 
-            // 7. Tạo yêu cầu lock lô và chờ Admin duyệt
+            $expiresAt = $this->lotLockExpiresAt();
+
+            // 7. Tạo lock lô — tự động thành công, không cần Admin duyệt
             $lockRequest = $this->lotLockRequestRepository->create([
-                'lot_id' => $dto->lotId,
-                'user_id' => $dto->userId,
-                'reason' => $dto->reason,
-                'status' => LotLockRequestStatus::PENDING->value,
-                'expires_at' => $this->lotLockExpiresAt(),
+                'lot_id'     => $dto->lotId,
+                'user_id'    => $dto->userId,
+                'reason'     => $dto->reason,
+                'status'     => LotLockRequestStatus::APPROVED->value,
+                'approved_by' => $dto->userId,
+                'approved_at' => now(),
+                'expires_at' => $expiresAt,
             ]);
 
-            // 8. Fire Event
+            // 8. Cập nhật trạng thái lô đất → Đang giữ chỗ
+            $lot->update([
+                'status'    => LotStatus::RESERVED->value,
+                'is_locked' => true,
+            ]);
+
+            // 9. Fire Event
             event(new LotLocked($lot, $lockRequest));
 
             $data = [
-                'id' => (string) $lockRequest->id,
-                'lot_id' => (string) $lockRequest->lot_id,
-                'user_id' => (string) $lockRequest->user_id,
-                'reason' => $lockRequest->reason,
-                'status' => LotLockRequestStatus::PENDING->value,
-                'status_label' => LotLockRequestStatus::PENDING->label(),
-                'expires_at' => $lockRequest->expires_at ? $lockRequest->expires_at->toIso8601String() : null,
-                'created_at' => $lockRequest->created_at ? $lockRequest->created_at->toIso8601String() : null,
+                'id'          => (string) $lockRequest->id,
+                'lot_id'      => (string) $lockRequest->lot_id,
+                'user_id'     => (string) $lockRequest->user_id,
+                'reason'      => $lockRequest->reason,
+                'status'      => LotLockRequestStatus::APPROVED->value,
+                'status_label' => LotLockRequestStatus::APPROVED->label(),
+                'expires_at'  => $lockRequest->expires_at ? $lockRequest->expires_at->toIso8601String() : null,
+                'created_at'  => $lockRequest->created_at ? $lockRequest->created_at->toIso8601String() : null,
                 'lot' => [
-                    'id' => $lot->id,
-                    'code' => $lot->code,
-                    'status' => LotStatus::AVAILABLE->serialize(),
+                    'id'     => $lot->id,
+                    'code'   => $lot->code,
+                    'status' => LotStatus::RESERVED->serialize(),
                 ]
             ];
 
-            return $this->success($data, 'Yêu cầu lock lô đã được gửi và đang chờ phê duyệt.');
+            return $this->success($data, 'Lock lô đất thành công.');
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
             if ($e instanceof ServiceException) {
                 return ServiceReturn::error(

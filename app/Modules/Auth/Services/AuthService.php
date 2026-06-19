@@ -356,6 +356,11 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'role' => $user->role->serialize(),
                 'is_active' => (bool) $user->is_active,
                 'created_at' => $user->created_at ? $user->created_at->toIso8601String() : null,
+                'branch' => $user->branch,
+                'branch_name' => $user->branch,
+                'branch_id' => $user->branch_id,
+                'department' => $user->department,
+                'job_position' => $user->job_position,
             ];
 
             return $this->success($profile, 'Tải thông tin cá nhân thành công.');
@@ -379,7 +384,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 403
             );
 
-            $departments = collect($this->authRepository->getActiveDepartmentNames())
+            $departments = collect($this->authRepository->getActiveDepartmentNames($user->branch_id))
                 ->map(fn (string $department) => [
                     'label' => $department,
                     'value' => $department,
@@ -443,6 +448,11 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'role' => $updated->role->serialize(),
                 'is_active' => (bool) $updated->is_active,
                 'created_at' => $updated->created_at ? $updated->created_at->toIso8601String() : null,
+                'branch' => $updated->branch,
+                'branch_name' => $updated->branch,
+                'branch_id' => $updated->branch_id,
+                'department' => $updated->department,
+                'job_position' => $updated->job_position,
             ];
 
             return $this->success($profile, 'Cập nhật thông tin thành công.');
@@ -865,9 +875,15 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $quarterProgress = $quarterPoints > 0 ? round(($quarterPoints / $targetPoints) * 100, 2) : 0;
             if ($quarterProgress > 100) $quarterProgress = 100;
 
+            $kpiPoints = $this->calculateEmployeeKpiPoints(
+                $userId,
+                now()->startOfMonth()->toDateString(),
+                now()->endOfMonth()->toDateString()
+            );
+
             $overview = [
                 'total_points' => $totalPoints,
-                'kpi_stars' => $ep?->kpi_stars ?? 0,
+                'kpi_stars' => (int) $kpiPoints,
                 'rank' => $rank,
                 'current_month_points' => $currentMonthPoints,
                 'quarter_progress_percent' => $quarterProgress,
@@ -1231,10 +1247,18 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $referrals = $this->referralHistoryRepository->countSuccessfulReferralsByUsers($userIds, $dto->fromDate, $dto->toDate);
             $workDays = $this->attendanceRepository->countWorkDaysByUsers($userIds, $dto->fromDate, $dto->toDate);
             $absences = $this->attendanceRepository->countFixedScheduleAbsencesByUsers($userIds, $dto->fromDate, $dto->toDate);
-            $stars = $this->rewardPointHistoryRepository->sumStarsByUsersAndDateRange($userIds, $dto->fromDate, $dto->toDate);
+
+            $settings = \App\Modules\Area\Models\InventorySetting::pluck('value', 'key');
+            $successfulTransactionPoints = (float) data_get($settings->get('kpi_points_successful_transaction'), 'points', 10);
+            $siteTourPoints = (float) data_get($settings->get('kpi_points_site_tour'), 'points', 1);
+            $customerMeetingPoints = (float) data_get($settings->get('kpi_points_customer_meeting'), 'points', 0.5);
+            $successfulReferralPoints = (float) data_get($settings->get('kpi_points_successful_referral'), 'points', 1);
+            $workDayPoints = (float) data_get($settings->get('kpi_points_work_day_rate'), 'points', 1);
+            $workDaysStep = (int) data_get($settings->get('kpi_points_work_day_rate'), 'days', 5);
+            $absencePenalty = (float) data_get($settings->get('kpi_points_absence_penalty'), 'points', 0.5);
 
             // Tính toán và định dạng dữ liệu cho từng nhân viên
-            $rankedList = $members->map(function ($member) use ($transactions, $tours, $meetings, $referrals, $workDays, $absences, $stars, $dto) {
+            $rankedList = $members->map(function ($member) use ($transactions, $tours, $meetings, $referrals, $workDays, $absences, $dto, $successfulTransactionPoints, $siteTourPoints, $customerMeetingPoints, $successfulReferralPoints, $workDayPoints, $workDaysStep, $absencePenalty) {
                 $mId = (string) $member->id;
                 $userTransactions = $transactions->get($mId, 0);
                 $userTours = $tours->get($mId, 0);
@@ -1243,18 +1267,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 $userWorkDays = $workDays->get($mId, 0);
                 $userAbsences = $absences->get($mId, 0);
 
-                $kpiPoints = ($userTransactions * 10)
-                    + ($userTours * 1)
-                    + ($userMeetings * 0.5)
-                    + ($userReferrals * 1)
-                    + floor($userWorkDays / 5)
-                    - ($userAbsences * 0.5);
-
-                if ($dto->fromDate || $dto->toDate) {
-                    $kpiStars = (int) $stars->get($mId, 0);
-                } else {
-                    $kpiStars = (int) ($member->employeeProfile->kpi_stars ?? 0);
-                }
+                $kpiPoints = ($userTransactions * $successfulTransactionPoints)
+                    + ($userTours * $siteTourPoints)
+                    + ($userMeetings * $customerMeetingPoints)
+                    + ($userReferrals * $successfulReferralPoints)
+                    + ($workDaysStep > 0 ? floor($userWorkDays / $workDaysStep) * $workDayPoints : 0)
+                    - ($userAbsences * abs($absencePenalty));
 
                 return [
                     'id' => $mId,
@@ -1264,7 +1282,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                     'avatar' => $member->avatar,
                     'total_kpi_points' => $kpiPoints,
                     'successful_transactions' => $userTransactions,
-                    'kpi_stars' => $kpiStars,
+                    'kpi_stars' => (int) $kpiPoints,
                 ];
             });
 
@@ -1349,22 +1367,23 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $userWorkDays = $this->attendanceRepository->countWorkDays($dto->employeeId, $dto->fromDate, $dto->toDate);
             $userAbsences = $this->attendanceRepository->countFixedScheduleAbsences($dto->employeeId, $dto->fromDate, $dto->toDate);
 
-            $kpiPoints = ($userTransactions * 10)
-                + ($userTours * 1)
-                + ($userMeetings * 0.5)
-                + ($userReferrals * 1)
-                + floor($userWorkDays / 5)
-                - ($userAbsences * 0.5);
+            $settings = \App\Modules\Area\Models\InventorySetting::pluck('value', 'key');
+            $successfulTransactionPoints = (float) data_get($settings->get('kpi_points_successful_transaction'), 'points', 10);
+            $siteTourPoints = (float) data_get($settings->get('kpi_points_site_tour'), 'points', 1);
+            $customerMeetingPoints = (float) data_get($settings->get('kpi_points_customer_meeting'), 'points', 0.5);
+            $successfulReferralPoints = (float) data_get($settings->get('kpi_points_successful_referral'), 'points', 1);
+            $workDayPoints = (float) data_get($settings->get('kpi_points_work_day_rate'), 'points', 1);
+            $workDaysStep = (int) data_get($settings->get('kpi_points_work_day_rate'), 'days', 5);
+            $absencePenalty = (float) data_get($settings->get('kpi_points_absence_penalty'), 'points', 0.5);
 
-            if ($dto->fromDate || $dto->toDate) {
-                $totalStars = $this->rewardPointHistoryRepository->sumStarsByUserAndDateRange(
-                    $dto->employeeId,
-                    $dto->fromDate,
-                    $dto->toDate
-                );
-            } else {
-                $totalStars = (int) ($employee->employeeProfile->kpi_stars ?? 0);
-            }
+            $kpiPoints = ($userTransactions * $successfulTransactionPoints)
+                + ($userTours * $siteTourPoints)
+                + ($userMeetings * $customerMeetingPoints)
+                + ($userReferrals * $successfulReferralPoints)
+                + ($workDaysStep > 0 ? floor($userWorkDays / $workDaysStep) * $workDayPoints : 0)
+                - ($userAbsences * abs($absencePenalty));
+
+            $totalStars = (int) $kpiPoints;
 
             // Lấy lịch sử điểm thưởng của nhân viên
             $history = $this->rewardPointHistoryRepository->getHistoriesPaginated(
@@ -1463,6 +1482,15 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 $toDate = \Carbon\Carbon::create($year, $startMonth + 2, 1)->endOfMonth()->toDateString();
             }
 
+            $settings = \App\Modules\Area\Models\InventorySetting::pluck('value', 'key');
+            $successfulTransactionPoints = (float) data_get($settings->get('kpi_points_successful_transaction'), 'points', 10);
+            $siteTourPoints = (float) data_get($settings->get('kpi_points_site_tour'), 'points', 1);
+            $customerMeetingPoints = (float) data_get($settings->get('kpi_points_customer_meeting'), 'points', 0.5);
+            $successfulReferralPoints = (float) data_get($settings->get('kpi_points_successful_referral'), 'points', 1);
+            $workDayPoints = (float) data_get($settings->get('kpi_points_work_day_rate'), 'points', 1);
+            $workDaysStep = (int) data_get($settings->get('kpi_points_work_day_rate'), 'days', 5);
+            $absencePenalty = (float) data_get($settings->get('kpi_points_absence_penalty'), 'points', 0.5);
+
             $usersByDept = $users->groupBy('department');
             $deptData = [];
 
@@ -1485,10 +1513,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 $workDaysMap = $this->attendanceRepository->countWorkDaysByUsers($userIds, $fromDate, $toDate);
                 $absencesMap = $this->attendanceRepository->countFixedScheduleAbsencesByUsers($userIds, $fromDate, $toDate);
 
-                // 6. Số lượng sao
-                $starsMap = $this->rewardPointHistoryRepository->sumStarsByUsersAndDateRange($userIds, $fromDate, $toDate);
-
-                // Tính toán KPI và sao của từng nhân viên rồi cộng lại
+                // Tính toán KPI của từng nhân viên rồi cộng lại
                 $totalKpiPoints = 0;
                 $totalStars = 0;
 
@@ -1504,22 +1529,15 @@ final class AuthService extends BaseService implements AuthServiceInterface
                     $uWorkDays = $workDaysMap->get($uId, 0);
                     $uAbsences = $absencesMap->get($uId, 0);
 
-                    $kpi = ($uTransactions * 10)
-                        + ($uTours * 1)
-                        + ($uMeetings * 0.5)
-                        + ($uReferrals * 1)
-                        + floor($uWorkDays / 5)
-                        - ($uAbsences * 0.5);
+                    $kpi = ($uTransactions * $successfulTransactionPoints)
+                        + ($uTours * $siteTourPoints)
+                        + ($uMeetings * $customerMeetingPoints)
+                        + ($uReferrals * $successfulReferralPoints)
+                        + ($workDaysStep > 0 ? floor($uWorkDays / $workDaysStep) * $workDayPoints : 0)
+                        - ($uAbsences * abs($absencePenalty));
 
                     $totalKpiPoints += $kpi;
-
-                    if ($fromDate || $toDate) {
-                        $totalStars += (int) $starsMap->get($uId, 0);
-                    } else {
-                        // All-time: lấy từ profile
-                        $userObj = $deptUsers->firstWhere('id', $uId);
-                        $totalStars += (int) ($userObj->employeeProfile->kpi_stars ?? 0);
-                    }
+                    $totalStars += $kpi;
                 }
 
                 $deptData[] = [
@@ -1623,9 +1641,17 @@ final class AuthService extends BaseService implements AuthServiceInterface
 
             $workDaysMap = $this->attendanceRepository->countWorkDaysByUsers($userIds, $fromDate, $toDate);
             $absencesMap = $this->attendanceRepository->countFixedScheduleAbsencesByUsers($userIds, $fromDate, $toDate);
-            $starsMap = $this->rewardPointHistoryRepository->sumStarsByUsersAndDateRange($userIds, $fromDate, $toDate);
 
-            $rankedList = $members->map(function ($member) use ($workDaysMap, $absencesMap, $starsMap, $fromDate, $toDate) {
+            $settings = \App\Modules\Area\Models\InventorySetting::pluck('value', 'key');
+            $successfulTransactionPoints = (float) data_get($settings->get('kpi_points_successful_transaction'), 'points', 10);
+            $siteTourPoints = (float) data_get($settings->get('kpi_points_site_tour'), 'points', 1);
+            $customerMeetingPoints = (float) data_get($settings->get('kpi_points_customer_meeting'), 'points', 0.5);
+            $successfulReferralPoints = (float) data_get($settings->get('kpi_points_successful_referral'), 'points', 1);
+            $workDayPoints = (float) data_get($settings->get('kpi_points_work_day_rate'), 'points', 1);
+            $workDaysStep = (int) data_get($settings->get('kpi_points_work_day_rate'), 'days', 5);
+            $absencePenalty = (float) data_get($settings->get('kpi_points_absence_penalty'), 'points', 0.5);
+
+            $rankedList = $members->map(function ($member) use ($workDaysMap, $absencesMap, $fromDate, $toDate, $successfulTransactionPoints, $siteTourPoints, $customerMeetingPoints, $successfulReferralPoints, $workDayPoints, $workDaysStep, $absencePenalty) {
                 $mId = (string) $member->id;
 
                 $uTransactions = $this->lotDepositRequestRepository->countCompletedTransactions($mId, $fromDate, $toDate);
@@ -1639,18 +1665,12 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 $uWorkDays = $workDaysMap->get($mId, 0);
                 $uAbsences = $absencesMap->get($mId, 0);
 
-                $kpiPoints = ($uTransactions * 10)
-                    + ($uTours * 1)
-                    + ($uMeetings * 0.5)
-                    + ($uReferrals * 1)
-                    + floor($uWorkDays / 5)
-                    - ($uAbsences * 0.5);
-
-                if ($fromDate || $toDate) {
-                    $kpiStars = (int) $starsMap->get($mId, 0);
-                } else {
-                    $kpiStars = (int) ($member->employeeProfile->kpi_stars ?? 0);
-                }
+                $kpiPoints = ($uTransactions * $successfulTransactionPoints)
+                    + ($uTours * $siteTourPoints)
+                    + ($uMeetings * $customerMeetingPoints)
+                    + ($uReferrals * $successfulReferralPoints)
+                    + ($workDaysStep > 0 ? floor($uWorkDays / $workDaysStep) * $workDayPoints : 0)
+                    - ($uAbsences * abs($absencePenalty));
 
                 return [
                     'id' => $mId,
@@ -1660,7 +1680,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
                     'avatar' => $member->avatar,
                     'total_kpi_points' => $kpiPoints,
                     'successful_transactions' => $uTransactions,
-                    'kpi_stars' => $kpiStars,
+                    'kpi_stars' => (int) $kpiPoints,
                 ];
             });
 
@@ -1725,5 +1745,31 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 'Cập nhật token thông báo thành công.'
             );
         });
+    }
+
+    private function calculateEmployeeKpiPoints(string $employeeId, ?string $fromDate = null, ?string $toDate = null): float
+    {
+        $userTransactions = $this->lotDepositRequestRepository->countCompletedTransactions($employeeId, $fromDate, $toDate);
+        $userTours = $this->siteTourRepository->countSiteTours($employeeId, $fromDate, $toDate);
+        $userMeetings = $this->customerMeetingRepository->countCustomerMeetings($employeeId, $fromDate, $toDate);
+        $userReferrals = $this->referralHistoryRepository->countSuccessfulReferralsForUsers($employeeId, $fromDate, $toDate);
+        $userWorkDays = $this->attendanceRepository->countWorkDays($employeeId, $fromDate, $toDate);
+        $userAbsences = $this->attendanceRepository->countFixedScheduleAbsences($employeeId, $fromDate, $toDate);
+
+        $settings = \App\Modules\Area\Models\InventorySetting::pluck('value', 'key');
+        $successfulTransactionPoints = (float) data_get($settings->get('kpi_points_successful_transaction'), 'points', 10);
+        $siteTourPoints = (float) data_get($settings->get('kpi_points_site_tour'), 'points', 1);
+        $customerMeetingPoints = (float) data_get($settings->get('kpi_points_customer_meeting'), 'points', 0.5);
+        $successfulReferralPoints = (float) data_get($settings->get('kpi_points_successful_referral'), 'points', 1);
+        $workDayPoints = (float) data_get($settings->get('kpi_points_work_day_rate'), 'points', 1);
+        $workDaysStep = (int) data_get($settings->get('kpi_points_work_day_rate'), 'days', 5);
+        $absencePenalty = (float) data_get($settings->get('kpi_points_absence_penalty'), 'points', 0.5);
+
+        return ($userTransactions * $successfulTransactionPoints)
+            + ($userTours * $siteTourPoints)
+            + ($userMeetings * $customerMeetingPoints)
+            + ($userReferrals * $successfulReferralPoints)
+            + ($workDaysStep > 0 ? floor($userWorkDays / $workDaysStep) * $workDayPoints : 0)
+            - ($userAbsences * abs($absencePenalty));
     }
 }

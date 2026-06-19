@@ -85,7 +85,7 @@ class DepartmentPerformance extends TableWidget
             })
             ->selectRaw('MIN(users.id::text) as id')
             ->selectRaw('departments.name as department_name')
-            ->selectRaw('COALESCE(SUM(employee_profiles.kpi_stars), 0) as total_kpi')
+            ->selectRaw('COALESCE(SUM(' . \App\Modules\Auth\Models\EmployeeProfile::getKpiPointsSelectRaw('users.id') . '), 0) as total_kpi')
             ->selectRaw('COALESCE(MAX(department_transactions.successful_transactions), 0) as successful_transactions')
             ->selectRaw('COALESCE(MAX(department_transactions.total_revenue), 0) as total_revenue')
             ->groupBy('users.department_id', 'departments.name');

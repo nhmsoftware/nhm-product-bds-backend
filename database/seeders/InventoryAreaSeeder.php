@@ -180,11 +180,14 @@ class InventoryAreaSeeder extends Seeder
 
         $users = [];
 
-        $getJobPositionId = function (?string $name, ?string $deptName) use ($now) {
+        $getJobPositionId = function (?string $name, ?string $deptName, ?string $branchId = null) use ($now) {
             if (empty($name)) return null;
             $deptId = null;
             if (!empty($deptName)) {
-                $deptId = DB::table('departments')->where('name', $deptName)->value('id');
+                $deptId = DB::table('departments')
+                    ->where('name', $deptName)
+                    ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+                    ->value('id');
             }
             $existingId = DB::table('job_positions')->where('name', $name)->value('id');
             if ($existingId) return $existingId;
@@ -211,9 +214,12 @@ class InventoryAreaSeeder extends Seeder
             }
             $deptId = null;
             if (!empty($data['department'])) {
-                $deptId = DB::table('departments')->where('name', $data['department'])->value('id');
+                $deptId = DB::table('departments')
+                    ->where('name', $data['department'])
+                    ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+                    ->value('id');
             }
-            $jobPosId = $getJobPositionId($data['job_position'], $data['department']);
+            $jobPosId = $getJobPositionId($data['job_position'], $data['department'], $branchId);
 
             $payload = [
                 'staff_code' => $data['staff_code'],
@@ -282,8 +288,6 @@ class InventoryAreaSeeder extends Seeder
                 'prefix' => 'A',
                 'direction' => 'Đông Nam',
                 'area_size' => 4120.5,
-                'price' => 5200000000,
-                'unit_price' => 52000000,
                 'status' => AreaStatus::OPENING->value,
                 'is_featured' => true,
                 'image_seed' => 'inventory-aurora',
@@ -316,8 +320,6 @@ DESC,
                 'prefix' => 'P',
                 'direction' => 'Tây Nam',
                 'area_size' => 3680.25,
-                'price' => 3900000000,
-                'unit_price' => 41000000,
                 'status' => AreaStatus::OPENING->value,
                 'is_featured' => true,
                 'image_seed' => 'inventory-palm',
@@ -347,8 +349,6 @@ DESC,
                 'prefix' => 'R',
                 'direction' => 'Đông Bắc',
                 'area_size' => 2860.75,
-                'price' => 7600000000,
-                'unit_price' => 68000000,
                 'status' => AreaStatus::OPENING->value,
                 'is_featured' => true,
                 'image_seed' => 'inventory-riverfront',
@@ -376,8 +376,6 @@ DESC,
                 'prefix' => 'H',
                 'direction' => 'Nam',
                 'area_size' => 5400.0,
-                'price' => 9800000000,
-                'unit_price' => 74000000,
                 'status' => AreaStatus::COMING_SOON->value,
                 'is_featured' => false,
                 'image_seed' => 'inventory-horizon',
@@ -409,8 +407,6 @@ DESC,
                 'prefix' => 'M',
                 'direction' => 'Bắc',
                 'area_size' => 2310.4,
-                'price' => 3450000000,
-                'unit_price' => 36000000,
                 'status' => AreaStatus::OPENING->value,
                 'is_featured' => false,
                 'image_seed' => 'inventory-metro',
@@ -440,8 +436,6 @@ DESC,
                 'prefix' => 'C',
                 'direction' => 'Tây Bắc',
                 'area_size' => 6200.9,
-                'price' => 12200000000,
-                'unit_price' => 88000000,
                 'status' => AreaStatus::OPENING->value,
                 'is_featured' => true,
                 'image_seed' => 'inventory-coastal',
@@ -496,8 +490,6 @@ DESC,
                 'remaining_lots' => $remainingLots,
                 'area_size' => $data['area_size'],
                 'direction' => $data['direction'],
-                'price' => $data['price'],
-                'unit_price' => $data['unit_price'],
                 'status' => $data['status'],
                 'type' => $projectData['type'],
                 'is_public' => true,
@@ -803,7 +795,6 @@ DESC,
             $column = ($i - 1) % 6;
             $row = intdiv($i - 1, 6);
             $status = $statuses[$i - 1] ?? LotStatus::AVAILABLE->value;
-            $price = $areaData['price'] + ($i * 125000000);
             $payload = [
                 'area_id' => $areaId,
                 'code' => $code,
@@ -819,8 +810,6 @@ DESC,
                 'legal' => $i % 3 === 0 ? 'Sổ đỏ lâu dài' : 'Sổ hồng riêng',
                 'description' => "Lô {$code} thuộc {$areaData['name']}, phù hợp tư vấn khách hàng demo trên mobile.",
                 'planning_id' => null,
-                'price' => $price,
-                'unit_price' => $areaData['unit_price'],
                 'coordinate_x' => 24 + ($column * 64),
                 'coordinate_y' => 24 + ($row * 56),
                 'width' => 52,

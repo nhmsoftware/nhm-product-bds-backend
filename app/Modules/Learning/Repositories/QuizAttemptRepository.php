@@ -72,4 +72,13 @@ final class QuizAttemptRepository extends BaseRepository implements QuizAttemptR
             ->where('quiz_id', $quizId)
             ->first();
     }
+
+    public function countUngradedEssaysByUserAndQuizIds(string $userId, array $quizIds): int
+    {
+        return $this->model->where('user_id', $userId)
+            ->whereIn('quiz_id', $quizIds)
+            ->where('is_draft', false)
+            ->whereNull('is_correct')
+            ->count();
+    }
 }

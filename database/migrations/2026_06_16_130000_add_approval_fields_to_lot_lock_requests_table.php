@@ -1,6 +1,5 @@
 <?php
 
-use App\Modules\Area\Models\Enums\LotLockRequestStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +11,7 @@ return new class extends Migration
     {
         Schema::table('lot_lock_requests', function (Blueprint $table) {
             if (!Schema::hasColumn('lot_lock_requests', 'status')) {
-                $table->unsignedTinyInteger('status')->default(LotLockRequestStatus::PENDING->value)->after('reason');
+                $table->unsignedTinyInteger('status')->default(2)->after('reason'); // 2 = APPROVED
             }
             if (!Schema::hasColumn('lot_lock_requests', 'expires_at')) {
                 $table->timestamp('expires_at')->nullable()->after('status');
@@ -36,7 +35,7 @@ return new class extends Migration
 
         DB::table('lot_lock_requests')
             ->whereNull('status')
-            ->update(['status' => LotLockRequestStatus::APPROVED->value]);
+            ->update(['status' => 2]); // 2 = APPROVED
     }
 
     public function down(): void

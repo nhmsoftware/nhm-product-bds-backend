@@ -5,6 +5,7 @@ use App\Filament\Resources\AreaResource\Pages;
 use App\Modules\Area\Models\Area;
 use App\Modules\Area\Models\Enums\AreaStatus;
 use App\Modules\Auth\Models\Enums\UserRole;
+use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminUploads;
 use App\Filament\Support\AdminOptions;
 use Filament\Facades\Filament;
@@ -120,10 +121,7 @@ class AreaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            Tables\Columns\ImageColumn::make('sales_board_image')
-                ->label('Hình ảnh')
-                ->square()
-                ->size(50),
+            AdminImageColumn::make('sales_board_image')->label('Hình ảnh')->square()->size(50),
             Tables\Columns\TextColumn::make('name')
                 ->label('Tên dự án')
                 ->searchable()

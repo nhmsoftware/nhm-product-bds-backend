@@ -72,7 +72,7 @@ class BranchSummaryTable extends TableWidget
             ->selectRaw('users.branch_id as branch_id')
             ->selectRaw('COUNT(users.id) as employee_count')
             ->selectRaw("COUNT(DISTINCT users.department_id) as department_count")
-            ->selectRaw('COALESCE(SUM(employee_profiles.kpi_stars), 0) as total_kpi')
+            ->selectRaw('COALESCE(SUM(' . \App\Modules\Auth\Models\EmployeeProfile::getKpiPointsSelectRaw('users.id') . '), 0) as total_kpi')
             ->groupBy('users.branch_id');
 
         return DB::table('branches')

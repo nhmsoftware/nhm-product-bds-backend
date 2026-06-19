@@ -251,7 +251,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                         'passingScore' => $passingScore,
                         'canStart'     => $canStart,
                     ],
-                    'canAccessPremiumLearning' => false,
+                    'canAccessPremiumLearning' => $enrollment?->status === CourseEnrollmentStatus::COMPLETED,
                     'notice' => [
                         'type'    => 'warning',
                         'message' => 'Bạn cần xem hết thời lượng video trước khi chuyển sang bài tiếp theo. Hệ thống sẽ tự động ghi nhận tiến độ.',
@@ -2100,8 +2100,18 @@ final class LearningService extends BaseService implements LearningServiceInterf
             // Check quiz requirements (A5)
             $quizzes = $this->quizRepository->getByLessonIds($lessons->pluck('id'));
             if ($quizzes->isNotEmpty()) {
+                $quizIds = $quizzes->pluck('id')->toArray();
+
+                // A5a – Còn câu tự luận chưa được chấm bài
+                if ($this->quizAttemptRepository->hasUngradedAttempts($userId, $quizIds)) {
+                    return ServiceReturn::error(
+                        message: 'Nhân viên còn câu hỏi tự luận chưa được chấm. Vui lòng chấm bài trước khi duyệt onboarding.',
+                        code: 400
+                    );
+                }
+
                 $correctAttemptsCount = $this->quizAttemptRepository
-                    ->countCorrectByUserAndQuizIds($userId, $quizzes->pluck('id')->toArray());
+                    ->countCorrectByUserAndQuizIds($userId, $quizIds);
 
                 $totalQuestionsCount = $quizzes->count();
                 // Passing score is 80%
@@ -2315,6 +2325,52 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 message: 'Tải thông tin chi tiết onboarding thành công.'
             );
         });
+    }
+
+    /**
+     * Admin chấm bài tự luận cho học viên (essay grading).
+     *
+     * @param string $attemptId
+     * @param bool $isCorrect
+     * @param string $gradedBy Admin user ID
+     * @return ServiceReturn
+     */
+    public function gradeEssayAttempt(string $attemptId, bool $isCorrect, string $gradedBy): ServiceReturn
+    {
+        return $this->execute(function () use ($attemptId, $isCorrect, $gradedBy) {
+            $attempt = $this->quizAttemptRepository->find($attemptId);
+            $this->validate($attempt !== null, 'Không tìm thấy bài làm.', 404);
+            $this->validate($attempt->is_correct === null, 'Bài làm này đã được chấm điểm rồi.', 422);
+            $this->validate($attempt->is_draft === false, 'Bài làm này chưa được nộp.', 422);
+
+            $attempt->is_correct = $isCorrect;
+            $attempt->graded_by = $gradedBy;
+            $attempt->graded_at = now();
+            $attempt->save();
+
+            // Sau khi chấm, kiểm tra xem còn câu tự luận chưa chấm nào không
+            // trong tập quiz của bài học cuối cùng thuộc khóa học của học viên này
+            $quiz = $attempt->quiz()->with('lesson')->first();
+            if ($quiz === null || $quiz->lesson === null) {
+                return $this->success(data: $attempt, message: 'Chấm bài thành công.');
+            }
+
+            $lessonId = $quiz->lesson->id;
+            $allLessonQuizIds = $this->quizRepository->getByLessonId($lessonId)->pluck('id')->toArray();
+
+            $ungradedCount = $this->quizAttemptRepository
+                ->countUngradedEssaysByUserAndQuizIds($attempt->user_id, $allLessonQuizIds);
+
+            if ($ungradedCount === 0) {
+                // Tất cả câu tự luận đã chấm — kiểm tra đủ điều kiện hoàn thành khóa học
+                $courseId = $quiz->lesson->course_id ?? null;
+                if ($courseId !== null) {
+                    $this->completeCourse($courseId, $attempt->user_id);
+                }
+            }
+
+            return $this->success(data: $attempt, message: 'Chấm bài thành công.');
+        }, useTransaction: true);
     }
 }
 

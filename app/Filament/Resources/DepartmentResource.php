@@ -23,7 +23,9 @@ class DepartmentResource extends Resource
 
     protected static ?string $modelLabel = 'Phòng ban';
 
-    protected static ?string $pluralModelLabel = 'Phòng ban';
+    protected static ?string $pluralModelLabel = 'Quản lý phòng ban';
+
+    protected static ?string $navigationLabel = 'Quản lý phòng ban';
 
     public static function form(Form $form): Form
     {

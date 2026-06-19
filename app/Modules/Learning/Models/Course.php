@@ -97,4 +97,21 @@ class Course extends Model
     {
         return $this->hasMany(CourseEnrollment::class, 'course_id');
     }
+
+    /**
+     * Danh sách toàn bộ câu hỏi quiz thuộc các bài học của khóa học này.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function quizzes(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            CourseQuiz::class,
+            CourseLesson::class,
+            'course_id',
+            'lesson_id',
+            'id',
+            'id'
+        );
+    }
 }

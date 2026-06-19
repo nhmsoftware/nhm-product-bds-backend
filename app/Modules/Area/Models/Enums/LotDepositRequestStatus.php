@@ -13,7 +13,7 @@ enum LotDepositRequestStatus: int
     case PENDING = 1;     // Chờ xác nhận
     case APPROVED = 2;    // Đã duyệt
     case REJECTED = 3;    // Từ chối
-    case COMPLETED = 4;   // Công chứng thành công
+    case COMPLETED = 4;   // Đã công chứng
 
     /**
      * Lấy nhãn tiếng Việt tương ứng cho từng trạng thái yêu cầu đặt cọc.
@@ -26,7 +26,7 @@ enum LotDepositRequestStatus: int
             self::PENDING => 'Chờ xác nhận',
             self::APPROVED => 'Đã duyệt',
             self::REJECTED => 'Từ chối',
-            self::COMPLETED => 'Công chứng thành công',
+            self::COMPLETED => 'Đã công chứng',
         };
     }
 }

@@ -98,13 +98,17 @@ final class AdminOptions
     public static function legalVideoCategories(): array
     {
         return [
-            'legal' => 'Pháp lý',
-            'planning' => 'Quy hoạch',
+            'project_legal' => 'Pháp lý dự án',
             'contract' => 'Hợp đồng',
+            'planning' => 'Quy hoạch',
+            'transaction_process' => 'Quy trình giao dịch',
             'tax' => 'Thuế phí',
             'investment' => 'Đầu tư',
+            'legal' => 'Pháp lý',
+            'other' => 'Khác',
         ];
     }
+
 
     private static function mergeDistinct(array $base, array $extra): array
     {

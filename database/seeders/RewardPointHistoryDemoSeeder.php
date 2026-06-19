@@ -61,23 +61,20 @@ class RewardPointHistoryDemoSeeder extends Seeder
                 );
 
                 DB::table('reward_point_histories')
-                    ->where('user_id', $user->id)
-                    ->whereIn('reason', [...$reasons, ...$prefixedReasons])
-                    ->delete();
+                     ->where('user_id', $user->id)
+                     ->whereIn('reason', [...$reasons, ...$prefixedReasons])
+                     ->delete();
 
                 $totalPoints = 0;
-                $totalStars = 0;
 
                 foreach ($config['histories'] as [$points, $reason, $stars, $daysAgo]) {
                     $createdAt = Carbon::now()->addDays($daysAgo)->setTime(rand(8, 18), rand(0, 59), 0);
                     $totalPoints += $points;
-                    $totalStars += $stars;
 
                     DB::table('reward_point_histories')->insert([
                         'id' => (string) Str::uuid(),
                         'user_id' => $user->id,
                         'points_changed' => $points,
-                        'stars_changed' => $stars,
                         'reason' => $reason,
                         'related_id' => null,
                         'created_at' => $createdAt,
@@ -97,13 +94,12 @@ class RewardPointHistoryDemoSeeder extends Seeder
                         'major' => 'Kinh doanh bất động sản',
                         'experience' => 'Tài khoản demo cho mobile app',
                         'reward_points' => $totalPoints,
-                        'kpi_stars' => $totalStars,
                         'created_at' => $existingProfile->created_at ?? now(),
                         'updated_at' => now(),
                     ]
                 );
 
-                $this->command?->info("Seeded reward history for {$email}: {$totalPoints} points, {$totalStars} stars.");
+                $this->command?->info("Seeded reward history for {$email}: {$totalPoints} points.");
             }
         });
     }

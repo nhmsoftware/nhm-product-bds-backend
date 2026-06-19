@@ -33,19 +33,42 @@ final class EmployeeReportService extends BaseService implements EmployeeReportS
 
             $users = $this->authRepository->getEmployeeReportData($director, $dto->department, $dto->employeeId, $dto->startDate, $dto->endDate);
 
-            $reports = $users->map(function ($user) {
+            $settings = \App\Modules\Area\Models\InventorySetting::pluck('value', 'key');
+            $successfulTransactionPoints = (float) data_get($settings->get('kpi_points_successful_transaction'), 'points', 10);
+            $siteTourPoints = (float) data_get($settings->get('kpi_points_site_tour'), 'points', 1);
+            $customerMeetingPoints = (float) data_get($settings->get('kpi_points_customer_meeting'), 'points', 0.5);
+            $successfulReferralPoints = (float) data_get($settings->get('kpi_points_successful_referral'), 'points', 1);
+            $workDayPoints = (float) data_get($settings->get('kpi_points_work_day_rate'), 'points', 1);
+            $workDaysStep = (int) data_get($settings->get('kpi_points_work_day_rate'), 'days', 5);
+            $absencePenalty = (float) data_get($settings->get('kpi_points_absence_penalty'), 'points', 0.5);
+
+            $reports = $users->map(function ($user) use ($successfulTransactionPoints, $siteTourPoints, $customerMeetingPoints, $successfulReferralPoints, $workDayPoints, $workDaysStep, $absencePenalty) {
+                $userTransactions = $user->successful_transactions ?? 0;
+                $userTours = $user->site_tours_count ?? 0;
+                $userMeetings = $user->customer_meetings_count ?? 0;
+                $userReferrals = $user->referrals_count ?? 0;
+                $userWorkDays = $user->working_days ?? 0;
+                $userAbsences = $user->fixed_schedule_absences ?? 0;
+
+                $kpiPoints = ($userTransactions * $successfulTransactionPoints)
+                    + ($userTours * $siteTourPoints)
+                    + ($userMeetings * $customerMeetingPoints)
+                    + ($userReferrals * $successfulReferralPoints)
+                    + ($workDaysStep > 0 ? floor($userWorkDays / $workDaysStep) * $workDayPoints : 0)
+                    - ($userAbsences * abs($absencePenalty));
+
                 return [
                     'id' => (string) $user->id,
                     'full_name' => $user->name,
                     'department' => $user->department,
                     'job_position' => $user->job_position,
-                    'total_kpi' => $user->employeeProfile ? $user->employeeProfile->kpi_stars : 0,
-                    'successful_transactions' => $user->successful_transactions ?? 0,
-                    'site_tours' => $user->site_tours_count ?? 0,
-                    'customer_meetings' => $user->customer_meetings_count ?? 0,
-                    'referrals' => $user->referrals_count ?? 0,
-                    'working_days' => $user->working_days ?? 0,
-                    'fixed_schedule_absences' => $user->fixed_schedule_absences ?? 0,
+                    'total_kpi' => (float) $kpiPoints,
+                    'successful_transactions' => $userTransactions,
+                    'site_tours' => $userTours,
+                    'customer_meetings' => $userMeetings,
+                    'referrals' => $userReferrals,
+                    'working_days' => $userWorkDays,
+                    'fixed_schedule_absences' => $userAbsences,
                 ];
             });
 
@@ -72,11 +95,39 @@ final class EmployeeReportService extends BaseService implements EmployeeReportS
 
             $users = $this->authRepository->getDepartmentReportData($director, $dto->department, $dto->startDate, $dto->endDate);
             
-            $departments = $users->groupBy('department')->map(function ($usersInDept, $deptName) {
+            $settings = \App\Modules\Area\Models\InventorySetting::pluck('value', 'key');
+            $successfulTransactionPoints = (float) data_get($settings->get('kpi_points_successful_transaction'), 'points', 10);
+            $siteTourPoints = (float) data_get($settings->get('kpi_points_site_tour'), 'points', 1);
+            $customerMeetingPoints = (float) data_get($settings->get('kpi_points_customer_meeting'), 'points', 0.5);
+            $successfulReferralPoints = (float) data_get($settings->get('kpi_points_successful_referral'), 'points', 1);
+            $workDayPoints = (float) data_get($settings->get('kpi_points_work_day_rate'), 'points', 1);
+            $workDaysStep = (int) data_get($settings->get('kpi_points_work_day_rate'), 'days', 5);
+            $absencePenalty = (float) data_get($settings->get('kpi_points_absence_penalty'), 'points', 0.5);
+
+            $mappedUsers = $users->map(function ($user) use ($successfulTransactionPoints, $siteTourPoints, $customerMeetingPoints, $successfulReferralPoints, $workDayPoints, $workDaysStep, $absencePenalty) {
+                $userTransactions = $user->successful_transactions ?? 0;
+                $userTours = $user->site_tours_count ?? 0;
+                $userMeetings = $user->customer_meetings_count ?? 0;
+                $userReferrals = $user->referrals_count ?? 0;
+                $userWorkDays = $user->working_days ?? 0;
+                $userAbsences = $user->fixed_schedule_absences ?? 0;
+
+                $kpiPoints = ($userTransactions * $successfulTransactionPoints)
+                    + ($userTours * $siteTourPoints)
+                    + ($userMeetings * $customerMeetingPoints)
+                    + ($userReferrals * $successfulReferralPoints)
+                    + ($workDaysStep > 0 ? floor($userWorkDays / $workDaysStep) * $workDayPoints : 0)
+                    - ($userAbsences * abs($absencePenalty));
+
+                $user->computed_kpi = $kpiPoints;
+                return $user;
+            });
+
+            $departments = $mappedUsers->groupBy('department')->map(function ($usersInDept, $deptName) {
                 return [
                     'department_name' => $deptName,
                     'total_employees' => $usersInDept->count(),
-                    'total_kpi' => (int) $usersInDept->sum(fn($u) => $u->employeeProfile ? $u->employeeProfile->kpi_stars : 0),
+                    'total_kpi' => (float) $usersInDept->sum('computed_kpi'),
                     'successful_transactions' => (int) $usersInDept->sum('successful_transactions'),
                     'site_tours' => (int) $usersInDept->sum('site_tours_count'),
                     'customer_meetings' => (int) $usersInDept->sum('customer_meetings_count'),

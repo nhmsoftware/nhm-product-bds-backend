@@ -33,13 +33,50 @@ class LotDepositRequestResource extends Resource
                 ->label('Lô đất')
                 ->options(fn (Forms\Get $get) => 
                     $get('area_id') 
-                        ? \App\Modules\Area\Models\Lot::where('area_id', $get('area_id'))->pluck('code', 'id')
+                        ? \App\Modules\Area\Models\Lot::where('area_id', $get('area_id'))
+                            ->with([
+                                'lockRequests' => fn ($q) => $q->where('status', \App\Modules\Area\Models\Enums\LotLockRequestStatus::APPROVED->value)->with('user'),
+                                'depositRequests' => fn ($q) => $q->whereIn('status', [
+                                    \App\Modules\Area\Models\Enums\LotDepositRequestStatus::PENDING->value,
+                                    \App\Modules\Area\Models\Enums\LotDepositRequestStatus::APPROVED->value,
+                                    \App\Modules\Area\Models\Enums\LotDepositRequestStatus::COMPLETED->value
+                                ])->with('user')
+                            ])
+                            ->get()
+                            ->mapWithKeys(function ($lot) {
+                                $label = $lot->code;
+                                $deposit = $lot->depositRequests->first();
+                                $lock = $lot->lockRequests->first();
+
+                                if ($deposit) {
+                                    $label .= ' - ' . ($deposit->user?->name ?? 'N/A') . ' - Đã đặt cọc';
+                                } elseif ($lock) {
+                                    $label .= ' - ' . ($lock->user?->name ?? 'N/A') . ' - Đã lock lô';
+                                }
+
+                                return [$lot->id => $label];
+                            })
+                            ->toArray()
                         : []
                 )
                 ->searchable()
                 ->preload()
                 ->required()
-                ->disabled(fn (Forms\Get $get) => !$get('area_id')),
+                ->disabled(fn (Forms\Get $get) => !$get('area_id'))
+                ->rules([
+                    fn (Forms\Get $get, ?LotDepositRequest $record): \Closure => function (string $attribute, $value, \Closure $fail) use ($record) {
+                        if ($record && $record->lot_id === $value) {
+                            return;
+                        }
+                        $lot = \App\Modules\Area\Models\Lot::find($value);
+                        if (!$lot) {
+                            return;
+                        }
+                        if ($lot->is_locked || $lot->status !== \App\Modules\Area\Models\Enums\LotStatus::AVAILABLE) {
+                            $fail('Lô đất này đang có người khác khóa, đã giữ chỗ hoặc đã bán. Vui lòng chọn lô đất khác.');
+                        }
+                    }
+                ]),
             Forms\Components\Select::make('user_id')
                 ->label('Nhân viên')
                 ->relationship('user', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
@@ -72,11 +109,84 @@ class LotDepositRequestResource extends Resource
                 ->label('Trạng thái')
                 ->options(self::enumOptions(LotDepositRequestStatus::class))
                 ->required(),
-            Forms\Components\Textarea::make('reason')->label('Lý do')->columnSpanFull(),
             Forms\Components\Textarea::make('reject_reason')->label('Lý do từ chối')->columnSpanFull()
         ])->columns(2);
     }
-    public static function table(Table $table): Table { return $table->columns([Tables\Columns\TextColumn::make('lot.code')->label('Lô')->searchable(), Tables\Columns\TextColumn::make('lot.area.name')->label('Khu'), Tables\Columns\TextColumn::make('user.name')->label('Nhân viên')->searchable(), Tables\Columns\TextColumn::make('status')->label('Trạng thái')->formatStateUsing(fn($state)=>$state instanceof LotDepositRequestStatus?$state->label():LotDepositRequestStatus::tryFrom((int)$state)?->label())->badge(), Tables\Columns\TextColumn::make('created_at')->label('Ngày tạo')->dateTime('d/m/Y H:i')->sortable()])->actions([Tables\Actions\Action::make('approve')->label('Duyệt')->icon('heroicon-o-check')->color('success')->visible(fn(LotDepositRequest $record): bool => $record->status === LotDepositRequestStatus::PENDING)->requiresConfirmation()->action(function (LotDepositRequest $record): void { $result = app(LotDepositRequestServiceInterface::class)->adminApprove((string) $record->id, auth()->user()); $result->isError() ? Notification::make()->title($result->getMessage())->danger()->send() : Notification::make()->title($result->getMessage())->success()->send(); }),Tables\Actions\Action::make('reject')->label('Từ chối')->icon('heroicon-o-x-mark')->color('danger')->visible(fn(LotDepositRequest $record): bool => $record->status === LotDepositRequestStatus::PENDING)->form([Forms\Components\Textarea::make('reason')->label('Lý do từ chối')->required()])->action(function (LotDepositRequest $record, array $data): void { $result = app(LotDepositRequestServiceInterface::class)->adminReject((string) $record->id, auth()->user(), (string) $data['reason']); $result->isError() ? Notification::make()->title($result->getMessage())->danger()->send() : Notification::make()->title($result->getMessage())->success()->send(); }),Tables\Actions\Action::make('confirm')->label('Xác nhận giao dịch')->icon('heroicon-o-banknotes')->color('warning')->visible(fn(LotDepositRequest $record): bool => $record->status === LotDepositRequestStatus::APPROVED)->requiresConfirmation()->action(function (LotDepositRequest $record): void { $result = app(LotDepositRequestServiceInterface::class)->adminConfirmTransaction((string) $record->id, auth()->user()); $result->isError() ? Notification::make()->title($result->getMessage())->danger()->send() : Notification::make()->title($result->getMessage())->success()->send(); }),Tables\Actions\EditAction::make(),Tables\Actions\DeleteAction::make()]); }
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('lot.code')
+                    ->label('Lô')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('lot.area.name')
+                    ->label('Khu'),
+                Tables\Columns\TextColumn::make('lot.area.branch.name')
+                    ->label('Chi nhánh'),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Nhân viên')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Trạng thái')
+                    ->formatStateUsing(fn($state) => $state instanceof LotDepositRequestStatus ? $state->label() : LotDepositRequestStatus::tryFrom((int)$state)?->label())
+                    ->badge()
+                    ->color(fn ($state): string => match ($state instanceof LotDepositRequestStatus ? $state : LotDepositRequestStatus::tryFrom((int)$state)) {
+                        LotDepositRequestStatus::PENDING => 'warning',
+                        LotDepositRequestStatus::APPROVED => 'info',
+                        LotDepositRequestStatus::REJECTED => 'danger',
+                        LotDepositRequestStatus::COMPLETED => 'success',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Ngày tạo')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
+            ])
+            ->actions([
+                Tables\Actions\Action::make('approve')
+                    ->label('Duyệt')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->visible(fn(LotDepositRequest $record): bool => $record->status === LotDepositRequestStatus::PENDING)
+                    ->requiresConfirmation()
+                    ->action(function (LotDepositRequest $record): void {
+                        $result = app(LotDepositRequestServiceInterface::class)->adminApprove((string) $record->id, auth()->user());
+                        $result->isError()
+                            ? Notification::make()->title($result->getMessage())->danger()->send()
+                            : Notification::make()->title($result->getMessage())->success()->send();
+                    }),
+                Tables\Actions\Action::make('reject')
+                    ->label('Từ chối')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('danger')
+                    ->visible(fn(LotDepositRequest $record): bool => $record->status === LotDepositRequestStatus::PENDING)
+                    ->form([
+                        Forms\Components\Textarea::make('reason')
+                            ->label('Lý do từ chối')
+                            ->required()
+                    ])
+                    ->action(function (LotDepositRequest $record, array $data): void {
+                        $result = app(LotDepositRequestServiceInterface::class)->adminReject((string) $record->id, auth()->user(), (string) $data['reason']);
+                        $result->isError()
+                            ? Notification::make()->title($result->getMessage())->danger()->send()
+                            : Notification::make()->title($result->getMessage())->success()->send();
+                    }),
+                Tables\Actions\Action::make('confirm')
+                    ->label('Xác nhận giao dịch')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('warning')
+                    ->visible(fn(LotDepositRequest $record): bool => $record->status === LotDepositRequestStatus::APPROVED)
+                    ->requiresConfirmation()
+                    ->action(function (LotDepositRequest $record): void {
+                        $result = app(LotDepositRequestServiceInterface::class)->adminConfirmTransaction((string) $record->id, auth()->user());
+                        $result->isError()
+                            ? Notification::make()->title($result->getMessage())->danger()->send()
+                            : Notification::make()->title($result->getMessage())->success()->send();
+                    }),
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+            ]);
+    }
     public static function getPages(): array { return ['index'=>Pages\ListLotDepositRequests::route('/'),'create'=>Pages\CreateLotDepositRequest::route('/create'),'edit'=>Pages\EditLotDepositRequest::route('/{record}/edit')]; }
     public static function getEloquentQuery(): Builder
     {

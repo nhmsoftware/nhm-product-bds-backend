@@ -17,7 +17,7 @@ class QuizzesRelationManager extends RelationManager
 
     public function form(Form $form): Form
     {
-        return $form->schema(CourseQuizResource::quizFormSchema())->columns(2);
+        return $form->schema(CourseQuizResource::quizFormSchema($this))->columns(2);
     }
 
     public function table(Table $table): Table
@@ -25,6 +25,7 @@ class QuizzesRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('question')
             ->columns([
+                Tables\Columns\TextColumn::make('lesson.title')->label('Bài học')->limit(30),
                 Tables\Columns\TextColumn::make('order')->label('Thứ tự')->sortable(),
                 Tables\Columns\TextColumn::make('type')->label('Loại')->formatStateUsing(fn (?string $state) => $state === 'essay' ? 'Tự luận' : 'Trắc nghiệm')->badge(),
                 Tables\Columns\TextColumn::make('title')->label('Tiêu đề')->limit(30),
@@ -32,7 +33,13 @@ class QuizzesRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('correct_option')->label('Đáp án đúng'),
             ])
             ->defaultSort('order')
-            ->headerActions([Tables\Actions\CreateAction::make()->label('Thêm câu hỏi')])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Thêm câu hỏi')
+                    ->using(function (array $data, string $model): \Illuminate\Database\Eloquent\Model {
+                        return $model::create($data);
+                    })
+            ])
             ->actions([
                 Tables\Actions\EditAction::make()->label('Sửa câu hỏi'),
                 Tables\Actions\DeleteAction::make()->label('Xóa câu hỏi'),

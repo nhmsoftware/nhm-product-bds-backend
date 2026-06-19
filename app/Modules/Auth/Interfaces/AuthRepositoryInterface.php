@@ -38,7 +38,7 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
 
     public function getActiveEmployeesWithDepartment(?string $branchId = null): Collection;
 
-    public function getActiveDepartmentNames(): array;
+    public function getActiveDepartmentNames(?string $branchId = null): array;
 
     /**
      * Lấy danh sách người dùng đang hoạt động cần nhận thông báo khi có bài viết nội bộ mới.
@@ -139,14 +139,6 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
     public function countCustomers(?string $branchId, ?int $month, ?int $quarter, ?int $year): int;
 
     /**
-     * Đếm số lượng điểm KPI theo chi nhánh.
-     *
-     * @param string|null $branchId
-     * @return int
-     */
-    public function countKpiStars(?string $branchId): int;
-
-    /**
      * Lấy dữ liệu thống kê phòng ban cho dashboard.
      *
      * @param string|null $branchId
@@ -158,12 +150,11 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
     public function getDepartmentStatsForDashboard(?string $branchId, ?int $month, ?int $quarter, ?int $year): Collection;
 
     /**
-     * Thêm điểm thưởng và điểm KPI cho người dùng.
+     * Thêm điểm thưởng cho người dùng.
      *
      * @param string $userId
      * @param int $points
-     * @param int $stars
      * @return void
      */
-    public function addRewardPointsAndStars(string $userId, int $points, int $stars): void;
+    public function addRewardPoints(string $userId, int $points): void;
 }

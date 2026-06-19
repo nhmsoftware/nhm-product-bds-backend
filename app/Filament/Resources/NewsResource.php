@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\NewsResource\Pages;
 use App\Modules\News\Models\News;
 use App\Modules\Auth\Models\Enums\UserRole;
+use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminOptions;
 use App\Filament\Support\AdminUploads;
 use Filament\Forms;
@@ -19,7 +20,8 @@ class NewsResource extends Resource
 {
     protected static ?string $model = News::class;
     protected static ?string $navigationIcon = 'heroicon-o-newspaper';
-    protected static ?string $navigationGroup = 'Nội dung';
+    protected static ?string $navigationGroup = 'Bình luận';
+    protected static ?string $navigationLabel = 'Quản lý tin tức';
     protected static ?string $modelLabel = 'Tin tức';
     protected static ?string $pluralModelLabel = 'Tin tức';
 
@@ -105,6 +107,7 @@ class NewsResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
+            AdminImageColumn::make('thumbnail')->label('Ảnh')->square()->size(50),
             Tables\Columns\TextColumn::make('title')
                 ->label('Tiêu đề')
                 ->searchable()
