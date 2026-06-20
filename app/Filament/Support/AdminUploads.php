@@ -66,26 +66,24 @@ final class AdminUploads
             ->downloadable()
             ->openable()
             ->afterStateHydrated(function (FileUpload $component, mixed $state): void {
-                $stripped = self::stripStoragePrefix($state);
-
-                if (is_array($stripped)) {
-                    $component->state($stripped);
+                // Video files are NOT pre-loaded into FilePond — large files cause
+                // an infinite "getting size" spinner while the browser fetches file info.
+                // Existing video_url is preserved via dehydrateStateUsing's getRawOriginal fallback.
+                // Only keep state when Livewire has already set it (newly uploaded temp file).
+                if (is_array($state) && !empty(array_filter($state))) {
+                    $component->state($state);
                     return;
                 }
-
-                // External URLs cannot be served through the local disk. Leave state empty;
-                // dehydrateStateUsing will fall back to the record's original value.
-                if (is_string($stripped) && self::isExternalUrl($stripped)) {
-                    $component->state([]);
-                    return;
-                }
-
-                if (is_string($stripped) && $stripped !== '') {
-                    $component->state([(string) Str::uuid() => $stripped]);
-                    return;
-                }
-
                 $component->state([]);
+            })
+            ->helperText(function (FileUpload $component) use ($name): ?string {
+                $record = $component->getContainer()->getLivewire()->record ?? null;
+                $existing = $record?->getRawOriginal($name) ?? $record?->{$name} ?? null;
+                if (blank($existing)) {
+                    return null;
+                }
+                $filename = basename((string) $existing);
+                return "Video hiện tại: {$filename} — Tải lên tệp mới để thay thế.";
             })
             ->dehydrateStateUsing(function (FileUpload $component, mixed $state) use ($name): mixed {
                 $values = is_array($state) ? array_values(array_filter($state)) : [];
