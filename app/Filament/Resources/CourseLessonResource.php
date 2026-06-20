@@ -47,7 +47,10 @@ class CourseLessonResource extends Resource
                         ->label('Tên tài liệu')
                         ->required(),
 
-                    // Upload tệp — chỉ hiện khi loại không phải link
+                    // URL — ẩn hoàn toàn, chỉ lưu giá trị
+                    Forms\Components\Hidden::make('url'),
+
+                    // Upload tệp — hiện khi loại là pdf/docx/image, tự hydrate từ url cũ
                     Forms\Components\FileUpload::make('file_upload')
                         ->label('Chọn tệp')
                         ->disk('public')
@@ -63,7 +66,17 @@ class CourseLessonResource extends Resource
                         ->downloadable()
                         ->openable()
                         ->live()
-                        ->afterStateUpdated(function (Forms\Set $set, mixed $state, Forms\Get $get): void {
+                        ->afterStateHydrated(function (Forms\Components\FileUpload $component): void {
+                            $itemState = $component->getContainer()->getRawState();
+                            $url = $itemState['url'] ?? null;
+                            if (is_string($url) && $url !== '' && !str_starts_with($url, 'http')) {
+                                $path = (string) preg_replace('#^/?storage/#', '', $url);
+                                $component->state([(string) \Illuminate\Support\Str::uuid() => $path]);
+                            } else {
+                                $component->state([]);
+                            }
+                        })
+                        ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, mixed $state): void {
                             if (!is_array($state)) return;
                             $path = array_values(array_filter($state))[0] ?? null;
                             if (!$path) return;
@@ -75,12 +88,22 @@ class CourseLessonResource extends Resource
                         ->visible(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']))
                         ->columnSpanFull(),
 
-                    // URL — nhập tay khi là link, read-only khi là tệp upload
-                    Forms\Components\TextInput::make('url')
-                        ->label(fn (Forms\Get $get) => $get('type') === 'link' ? 'URL liên kết' : 'Đường dẫn tệp (tự động)')
-                        ->required()
-                        ->readOnly(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']))
-                        ->helperText(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']) ? 'Tự động điền sau khi upload' : null)
+                    // Link ngoài — chỉ hiện khi loại là link
+                    Forms\Components\TextInput::make('link_input')
+                        ->label('URL liên kết')
+                        ->required(fn (Forms\Get $get) => $get('type') === 'link')
+                        ->url()
+                        ->live()
+                        ->afterStateHydrated(function (Forms\Components\TextInput $component): void {
+                            $itemState = $component->getContainer()->getRawState();
+                            $url = $itemState['url'] ?? null;
+                            if (is_string($url) && str_starts_with($url, 'http')) {
+                                $component->state($url);
+                            }
+                        })
+                        ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('url', $state ?? ''))
+                        ->dehydrated(false)
+                        ->visible(fn (Forms\Get $get) => $get('type') === 'link')
                         ->columnSpanFull(),
 
                     // Metadata — ẩn, giữ lại giá trị cũ
