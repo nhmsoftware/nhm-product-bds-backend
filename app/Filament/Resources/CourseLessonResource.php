@@ -37,11 +37,55 @@ class CourseLessonResource extends Resource
             Forms\Components\Repeater::make('attachments')
                 ->label('Tài liệu đính kèm')
                 ->schema([
-                    Forms\Components\Select::make('type')->label('Loại')->options(['pdf' => 'PDF', 'docx' => 'Word', 'image' => 'Ảnh', 'link' => 'Liên kết'])->required(),
-                    Forms\Components\TextInput::make('name')->label('Tên tài liệu')->required(),
-                    Forms\Components\TextInput::make('url')->label('URL/File path')->required()->columnSpanFull(),
-                    Forms\Components\TextInput::make('mime_type')->label('MIME type'),
-                    Forms\Components\TextInput::make('size')->label('Dung lượng'),
+                    Forms\Components\Select::make('type')
+                        ->label('Loại')
+                        ->options(['pdf' => 'PDF', 'docx' => 'Word', 'image' => 'Ảnh', 'link' => 'Liên kết ngoài'])
+                        ->required()
+                        ->live(),
+
+                    Forms\Components\TextInput::make('name')
+                        ->label('Tên tài liệu')
+                        ->required(),
+
+                    // Upload tệp — chỉ hiện khi loại không phải link
+                    Forms\Components\FileUpload::make('file_upload')
+                        ->label('Chọn tệp')
+                        ->disk('public')
+                        ->directory('learning/attachments')
+                        ->visibility('public')
+                        ->acceptedFileTypes([
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                        ])
+                        ->maxSize(50 * 1024)
+                        ->downloadable()
+                        ->openable()
+                        ->live()
+                        ->afterStateUpdated(function (Forms\Set $set, mixed $state, Forms\Get $get): void {
+                            if (!is_array($state)) return;
+                            $path = array_values(array_filter($state))[0] ?? null;
+                            if (!$path) return;
+                            $set('url', '/storage/' . ltrim($path, '/'));
+                            $mimeMap = ['pdf' => 'application/pdf', 'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image' => 'image/jpeg'];
+                            $set('mime_type', $mimeMap[$get('type')] ?? '');
+                        })
+                        ->dehydrated(false)
+                        ->visible(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']))
+                        ->columnSpanFull(),
+
+                    // URL — nhập tay khi là link, read-only khi là tệp upload
+                    Forms\Components\TextInput::make('url')
+                        ->label(fn (Forms\Get $get) => $get('type') === 'link' ? 'URL liên kết' : 'Đường dẫn tệp (tự động)')
+                        ->required()
+                        ->readOnly(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']))
+                        ->helperText(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']) ? 'Tự động điền sau khi upload' : null)
+                        ->columnSpanFull(),
+
+                    // Metadata — ẩn, giữ lại giá trị cũ
+                    Forms\Components\Hidden::make('mime_type'),
+                    Forms\Components\Hidden::make('size'),
                 ])
                 ->columns(2)
                 ->columnSpanFull(),

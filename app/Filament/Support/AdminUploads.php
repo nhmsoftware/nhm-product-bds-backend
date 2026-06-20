@@ -62,7 +62,7 @@ final class AdminUploads
             ->directory($directory)
             ->visibility('public')
             ->acceptedFileTypes(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'])
-            ->maxSize(512 * 1024) // 512MB in KB
+            ->maxSize(1024 * 1024) // 1GB in KB
             ->downloadable()
             ->openable()
             ->afterStateHydrated(function (FileUpload $component, mixed $state): void {
