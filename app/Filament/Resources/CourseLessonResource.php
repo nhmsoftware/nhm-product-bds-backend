@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 
 class CourseLessonResource extends Resource
 {
@@ -76,21 +77,24 @@ class CourseLessonResource extends Resource
                         ->maxSize(50 * 1024)
                         ->downloadable()
                         ->openable()
-                        ->afterStateHydrated(function (Forms\Components\FileUpload $component, mixed $state): void {
-                            // Đã có state array non-empty → tệp vừa upload đang pending, giữ nguyên
-                            if (is_array($state) && !empty(array_filter($state))) {
-                                $component->state($state);
-                                return;
-                            }
-                            // Hiển thị file hiện có từ sibling 'url' khi edit
-                            $itemState = $component->getContainer()->getRawState();
-                            $url = $itemState['url'] ?? null;
-                            if (is_string($url) && $url !== '' && !str_starts_with($url, 'http')) {
-                                $path = (string) preg_replace('#^/?storage/#', '', $url);
-                                $component->state([(string) \Illuminate\Support\Str::uuid() => $path]);
+                        ->afterStateHydrated(function (Forms\Components\FileUpload $component): void {
+                            $livewire = $component->getContainer()->getLivewire();
+                            // Đọc trực tiếp từ Livewire data — tránh dùng $state param (có thể stale từ record)
+                            $currentState = data_get($livewire, $component->getStatePath());
+                            if (is_array($currentState) && !empty(array_filter($currentState))) {
+                                $component->state($currentState);
                                 return;
                             }
                             $component->state([]);
+                        })
+                        ->helperText(function (Forms\Components\FileUpload $component): ?string {
+                            $livewire = $component->getContainer()->getLivewire();
+                            $itemPath = Str::beforeLast($component->getStatePath(), '._file_upload');
+                            $url = data_get($livewire, $itemPath . '.url');
+                            if (!is_string($url) || blank($url)) {
+                                return null;
+                            }
+                            return 'File hiện tại: ' . basename($url) . ' — Tải lên file mới để thay thế.';
                         })
                         ->visible(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']))
                         ->columnSpanFull(),
@@ -102,8 +106,9 @@ class CourseLessonResource extends Resource
                         ->url()
                         ->live()
                         ->afterStateHydrated(function (Forms\Components\TextInput $component): void {
-                            $itemState = $component->getContainer()->getRawState();
-                            $url = $itemState['url'] ?? null;
+                            $livewire = $component->getContainer()->getLivewire();
+                            $itemPath = Str::beforeLast($component->getStatePath(), '._link_input');
+                            $url = data_get($livewire, $itemPath . '.url');
                             if (is_string($url) && str_starts_with($url, 'http')) {
                                 $component->state($url);
                             }
