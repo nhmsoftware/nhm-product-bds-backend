@@ -31,7 +31,7 @@ class CourseLessonResource extends Resource
             Forms\Components\TextInput::make('title')->label('Tên bài học')->required()->maxLength(255),
             Forms\Components\RichEditor::make('content')->label('Mô tả/Nội dung bài học')->columnSpanFull(),
             AdminUploads::video('video_url', 'Video đào tạo', 'admin/lessons/videos')->columnSpanFull(),
-            Forms\Components\TextInput::make('duration_seconds')->label('Thời lượng video (giây)')->numeric()->minValue(0)->default(0)->helperText('Nhập thủ công thời lượng video tính bằng giây.'),
+            Forms\Components\Hidden::make('duration_seconds')->default(0),
             Forms\Components\TextInput::make('order')->label('Thứ tự')->numeric()->default(0),
             Forms\Components\Toggle::make('is_active')->label('Mở khóa bài học')->default(true),
             Forms\Components\Repeater::make('attachments')
@@ -41,17 +41,24 @@ class CourseLessonResource extends Resource
                         ->label('Loại')
                         ->options(['pdf' => 'PDF', 'docx' => 'Word', 'image' => 'Ảnh', 'link' => 'Liên kết ngoài'])
                         ->required()
-                        ->live(),
+                        ->live()
+                        ->afterStateUpdated(function (Forms\Set $set, ?string $state): void {
+                            $set('url', '');
+                            $mimeMap = [
+                                'pdf'  => 'application/pdf',
+                                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'image' => 'image/jpeg',
+                                'link' => '',
+                            ];
+                            $set('mime_type', $mimeMap[$state] ?? '');
+                        }),
 
                     Forms\Components\TextInput::make('name')
                         ->label('Tên tài liệu')
                         ->required(),
 
-                    // URL — ẩn hoàn toàn, chỉ lưu giá trị
-                    Forms\Components\Hidden::make('url'),
-
-                    // Upload tệp — hiện khi loại là pdf/docx/image, tự hydrate từ url cũ
-                    Forms\Components\FileUpload::make('file_upload')
+                    // FileUpload viết thẳng vào trường 'url' — Filament tự xử lý move temp→final
+                    Forms\Components\FileUpload::make('url')
                         ->label('Chọn tệp')
                         ->disk('public')
                         ->directory('learning/attachments')
@@ -65,48 +72,47 @@ class CourseLessonResource extends Resource
                         ->maxSize(50 * 1024)
                         ->downloadable()
                         ->openable()
-                        ->live()
-                        ->afterStateHydrated(function (Forms\Components\FileUpload $component): void {
-                            $itemState = $component->getContainer()->getRawState();
-                            $url = $itemState['url'] ?? null;
-                            if (is_string($url) && $url !== '' && !str_starts_with($url, 'http')) {
-                                $path = (string) preg_replace('#^/?storage/#', '', $url);
-                                $component->state([(string) \Illuminate\Support\Str::uuid() => $path]);
-                            } else {
-                                $component->state([]);
+                        ->afterStateHydrated(function (Forms\Components\FileUpload $component, mixed $state): void {
+                            // Nếu state đã là array (tệp vừa upload hoặc đã set sẵn) → giữ nguyên
+                            if (is_array($state)) {
+                                $component->state($state);
+                                return;
                             }
+                            // Chuỗi path nội bộ (không phải link http) → chuyển sang format array
+                            if (is_string($state) && $state !== '' && !str_starts_with($state, 'http')) {
+                                $path = (string) preg_replace('#^/?storage/#', '', $state);
+                                $component->state([(string) \Illuminate\Support\Str::uuid() => $path]);
+                                return;
+                            }
+                            $component->state([]);
                         })
-                        ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, mixed $state): void {
-                            if (!is_array($state)) return;
-                            $path = array_values(array_filter($state))[0] ?? null;
-                            if (!$path) return;
-                            $set('url', '/storage/' . ltrim($path, '/'));
-                            $mimeMap = ['pdf' => 'application/pdf', 'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image' => 'image/jpeg'];
-                            $set('mime_type', $mimeMap[$get('type')] ?? '');
+                        ->dehydrateStateUsing(function (mixed $state): string {
+                            if (!is_array($state)) {
+                                return '';
+                            }
+                            $values = array_values(array_filter($state));
+                            if (empty($values)) {
+                                return '';
+                            }
+                            $path = $values[0];
+                            if (!str_starts_with($path, '/storage/') && !str_starts_with($path, 'http')) {
+                                return '/storage/' . ltrim($path, '/');
+                            }
+                            return $path;
                         })
-                        ->dehydrated(false)
+                        ->dehydrated(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']))
                         ->visible(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']))
                         ->columnSpanFull(),
 
-                    // Link ngoài — chỉ hiện khi loại là link
-                    Forms\Components\TextInput::make('link_input')
+                    // TextInput cùng tên 'url' — chỉ active (dehydrated) khi type = link
+                    Forms\Components\TextInput::make('url')
                         ->label('URL liên kết')
                         ->required(fn (Forms\Get $get) => $get('type') === 'link')
                         ->url()
-                        ->live()
-                        ->afterStateHydrated(function (Forms\Components\TextInput $component): void {
-                            $itemState = $component->getContainer()->getRawState();
-                            $url = $itemState['url'] ?? null;
-                            if (is_string($url) && str_starts_with($url, 'http')) {
-                                $component->state($url);
-                            }
-                        })
-                        ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('url', $state ?? ''))
-                        ->dehydrated(false)
+                        ->dehydrated(fn (Forms\Get $get) => $get('type') === 'link')
                         ->visible(fn (Forms\Get $get) => $get('type') === 'link')
                         ->columnSpanFull(),
 
-                    // Metadata — ẩn, giữ lại giá trị cũ
                     Forms\Components\Hidden::make('mime_type'),
                     Forms\Components\Hidden::make('size'),
                 ])
