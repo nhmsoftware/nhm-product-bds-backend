@@ -57,8 +57,12 @@ class CourseLessonResource extends Resource
                         ->label('Tên tài liệu')
                         ->required(),
 
-                    // FileUpload viết thẳng vào trường 'url' — Filament tự xử lý move temp→final
-                    Forms\Components\FileUpload::make('url')
+                    // url lưu giá trị cuối — được cập nhật bởi _file_upload (qua mutateFormData*)
+                    // hoặc bởi _link_input (qua afterStateUpdated)
+                    Forms\Components\Hidden::make('url'),
+
+                    // FileUpload tên riêng — dehydrated:true để Filament tự move temp→final disk
+                    Forms\Components\FileUpload::make('_file_upload')
                         ->label('Chọn tệp')
                         ->disk('public')
                         ->directory('learning/attachments')
@@ -73,43 +77,39 @@ class CourseLessonResource extends Resource
                         ->downloadable()
                         ->openable()
                         ->afterStateHydrated(function (Forms\Components\FileUpload $component, mixed $state): void {
-                            // Nếu state đã là array (tệp vừa upload hoặc đã set sẵn) → giữ nguyên
-                            if (is_array($state)) {
+                            // Đã có state array non-empty → tệp vừa upload đang pending, giữ nguyên
+                            if (is_array($state) && !empty(array_filter($state))) {
                                 $component->state($state);
                                 return;
                             }
-                            // Chuỗi path nội bộ (không phải link http) → chuyển sang format array
-                            if (is_string($state) && $state !== '' && !str_starts_with($state, 'http')) {
-                                $path = (string) preg_replace('#^/?storage/#', '', $state);
+                            // Hiển thị file hiện có từ sibling 'url' khi edit
+                            $itemState = $component->getContainer()->getRawState();
+                            $url = $itemState['url'] ?? null;
+                            if (is_string($url) && $url !== '' && !str_starts_with($url, 'http')) {
+                                $path = (string) preg_replace('#^/?storage/#', '', $url);
                                 $component->state([(string) \Illuminate\Support\Str::uuid() => $path]);
                                 return;
                             }
                             $component->state([]);
                         })
-                        ->dehydrateStateUsing(function (mixed $state): string {
-                            if (!is_array($state)) {
-                                return '';
-                            }
-                            $values = array_values(array_filter($state));
-                            if (empty($values)) {
-                                return '';
-                            }
-                            $path = $values[0];
-                            if (!str_starts_with($path, '/storage/') && !str_starts_with($path, 'http')) {
-                                return '/storage/' . ltrim($path, '/');
-                            }
-                            return $path;
-                        })
-                        ->dehydrated(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']))
                         ->visible(fn (Forms\Get $get) => in_array($get('type'), ['pdf', 'docx', 'image']))
                         ->columnSpanFull(),
 
-                    // TextInput cùng tên 'url' — chỉ active (dehydrated) khi type = link
-                    Forms\Components\TextInput::make('url')
+                    // Link ngoài — cập nhật sibling Hidden('url') qua afterStateUpdated
+                    Forms\Components\TextInput::make('_link_input')
                         ->label('URL liên kết')
                         ->required(fn (Forms\Get $get) => $get('type') === 'link')
                         ->url()
-                        ->dehydrated(fn (Forms\Get $get) => $get('type') === 'link')
+                        ->live()
+                        ->afterStateHydrated(function (Forms\Components\TextInput $component): void {
+                            $itemState = $component->getContainer()->getRawState();
+                            $url = $itemState['url'] ?? null;
+                            if (is_string($url) && str_starts_with($url, 'http')) {
+                                $component->state($url);
+                            }
+                        })
+                        ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('url', $state ?? ''))
+                        ->dehydrated(false)
                         ->visible(fn (Forms\Get $get) => $get('type') === 'link')
                         ->columnSpanFull(),
 
