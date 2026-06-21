@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use Filament\Forms\Components\FileUpload;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 final class AdminUploads
@@ -19,34 +20,36 @@ final class AdminUploads
             ->downloadable()
             ->openable()
             ->afterStateHydrated(function (FileUpload $component, mixed $state): void {
-                $stripped = self::stripStoragePrefix($state);
-
-                if (is_array($stripped)) {
-                    $component->state($stripped);
+                $livewire = $component->getContainer()->getLivewire();
+                // Đọc trực tiếp từ Livewire data — tránh $state param stale từ record
+                $currentState = data_get($livewire, $component->getStatePath());
+                if (is_array($currentState) && !empty(array_filter($currentState))) {
+                    $component->state($currentState);
                     return;
                 }
-
-                // External URLs cannot be served through the local disk — the imageEditor
-                // calls getImageNode() on the file and crashes. Leave state empty;
-                // dehydrateStateUsing will fall back to the record's original value.
-                if (is_string($stripped) && self::isExternalUrl($stripped)) {
-                    $component->state([]);
-                    return;
-                }
-
-                if (is_string($stripped) && $stripped !== '') {
-                    $component->state([(string) Str::uuid() => $stripped]);
-                    return;
-                }
-
+                // Ảnh hiện có KHÔNG nạp vào FilePond — tránh "Đang chờ kích thước" spinner
+                // khi APP_URL khác với URL thực của server. Dùng helperText để preview thay thế.
                 $component->state([]);
+            })
+            ->helperText(function (FileUpload $component) use ($name): HtmlString {
+                $record = $component->getRecord();
+                $existing = $record?->getRawOriginal($name) ?? $record?->{$name} ?? null;
+                if (blank($existing)) {
+                    return new HtmlString('');
+                }
+                $url = self::toAbsoluteUrl((string) $existing);
+                return new HtmlString(
+                    "<div style='margin-top:8px'>"
+                    . "<img src='" . e($url) . "' alt=''"
+                    . " style='max-height:120px;border-radius:6px;border:1px solid #e5e7eb;object-fit:cover;'>"
+                    . "</div>"
+                );
             })
             ->dehydrateStateUsing(function (FileUpload $component, mixed $state) use ($name): mixed {
                 $values = is_array($state) ? array_values(array_filter($state)) : [];
 
-                // No new file uploaded — preserve the original DB value.
                 if (empty($values)) {
-                    $record = $component->getContainer()->getLivewire()->record ?? null;
+                    $record = $component->getRecord();
                     return $record?->getRawOriginal($name) ?? $record?->{$name} ?? null;
                 }
 
@@ -66,30 +69,39 @@ final class AdminUploads
             ->downloadable()
             ->openable()
             ->afterStateHydrated(function (FileUpload $component, mixed $state): void {
-                // Video files are NOT pre-loaded into FilePond — large files cause
-                // an infinite "getting size" spinner while the browser fetches file info.
-                // Existing video_url is preserved via dehydrateStateUsing's getRawOriginal fallback.
-                // Only keep state when Livewire has already set it (newly uploaded temp file).
+                // Video KHÔNG nạp vào FilePond — file lớn gây spinner vô tận khi FilePond
+                // cố fetch file info qua URL dựa trên APP_URL (có thể sai với server thực).
+                // Existing URL được giữ qua dehydrateStateUsing's getRawOriginal fallback.
                 if (is_array($state) && !empty(array_filter($state))) {
                     $component->state($state);
                     return;
                 }
                 $component->state([]);
             })
-            ->helperText(function (FileUpload $component) use ($name): ?string {
-                $record = $component->getContainer()->getLivewire()->record ?? null;
+            ->helperText(function (FileUpload $component) use ($name): HtmlString {
+                $record = $component->getRecord();
                 $existing = $record?->getRawOriginal($name) ?? $record?->{$name} ?? null;
                 if (blank($existing)) {
-                    return null;
+                    return new HtmlString('');
                 }
-                $filename = basename((string) $existing);
-                return "Video hiện tại: {$filename} — Tải lên tệp mới để thay thế.";
+                $url = self::toAbsoluteUrl((string) $existing);
+                return new HtmlString(
+                    "<div style='margin-top:8px'>"
+                    . "<video controls style='width:100%;max-height:360px;border-radius:8px;background:#000;display:block'>"
+                    . "<source src='" . e($url) . "'>"
+                    . "Trình duyệt không hỗ trợ phát video."
+                    . "</video>"
+                    . "<p style='font-size:0.8em;color:#6b7280;margin-top:6px'>"
+                    . "Tải lên tệp mới để thay thế video trên."
+                    . "</p>"
+                    . "</div>"
+                );
             })
             ->dehydrateStateUsing(function (FileUpload $component, mixed $state) use ($name): mixed {
                 $values = is_array($state) ? array_values(array_filter($state)) : [];
 
                 if (empty($values)) {
-                    $record = $component->getContainer()->getLivewire()->record ?? null;
+                    $record = $component->getRecord();
                     return $record?->getRawOriginal($name) ?? $record?->{$name} ?? null;
                 }
 
@@ -120,6 +132,19 @@ final class AdminUploads
                 $component->state(is_array($state) ? $state : []);
             })
             ->dehydrateStateUsing(fn (mixed $state) => self::withStoragePrefix($state));
+    }
+
+    /**
+     * Chuyển path DB (/storage/... hoặc http://...) thành absolute URL
+     * dùng domain của request hiện tại, tránh phụ thuộc APP_URL config.
+     */
+    private static function toAbsoluteUrl(string $stored): string
+    {
+        if (self::isExternalUrl($stored)) {
+            return $stored;
+        }
+        $path = ltrim((string) preg_replace('#^/?storage/#', 'storage/', $stored), '/');
+        return request()->getSchemeAndHttpHost() . '/' . $path;
     }
 
     private static function isExternalUrl(string $value): bool

@@ -62,12 +62,20 @@ final class AdminOptions
     public static function newsCategories(): array
     {
         return [
-            'market' => 'Thị trường',
-            'legal' => 'Pháp lý',
+            'market'     => 'Thị trường',
+            'legal'      => 'Pháp lý',
             'investment' => 'Đầu tư',
-            'project' => 'Dự án',
-            'company' => 'Nội bộ công ty',
-            'training' => 'Đào tạo',
+            'project'    => 'Dự án',
+            'training'   => 'Đào tạo',
+        ];
+    }
+
+    public static function newsCategoryLabels(): array
+    {
+        return [
+            ...self::newsCategories(),
+            'internal' => 'Nội bộ',
+            'company'  => 'Nội bộ',
         ];
     }
 

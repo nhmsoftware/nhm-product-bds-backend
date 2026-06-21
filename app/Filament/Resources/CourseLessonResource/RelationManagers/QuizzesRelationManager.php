@@ -4,9 +4,11 @@ namespace App\Filament\Resources\CourseLessonResource\RelationManagers;
 
 use App\Filament\Resources\CourseQuizResource;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 
 class QuizzesRelationManager extends RelationManager
 {
@@ -36,6 +38,26 @@ class QuizzesRelationManager extends RelationManager
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label('Thêm câu hỏi')
+                    ->before(function (array $data, Tables\Actions\CreateAction $action): void {
+                        $courseId = $this->getOwnerRecord()->id;
+                        $lessonId = $data['lesson_id'] ?? null;
+
+                        $conflictExists = DB::table('course_quizzes')
+                            ->join('course_lessons', 'course_lessons.id', '=', 'course_quizzes.lesson_id')
+                            ->where('course_lessons.course_id', $courseId)
+                            ->whereNull('course_quizzes.deleted_at')
+                            ->when($lessonId, fn ($q) => $q->where('course_quizzes.lesson_id', '!=', $lessonId))
+                            ->exists();
+
+                        if ($conflictExists) {
+                            Notification::make()
+                                ->title('Không thể thêm câu hỏi')
+                                ->body('Mỗi khóa học chỉ được có 1 bài học chứa câu hỏi quiz. Vui lòng chọn bài học đang có quiz.')
+                                ->danger()
+                                ->send();
+                            $action->halt();
+                        }
+                    })
                     ->using(function (array $data, string $model): \Illuminate\Database\Eloquent\Model {
                         return $model::create($data);
                     })

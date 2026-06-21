@@ -28,6 +28,28 @@ class NewsResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
+            // ── Loại tin ─────────────────────────────────────────────────────
+            Forms\Components\ToggleButtons::make('news_type')
+                ->label('Loại tin')
+                ->options(['public' => 'Tin công khai', 'internal' => 'Tin nội bộ'])
+                ->icons(['public' => 'heroicon-o-globe-alt', 'internal' => 'heroicon-o-lock-closed'])
+                ->colors(['public' => 'success', 'internal' => 'warning'])
+                ->grouped()
+                ->default(fn ($record) => $record?->category === 'internal' ? 'internal' : 'public')
+                ->live()
+                ->dehydrated(false)
+                ->columnSpanFull()
+                ->afterStateUpdated(function (string $state, Forms\Set $set): void {
+                    if ($state === 'internal') {
+                        $set('category', 'internal');
+                    } else {
+                        $set('category', null);
+                        $set('branch_id', null);
+                        $set('department', null);
+                    }
+                }),
+
+            // ── Thông tin chung ───────────────────────────────────────────────
             Forms\Components\TextInput::make('title')
                 ->label('Tiêu đề')
                 ->required()
@@ -36,44 +58,23 @@ class NewsResource extends Resource
             Forms\Components\TextInput::make('slug')
                 ->label('Slug')
                 ->required(),
-            Forms\Components\Select::make('author_id')
-                ->label('Tác giả')
-                ->relationship('author', 'name', function (Builder $query) {
-                    $currentUser = auth()->user();
-                    if (!$currentUser) return $query;
-                    $query->where('id', '!=', $currentUser->id)
-                          ->where('role', '!=', UserRole::BUYER->value)
-                          ->where('role', '!=', UserRole::SUPER_ADMIN->value)
-                          ->whereNotNull('job_position_id');
-                    if ($currentUser->role !== UserRole::SUPER_ADMIN) {
-                        $query->where('role', '<=', $currentUser->role->value);
-                    }
-                    if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
-                        $query->where('branch_id', $currentUser->branch_id);
-                    }
-                    if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
-                        $query->where('department_id', $currentUser->department_id);
-                    }
-                    return $query;
-                })
-                ->searchable()
-                ->preload()
-                ->required(),
+
+            Forms\Components\Hidden::make('author_id')
+                ->default(fn () => auth()->id()),
+
+            // Danh mục: chỉ cho tin công khai, ẩn khi nội bộ (category='internal' được set tự động)
             Forms\Components\Select::make('category')
                 ->label('Danh mục')
                 ->options(AdminOptions::newsCategories())
-                ->required()
+                ->required(fn (Forms\Get $get) => $get('news_type') !== 'internal')
+                ->hidden(fn (Forms\Get $get) => $get('news_type') === 'internal')
                 ->searchable(),
-            Forms\Components\Select::make('department')
-                ->label('Phòng ban')
-                ->options(AdminOptions::departments())
-                ->searchable(),
-            // Thay trường 'area' (getter-only) bằng 'branch_id' với relationship
+
+            // ── Phân phối tin nội bộ (chỉ hiện khi news_type = internal) ──────
             Forms\Components\Select::make('branch_id')
                 ->label('Chi nhánh')
                 ->relationship('branch', 'name', function (Builder $query) {
                     $user = auth()->user();
-                    // Director chỉ thấy chi nhánh của bản thân
                     if ($user && $user->role === UserRole::DIRECTOR && $user->branch_id) {
                         $query->where('id', $user->branch_id);
                     }
@@ -81,7 +82,27 @@ class NewsResource extends Resource
                 })
                 ->searchable()
                 ->preload()
-                ->placeholder('Tất cả chi nhánh'),
+                ->placeholder('Tất cả chi nhánh')
+                ->live()
+                ->visible(fn (Forms\Get $get) => $get('news_type') === 'internal')
+                ->afterStateUpdated(function ($state, Forms\Set $set): void {
+                    if (blank($state)) {
+                        $set('department', null);
+                    }
+                }),
+
+            Forms\Components\Select::make('department')
+                ->label('Phòng ban')
+                ->options(AdminOptions::departments())
+                ->searchable()
+                ->placeholder('Tất cả phòng ban')
+                ->visible(fn (Forms\Get $get) => $get('news_type') === 'internal')
+                ->disabled(fn (Forms\Get $get) => blank($get('branch_id')))
+                ->helperText(fn (Forms\Get $get) => blank($get('branch_id'))
+                    ? 'Chọn chi nhánh trước để lọc theo phòng ban'
+                    : null),
+
+            // ── Cài đặt xuất bản ──────────────────────────────────────────────
             Forms\Components\Toggle::make('is_published')
                 ->label('Đã xuất bản')
                 ->default(true),
@@ -93,6 +114,7 @@ class NewsResource extends Resource
                 ->default(0),
             Forms\Components\DateTimePicker::make('published_at')
                 ->label('Ngày xuất bản'),
+
             AdminUploads::image('thumbnail', 'Ảnh thumbnail', 'admin/news')
                 ->columnSpanFull(),
             Forms\Components\Textarea::make('summary')
@@ -115,7 +137,8 @@ class NewsResource extends Resource
                 ->limit(50),
             Tables\Columns\TextColumn::make('category')
                 ->label('Danh mục')
-                ->badge(),
+                ->badge()
+                ->formatStateUsing(fn ($state) => AdminOptions::newsCategoryLabels()[$state] ?? $state),
             Tables\Columns\TextColumn::make('branch.name')
                 ->label('Chi nhánh')
                 ->placeholder('—'),
@@ -133,7 +156,7 @@ class NewsResource extends Resource
                 ->sortable(),
         ])->actions([
             Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make()
+            Tables\Actions\DeleteAction::make(),
         ]);
     }
 
@@ -142,7 +165,6 @@ class NewsResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        // Director chỉ xem tin tức của chi nhánh mình
         if ($user && $user->role === UserRole::DIRECTOR && $user->branch_id) {
             $query->where('branch_id', $user->branch_id);
         }
@@ -153,9 +175,9 @@ class NewsResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListNews::route('/'),
+            'index'  => Pages\ListNews::route('/'),
             'create' => Pages\CreateNews::route('/create'),
-            'edit' => Pages\EditNews::route('/{record}/edit'),
+            'edit'   => Pages\EditNews::route('/{record}/edit'),
         ];
     }
 }

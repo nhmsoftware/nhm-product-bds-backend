@@ -98,11 +98,14 @@ class GradeAttempts extends Page implements HasForms
         $totalCorrect = $mcCorrectCount + $essayCorrectCount;
         $totalQuestions = $mcTotalCount + $essayTotalCount;
 
-        $summaryText = "{$totalCorrect}/{$totalQuestions} câu đúng ({$totalCorrect} điểm)";
+        $summaryText = "{$totalCorrect}/{$totalQuestions} câu đúng";
         if ($essayPendingCount > 0) {
-            $summaryText .= " — <span style='color: #d97706; font-weight: 600;'>{$essayPendingCount} câu tự luận chờ chấm</span>";
+            $summaryText .= " — <span style='color: #d97706; font-weight: 600;'>{$essayPendingCount} câu tự luận chờ chấm (điểm sẽ hiển thị sau khi chấm xong)</span>";
         } else {
-            $summaryText .= " — <span style='color: #16a34a; font-weight: 600;'>Đã chấm xong tất cả câu tự luận</span>";
+            $finalScore = $totalQuestions > 0 ? round(($totalCorrect / $totalQuestions) * 10, 2) : 0;
+            $scoreColor = $finalScore >= 8 ? '#16a34a' : ($finalScore >= 5 ? '#d97706' : '#dc2626');
+            $summaryText .= " — <span style='color: {$scoreColor}; font-weight: 700; font-size: 1.05em;'>Điểm: {$finalScore}/10</span>"
+                . " <span style='color: #16a34a; font-weight: 600;'>(Đã chấm xong)</span>";
         }
 
         $topPlaceholder = Forms\Components\Placeholder::make('summary')
@@ -170,8 +173,8 @@ class GradeAttempts extends Page implements HasForms
         }
 
         $badge = $attempt->is_correct
-            ? '<span style="background:#dcfce7;color:#15803d;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;">Đúng — 1 điểm</span>'
-            : '<span style="background:#fee2e2;color:#dc2626;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;">Sai — 0 điểm</span>';
+            ? '<span style="background:#dcfce7;color:#15803d;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;">Đúng</span>'
+            : '<span style="background:#fee2e2;color:#dc2626;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;">Sai</span>';
 
         return Forms\Components\Placeholder::make("mc_{$attempt->id}")
             ->label('Câu hỏi: ' . $attempt->question)
@@ -196,14 +199,14 @@ class GradeAttempts extends Page implements HasForms
         if ($isPending) {
             $components[] = Forms\Components\Radio::make("grade_{$attempt->id}")
                 ->label('Kết quả chấm')
-                ->options(['correct' => 'Đúng — 1 điểm', 'incorrect' => 'Sai — 0 điểm'])
+                ->options(['correct' => 'Đúng', 'incorrect' => 'Sai'])
                 ->required()
                 ->inline()
                 ->columnSpanFull();
         } else {
             $badge = $attempt->is_correct
-                ? '<span style="background:#dcfce7;color:#15803d;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;">Đã chấm — Đúng — 1 điểm</span>'
-                : '<span style="background:#fee2e2;color:#dc2626;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;">Đã chấm — Sai — 0 điểm</span>';
+                ? '<span style="background:#dcfce7;color:#15803d;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;">Đã chấm — Đúng</span>'
+                : '<span style="background:#fee2e2;color:#dc2626;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;">Đã chấm — Sai</span>';
 
             $components[] = Forms\Components\Placeholder::make("result_{$attempt->id}")
                 ->label('Kết quả')

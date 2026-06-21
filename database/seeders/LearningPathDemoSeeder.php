@@ -55,6 +55,7 @@ class LearningPathDemoSeeder extends Seeder
                 'quiz' => [
                     ['question' => 'Nhân viên cần làm gì trước khi tư vấn một lô đất cho khách hàng?', 'options' => ['Kiểm tra trạng thái bảng hàng', 'Báo giá theo trí nhớ', 'Bỏ qua lịch sử khách hàng', 'Giữ chỗ không cần xác nhận'], 'correct_option' => 0],
                     ['question' => 'Lộ trình học bắt buộc yêu cầu nhân viên học theo nguyên tắc nào?', 'options' => ['Xem lần lượt và hoàn thành video', 'Bỏ qua bài chưa xem', 'Chỉ làm quiz cuối khóa', 'Tự đánh dấu hoàn thành'], 'correct_option' => 0],
+                    ['type' => 'essay', 'question' => 'Mô tả ngắn gọn quy trình bạn sẽ thực hiện khi lần đầu tư vấn khách hàng mua bất động sản.', 'placeholder' => 'Nhập câu trả lời của bạn (tối thiểu 2–3 câu)...'],
                 ],
             ],
             [
@@ -211,19 +212,20 @@ class LearningPathDemoSeeder extends Seeder
         }
 
         foreach ($quizzes as $index => $quizData) {
+            $type = $quizData['type'] ?? 'multiple_choice';
             CourseQuiz::create([
-                'lesson_id' => $lastLesson->id,
-                'type' => 'multiple_choice',
-                'order' => $index + 1,
-                'title' => 'Câu ' . ($index + 1),
-                'question' => $quizData['question'],
-                'options' => array_map(
+                'lesson_id'      => $lastLesson->id,
+                'type'           => $type,
+                'order'          => $index + 1,
+                'title'          => 'Câu ' . ($index + 1),
+                'question'       => $quizData['question'],
+                'options'        => $type === 'essay' ? [] : array_map(
                     fn (string $label, int $value) => ['value' => $value, 'label' => $label],
                     $quizData['options'],
                     array_keys($quizData['options'])
                 ),
-                'placeholder' => null,
-                'correct_option' => $quizData['correct_option'],
+                'placeholder'    => $quizData['placeholder'] ?? null,
+                'correct_option' => $type === 'essay' ? null : $quizData['correct_option'],
             ]);
         }
 

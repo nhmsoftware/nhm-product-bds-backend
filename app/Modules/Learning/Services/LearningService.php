@@ -592,11 +592,23 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     $progressPercent = round(($completedLessonsCount / $totalLessonsCount) * 100, 2);
                     $enrollment->progress_percent = $progressPercent;
 
-                    if ($completedLessonsCount === $totalLessonsCount) {
-                        $enrollment->status = CourseEnrollmentStatus::COMPLETED;
-                        $enrollment->completed_at = now();
-                    } else {
-                        $enrollment->status = CourseEnrollmentStatus::IN_PROGRESS;
+                    $terminalStatuses = [
+                        CourseEnrollmentStatus::COMPLETED,
+                        CourseEnrollmentStatus::PENDING_ONBOARDING,
+                        CourseEnrollmentStatus::PENDING_GRADING,
+                    ];
+                    if (!in_array($enrollment->status, $terminalStatuses, true)) {
+                        if ($completedLessonsCount === $totalLessonsCount) {
+                            // Required course: không auto-complete, chờ quiz+duyệt
+                            if ($course->is_required) {
+                                $enrollment->status = CourseEnrollmentStatus::IN_PROGRESS;
+                            } else {
+                                $enrollment->status = CourseEnrollmentStatus::COMPLETED;
+                                $enrollment->completed_at = now();
+                            }
+                        } else {
+                            $enrollment->status = CourseEnrollmentStatus::IN_PROGRESS;
+                        }
                     }
 
                     $enrollment->save();
@@ -897,6 +909,15 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $enrollment->quiz_expires_at = null;
             $enrollment->quiz_remaining_seconds = null;
             $enrollment->quiz_last_saved_at = null;
+
+            // Nếu có câu tự luận → chờ chấm bài
+            $hasEssayQuestions = $questions->contains(
+                fn ($q) => ($q->type ?? '') === \App\Modules\Learning\Models\Enums\CourseQuizType::ESSAY->value
+            );
+            if ($hasEssayQuestions) {
+                $enrollment->status = CourseEnrollmentStatus::PENDING_GRADING;
+            }
+
             $enrollment->save();
 
             $responsePayload = [
@@ -1115,15 +1136,26 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 }
             }
 
-            // 7. Cập nhật trạng thái và tiến độ khóa học thành Hoàn thành (100%)
-            $enrollment->status = CourseEnrollmentStatus::COMPLETED;
+            // 7. Cập nhật trạng thái và tiến độ khóa học
             $enrollment->progress_percent = 100.00;
-            $enrollment->completed_at = now();
+
+            if ($course->is_required) {
+                // Required course → chờ admin duyệt onboarding
+                $enrollment->status = CourseEnrollmentStatus::PENDING_ONBOARDING;
+            } else {
+                $enrollment->status = CourseEnrollmentStatus::COMPLETED;
+                $enrollment->completed_at = now();
+            }
+
             $enrollment->save();
+
+            $message = $course->is_required
+                ? 'Bạn đã hoàn thành bài quiz. Vui lòng chờ quản lý duyệt hoàn thành khóa học.'
+                : 'Bạn đã hoàn thành khóa học.';
 
             return $this->success(
                 data: $enrollment,
-                message: 'Bạn đã hoàn thành khóa học.'
+                message: $message
             );
         }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
             // A3 – Lỗi cập nhật trạng thái khóa học

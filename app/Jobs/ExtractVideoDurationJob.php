@@ -67,38 +67,124 @@ class ExtractVideoDurationJob implements ShouldQueue
 
     private function extractDuration(string $filePath): ?int
     {
-        $ffprobe = trim((string) shell_exec('which ffprobe 2>/dev/null'));
-
-        if (blank($ffprobe)) {
-            Log::error('ExtractVideoDuration: ffprobe not found. Install with: sudo apt install -y ffmpeg');
-            return null;
-        }
-
-        $process = new Process([
-            $ffprobe,
-            '-v', 'error',
-            '-show_entries', 'format=duration',
-            '-of', 'default=noprint_wrappers=1:nokey=1',
-            $filePath,
+        Log::info('ExtractVideoDuration: start', [
+            'lesson_id' => $this->lessonId,
+            'file'      => $filePath,
+            'exists'    => file_exists($filePath),
+            'size'      => file_exists($filePath) ? filesize($filePath) : null,
         ]);
 
-        $process->setTimeout(30);
-        $process->run();
+        // Try ffprobe first
+        $ffprobe = trim((string) shell_exec('which ffprobe 2>/dev/null'));
 
-        if (!$process->isSuccessful()) {
+        if (!blank($ffprobe)) {
+            $process = new Process([
+                $ffprobe, '-v', 'error',
+                '-show_entries', 'format=duration',
+                '-of', 'default=noprint_wrappers=1:nokey=1',
+                $filePath,
+            ]);
+            $process->setTimeout(30);
+            $process->run();
+
+            if ($process->isSuccessful()) {
+                $raw = trim($process->getOutput());
+                if (is_numeric($raw)) {
+                    $duration = (int) round((float) $raw);
+                    Log::info('ExtractVideoDuration: ffprobe ok', ['lesson_id' => $this->lessonId, 'duration' => $duration]);
+                    return $duration;
+                }
+            }
+
             Log::warning('ExtractVideoDuration: ffprobe failed', [
                 'lesson_id' => $this->lessonId,
-                'error'     => $process->getErrorOutput(),
+                'stderr'    => $process->getErrorOutput(),
             ]);
+        } else {
+            Log::warning('ExtractVideoDuration: ffprobe not found, trying PHP MP4 parser', ['lesson_id' => $this->lessonId]);
+        }
+
+        // Fallback: pure PHP — parse MP4/MOV moov→mvhd atom
+        $duration = $this->parseMP4Duration($filePath);
+
+        if ($duration !== null) {
+            Log::info('ExtractVideoDuration: PHP parser ok', ['lesson_id' => $this->lessonId, 'duration' => $duration]);
+        } else {
+            Log::error('ExtractVideoDuration: all methods failed — install ffmpeg: sudo apt install -y ffmpeg', ['lesson_id' => $this->lessonId]);
+        }
+
+        return $duration;
+    }
+
+    private function parseMP4Duration(string $filePath): ?int
+    {
+        $handle = @fopen($filePath, 'rb');
+        if (!$handle) {
             return null;
         }
 
-        $raw = trim($process->getOutput());
+        $fileSize = filesize($filePath);
+        $offset   = 0;
 
-        if (!is_numeric($raw)) {
-            return null;
+        while ($offset < $fileSize - 8) {
+            fseek($handle, $offset);
+            $header = fread($handle, 8);
+            if (strlen($header) < 8) {
+                break;
+            }
+
+            $boxSize = unpack('N', substr($header, 0, 4))[1];
+            $boxType = substr($header, 4, 4);
+
+            if ($boxSize < 8) {
+                break;
+            }
+
+            if ($boxType === 'moov') {
+                $moovEnd = $offset + $boxSize;
+                $inner   = $offset + 8;
+
+                while ($inner < $moovEnd - 8) {
+                    fseek($handle, $inner);
+                    $sub = fread($handle, 8);
+                    if (strlen($sub) < 8) {
+                        break;
+                    }
+
+                    $subSize = unpack('N', substr($sub, 0, 4))[1];
+                    $subType = substr($sub, 4, 4);
+
+                    if ($subType === 'mvhd') {
+                        $mvhd = fread($handle, 20);
+                        if (strlen($mvhd) < 20) {
+                            break;
+                        }
+                        $version = ord($mvhd[0]);
+                        if ($version === 1) {
+                            $extra     = fread($handle, 8);
+                            $timescale = unpack('N', substr($mvhd, 16, 4))[1];
+                            $duration  = (unpack('N', substr($extra, 0, 4))[1] * 4294967296)
+                                       + unpack('N', substr($extra, 4, 4))[1];
+                        } else {
+                            $timescale = unpack('N', substr($mvhd, 8, 4))[1];
+                            $duration  = unpack('N', substr($mvhd, 12, 4))[1];
+                        }
+
+                        fclose($handle);
+                        return $timescale > 0 ? (int) round($duration / $timescale) : null;
+                    }
+
+                    if ($subSize < 8) {
+                        break;
+                    }
+                    $inner += $subSize;
+                }
+            }
+
+            $offset += $boxSize;
         }
 
-        return (int) round((float) $raw);
+        fclose($handle);
+        return null;
     }
 }
