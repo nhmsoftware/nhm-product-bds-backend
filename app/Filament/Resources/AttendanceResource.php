@@ -66,8 +66,14 @@ class AttendanceResource extends Resource
                 ->label('Trạng thái')
                 ->options(self::enumOptions(AttendanceStatus::class))
                 ->required(),
-            Forms\Components\TextInput::make('check_in_method')->label('Cách check-in'),
-            Forms\Components\TextInput::make('check_out_method')->label('Cách check-out'),
+            Forms\Components\Select::make('check_in_method')
+                ->label('Cách check-in')
+                ->options(['gps' => 'GPS', 'wifi' => 'WiFi'])
+                ->placeholder('Chọn cách check-in'),
+            Forms\Components\Select::make('check_out_method')
+                ->label('Cách check-out')
+                ->options(['gps' => 'GPS', 'wifi' => 'WiFi'])
+                ->placeholder('Chọn cách check-out'),
             Forms\Components\TextInput::make('check_in_lat')->label('Lat in'),
             Forms\Components\TextInput::make('check_in_lng')->label('Lng in'),
             Forms\Components\TextInput::make('check_out_lat')->label('Lat out'),

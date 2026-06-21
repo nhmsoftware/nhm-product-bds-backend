@@ -52,14 +52,14 @@ class AreaResource extends Resource
                         Forms\Components\Toggle::make('is_public')->label('Hiển thị công khai')->default(true),
                         Forms\Components\TextInput::make('planning_check_url')->label('Link kiểm tra quy hoạch')->columnSpanFull(),
                         Forms\Components\TextInput::make('google_maps_url')->label('Google Maps URL')->url()->columnSpanFull(),
-                        Forms\Components\TextInput::make('brochure')->label('Brochure')->url()->columnSpanFull(),
+                        AdminUploads::file('brochure', 'Brochure (PDF)', 'admin/area-brochures')->columnSpanFull(),
                         Forms\Components\Textarea::make('description')->label('Mô tả')->columnSpanFull(),
                     ])->columns(2),
                 Forms\Components\Wizard\Step::make('Hình ảnh & Phân quyền')
                     ->description('Ảnh bảng hàng và phân quyền truy cập')
                     ->schema([
                         AdminUploads::image('sales_board_image', 'Ảnh bảng hàng', 'admin/area-sales-boards')->columnSpanFull(),
-                        AdminUploads::images('sales_board_images', 'Danh sách ảnh bảng hàng', 'admin/area-sales-board-gallery')->columnSpanFull(),
+                        AdminUploads::images('sales_board_images', 'Danh sách ảnh bảng hàng', 'admin/area-sales-board-gallery')->columnSpanFull()->hidden(true),
                         Forms\Components\TextInput::make('sales_board_iframe')->label('Iframe bảng hàng')->columnSpanFull(),
                         Forms\Components\CheckboxList::make('role_access')
                             ->label('Vai trò được phép xem khu đất')
