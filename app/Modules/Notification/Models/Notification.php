@@ -74,6 +74,20 @@ class Notification extends DatabaseNotification
         'updated_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Notification $notification) {
+            $groupId = data_get($notification->data, 'group_id');
+            if ($groupId) {
+                static::withoutEvents(function () use ($groupId) {
+                    static::query()
+                        ->whereRaw("data::json->>'group_id' = ?", [$groupId])
+                        ->delete();
+                });
+            }
+        });
+    }
+
     /**
      * Ghi đè toArray để thêm trường is_read để Frontend dễ sử dụng
      * và chuẩn hóa cấu trúc response theo chuẩn dự án.

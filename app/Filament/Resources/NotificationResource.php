@@ -136,7 +136,9 @@ class NotificationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('data.title')->label('Tiêu đề')->searchable()->limit(40),
                 Tables\Columns\TextColumn::make('data.body')->label('Nội dung')->searchable()->limit(60),
-                Tables\Columns\TextColumn::make('notifiable.name')->label('Người nhận')->default('-'),
+                Tables\Columns\TextColumn::make('data.target_label')
+                    ->label('Gửi tới')
+                    ->default(fn ($record) => $record->notifiable?->name ?? '-'),
                 Tables\Columns\IconColumn::make('read_at')
                     ->label('Đã đọc')
                     ->boolean()
@@ -164,6 +166,16 @@ class NotificationResource extends Resource
             ->headerActions([
                 //
             ]);
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereIn('id', function ($query) {
+                $query->selectRaw('MIN(id::text)::uuid')
+                    ->from('notifications')
+                    ->groupByRaw("COALESCE(data::json->>'group_id', id::text)");
+            });
     }
 
     public static function getPages(): array

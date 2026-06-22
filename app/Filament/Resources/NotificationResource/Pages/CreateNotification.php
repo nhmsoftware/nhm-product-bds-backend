@@ -40,6 +40,16 @@ class CreateNotification extends CreateRecord
             ]);
         }
 
+        $targetLabel = match ($data['target_type']) {
+            'all' => 'Tất cả nhân sự',
+            'role' => 'Vai trò: ' . (UserRole::from((int) $data['target_role'])->label()),
+            'department' => 'Phòng ban: ' . $data['target_department'],
+            'area' => 'Chi nhánh: ' . (\App\Modules\Branch\Models\Branch::find($data['target_area'])?->name ?? 'Không xác định'),
+            'users' => 'Đích danh (' . count($recipientIds) . ' nhân sự)',
+            default => 'Không xác định',
+        };
+
+        $groupId = \Illuminate\Support\Str::uuid()->toString();
         $firstNotification = null;
         $repo = app(\App\Modules\Notification\Interfaces\NotificationRepositoryInterface::class);
 
@@ -47,6 +57,9 @@ class CreateNotification extends CreateRecord
             $notification = $repo->createForUser((string) $userId, [
                 'title' => $data['title'],
                 'body' => $data['body'],
+                'group_id' => $groupId,
+                'target_type' => $data['target_type'],
+                'target_label' => $targetLabel,
             ]);
             if ($index === 0) {
                 $firstNotification = $notification;

@@ -521,6 +521,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
         return match ($unit) {
             'days' => now()->addDays($amount),
+            'minutes' => now()->addMinutes($amount),
             default => now()->addHours($amount),
         };
     }

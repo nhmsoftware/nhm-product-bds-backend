@@ -116,6 +116,7 @@ class ManageSettings extends Page implements HasForms
                         Select::make('lot_lock_approval_timeout.unit')
                             ->label('Đơn vị thời gian')
                             ->options([
+                                'minutes' => 'Phút',
                                 'hours' => 'Giờ',
                                 'days' => 'Ngày',
                             ])
