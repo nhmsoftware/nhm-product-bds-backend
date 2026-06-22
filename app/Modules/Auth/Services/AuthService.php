@@ -222,8 +222,16 @@ final class AuthService extends BaseService implements AuthServiceInterface
             $cooldownKey = "otp_cooldown:{$dto->username}";
             $this->validate(!Cache::has($cooldownKey), 'Vui lòng đợi 60 giây trước khi yêu cầu mã mới.', 429);
 
-            // 3. Tạo OTP (6 chữ số)
-            $otp = (string) rand(100000, 999999);
+            // 3. Tạo OTP
+            // Nếu chưa cấu hình Mail (MAIL_USERNAME/MAIL_PASSWORD trống) hoặc mailer mặc định là log,
+            // thì dùng mã OTP mặc định là '123456' để dễ dàng test. Ngược lại sinh ngẫu nhiên.
+            $hasMailConfig = !empty(env('MAIL_USERNAME')) && !empty(env('MAIL_PASSWORD')) && env('MAIL_HOST') !== '127.0.0.1';
+            
+            if (!$hasMailConfig || config('mail.default') === 'log') {
+                $otp = '123456';
+            } else {
+                $otp = (string) rand(100000, 999999);
+            }
 
             // 4. Lưu Cache (hết hạn sau 5 phút)
             Cache::put("otp:{$dto->username}", $otp, now()->addMinutes(5));
@@ -234,7 +242,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
             // \Log::info("OTP for {$dto->username}: {$otp}");
 
             $responseData = null;
-            if (config('services.otp_expose') === true && !app()->isProduction()) {
+            if ($otp === '123456' || config('services.otp_expose') === true) {
                 $responseData = ['otp_code' => $otp];
             }
 
