@@ -20,6 +20,7 @@ class CourseLessonResource extends Resource
     protected static ?string $navigationGroup = 'Đào tạo';
     protected static ?string $modelLabel = 'Bài học';
     protected static ?string $pluralModelLabel = 'Bài học';
+    protected static ?string $navigationLabel = 'Quản lý bài học';
 
     public static function form(Form $form): Form
     {
