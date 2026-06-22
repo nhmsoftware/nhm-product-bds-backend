@@ -59,6 +59,7 @@ class QuizAttemptResource extends Resource
 
                 Tables\Columns\TextColumn::make('pending_count')
                     ->label('Câu chờ chấm')
+                    ->alignCenter()
                     ->getStateUsing(function (QuizAttempt $record): int {
                         $courseId = $record->quiz->lesson->course_id;
                         return QuizAttempt::query()
@@ -94,6 +95,7 @@ class QuizAttemptResource extends Resource
 
                 Tables\Columns\TextColumn::make('correct_answers')
                     ->label('Số câu đúng')
+                    ->alignCenter()
                     ->getStateUsing(function (QuizAttempt $record): string {
                         $courseId = $record->quiz->lesson->course_id;
                         $allAttempts = QuizAttempt::query()
@@ -181,6 +183,45 @@ class QuizAttemptResource extends Resource
                         return $hasPending ? 'primary' : 'gray';
                     })
                     ->url(fn (QuizAttempt $record): string => self::getUrl('grade', ['record' => $record->id])),
+                Tables\Actions\Action::make('confirmOnboarding')
+                    ->label('Duyệt onboarding')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(function (QuizAttempt $record): bool {
+                        $course = $record->quiz?->lesson?->course;
+                        if (!$course || !$course->is_required) {
+                            return false;
+                        }
+
+                        // Check if status is pending onboarding
+                        $enrollment = \App\Modules\Learning\Models\CourseEnrollment::where('user_id', $record->user_id)
+                            ->where('course_id', $course->id)
+                            ->first();
+
+                        return $enrollment && $enrollment->status === \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::PENDING_ONBOARDING;
+                    })
+                    ->requiresConfirmation()
+                    ->action(function (QuizAttempt $record) {
+                        $courseId = $record->quiz->lesson->course_id;
+                        $learningService = app(\App\Modules\Learning\Interfaces\LearningServiceInterface::class);
+                        $result = $learningService->adminConfirmOnboarding(
+                            (string) $courseId,
+                            (string) $record->user_id,
+                            (string) auth()->user()?->getAuthIdentifier()
+                        );
+
+                        if ($result->isError()) {
+                            \Filament\Notifications\Notification::make()
+                                ->title($result->getMessage())
+                                ->danger()
+                                ->send();
+                        } else {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Duyệt hoàn thành onboarding cho nhân viên thành công.')
+                                ->success()
+                                ->send();
+                        }
+                    }),
             ]);
     }
 

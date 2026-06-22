@@ -26,12 +26,21 @@ class BranchResource extends Resource
             Forms\Components\TextInput::make('name')
                 ->label('Tên chi nhánh')
                 ->required()
+                ->extraInputAttributes(['required' => false])
+                ->validationMessages(['required' => __('common.error.required')])
                 ->maxLength(255)
                 ->live(onBlur: true)
                 ->afterStateUpdated(fn (?string $state, Forms\Set $set) => $set('code', strtoupper(Str::slug((string) $state, '_')))),
             Forms\Components\TextInput::make('code')->label('Mã chi nhánh')->maxLength(50),
             Forms\Components\TextInput::make('area')->label('Khu vực quản lý')->maxLength(255),
-            Forms\Components\TextInput::make('sort')->label('Thứ tự')->numeric()->default(0),
+            Forms\Components\TextInput::make('sort')
+                ->label('Thứ tự')
+                ->default(1)
+                ->rules(['integer', 'min:1'])
+                ->validationMessages([
+                    'integer' => 'Thứ tự phải là số nguyên.',
+                    'min' => 'Thứ tự phải lớn hơn hoặc bằng 1.',
+                ]),
             Forms\Components\Toggle::make('is_active')->label('Đang sử dụng')->default(true),
         ])->columns(2);
     }

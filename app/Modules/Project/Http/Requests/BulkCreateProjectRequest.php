@@ -65,6 +65,7 @@ class BulkCreateProjectRequest extends FormRequest
             'lots.*.price' => 'nullable|integer|min:0',
             'lots.*.unit_price' => 'nullable|integer|min:0',
             'lots.*.frontage' => 'nullable|numeric|min:0',
+            'lots.*.is_corner' => 'nullable|boolean',
             'lots.*.legal' => 'nullable|string|max:255',
             'lots.*.description' => 'nullable|string',
             'lots.*.coordinate_x' => 'nullable|integer',

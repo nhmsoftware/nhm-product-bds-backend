@@ -13,6 +13,7 @@
         "laravel/framework": "^13.7",
         "laravel/reverb": "^1.10",
         "laravel/tinker": "^3.0",
+        "phpoffice/phpspreadsheet": "*",
         "predis/predis": "^3.5",
         "symfony/type-info": "^7.4",
         "symfony/yaml": "^7.0",

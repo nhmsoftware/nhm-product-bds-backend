@@ -26,5 +26,16 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Database\Eloquent\Factories\Factory::guessFactoryNamesUsing(function (string $modelName) {
             return 'Database\\Factories\\' . class_basename($modelName) . 'Factory';
         });
+
+        \Filament\Forms\Components\Field::configureUsing(function (\Filament\Forms\Components\Field $field): void {
+            $traits = class_uses_recursive($field);
+            if (in_array(\Filament\Forms\Components\Concerns\HasExtraInputAttributes::class, $traits)) {
+                $field->extraInputAttributes(['required' => false]);
+            }
+
+            $field->validationMessages([
+                'required' => __('common.error.required'),
+            ]);
+        });
     }
 }

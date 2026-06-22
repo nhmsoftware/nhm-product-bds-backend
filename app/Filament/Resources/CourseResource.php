@@ -26,11 +26,18 @@ class CourseResource extends Resource
     {
         return $form->schema([
             Forms\Components\Section::make('Thông tin khóa học')->schema([
-                Forms\Components\TextInput::make('title')->label('Tên khóa học')->required()->maxLength(255),
+                Forms\Components\TextInput::make('title')->label('Tên khóa học')->required()->maxLength(255)->unique(ignoreRecord: true, modifyRuleUsing: fn ($rule) => $rule->whereNull('deleted_at'))->extraInputAttributes(['required' => false])->validationMessages(['required' => __('common.error.required'), 'unique' => 'Tên khóa học đã tồn tại']),
                 AdminUploads::image('thumbnail', 'Ảnh khóa học', 'admin/courses')->columnSpanFull(),
                 Forms\Components\Textarea::make('description')->label('Mô tả')->rows(4)->columnSpanFull(),
                 Forms\Components\Toggle::make('is_required')->label('Khóa học bắt buộc')->helperText('Chỉ được có 1 khóa học bắt buộc trong hệ thống.')->default(false),
-                Forms\Components\TextInput::make('order')->label('Thứ tự hiển thị')->numeric()->default(0),
+                Forms\Components\TextInput::make('order')
+                    ->label('Thứ tự hiển thị')
+                    ->default(1)
+                    ->rules(['integer', 'min:1'])
+                    ->validationMessages([
+                        'integer' => 'Thứ tự hiển thị phải là số nguyên.',
+                        'min' => 'Thứ tự hiển thị phải lớn hơn hoặc bằng 1.',
+                    ]),
                 Forms\Components\Toggle::make('is_active')->label('Mở khóa học')->default(true),
                 Forms\Components\Toggle::make('has_certificate')->label('Cấp chứng chỉ khi hoàn thành')->default(true),
             ])->columns(2),

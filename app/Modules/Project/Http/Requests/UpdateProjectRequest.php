@@ -65,6 +65,7 @@ class UpdateProjectRequest extends FormRequest
             'areas.*.lots.*.width' => 'nullable|integer',
             'areas.*.lots.*.height' => 'nullable|integer',
             'areas.*.lots.*.frontage' => 'nullable|numeric|min:0',
+            'areas.*.lots.*.is_corner' => 'nullable|boolean',
             'areas.*.lots.*.legal' => 'nullable|string',
             'areas.*.lots.*.description' => 'nullable|string',
             'areas.*.lots.*.planning_id' => 'nullable|string|uuid',

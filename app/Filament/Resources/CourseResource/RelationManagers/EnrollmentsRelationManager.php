@@ -116,7 +116,7 @@ class EnrollmentsRelationManager extends RelationManager
                     ->label('Duyệt onboarding')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $isRequiredCourse && $record->status !== CourseEnrollmentStatus::COMPLETED)
+                    ->visible(fn ($record) => $isRequiredCourse && $record->status === CourseEnrollmentStatus::PENDING_ONBOARDING)
                     ->tooltip(function ($record): ?string {
                         $count = $this->countUngradedEssays($record);
                         if ($count > 0) {

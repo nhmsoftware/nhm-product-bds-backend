@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'onboarding' => \App\Http\Middleware\RequireOnboardingCompleted::class,
         ]);
+        $middleware->web(append: [
+            \App\Http\Middleware\CheckUserActive::class,
+        ]);
+        $middleware->api(append: [
+            \App\Http\Middleware\CheckUserActive::class,
+        ]);
         $middleware->trimStrings(except: [
             'current_password',
             'password',

@@ -13,7 +13,7 @@ class LotResource extends Resource
     protected static ?string $navigationGroup = 'Kho hàng';
     protected static ?string $modelLabel = 'Lô đất';
     protected static ?string $pluralModelLabel = 'Lô đất';
-    protected static bool $shouldRegisterNavigation = false;
+    protected static ?string $navigationLabel = 'Danh sách lô đất';
     public static function form(Form $form): Form { return $form->schema([
         Forms\Components\Select::make('area_id')
             ->label('Khu đất')
@@ -60,8 +60,11 @@ class LotResource extends Resource
         Forms\Components\TextInput::make('direction')->label('Hướng'),
         Forms\Components\TextInput::make('price')->label('Giá')->mask(\Filament\Support\RawJs::make('$money($input, \'.\', \',\', 0)'))->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
         Forms\Components\TextInput::make('unit_price')->label('Đơn giá/m²')->mask(\Filament\Support\RawJs::make('$money($input, \'.\', \',\', 0)'))->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
-        Forms\Components\TextInput::make('frontage')->label('Lô góc')->numeric(), Forms\Components\TextInput::make('legal')->label('Pháp lý'),
-        Forms\Components\Toggle::make('is_locked')->label('Đã lock'), Forms\Components\Textarea::make('description')->label('Mô tả')->columnSpanFull(),
+        Forms\Components\TextInput::make('legal')->label('Pháp lý'),
+        Forms\Components\TextInput::make('frontage')->label('Mặt tiền')->numeric(),
+        Forms\Components\Toggle::make('is_corner')->label('Lô góc'),
+        Forms\Components\Toggle::make('is_locked')->label('Đã lock'),
+        Forms\Components\Textarea::make('description')->label('Mô tả')->columnSpanFull(),
         AdminUploads::image('image_url', 'Ảnh đại diện', 'admin/lots')->columnSpanFull(),
         AdminUploads::images('images', 'Danh sách ảnh lô đất', 'admin/lot-gallery')->columnSpanFull(),
     ])->columns(2); }

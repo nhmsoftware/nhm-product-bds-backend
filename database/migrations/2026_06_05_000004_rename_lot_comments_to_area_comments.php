@@ -23,13 +23,12 @@ return new class extends Migration
         // 3. Migrate data from lot_id to area_id
         DB::statement("UPDATE lot_comments SET area_id = (SELECT area_id FROM lots WHERE lots.id = lot_comments.lot_id)");
 
-        // 4. Drop lot_id and its foreign key, index
         Schema::table('lot_comments', function (Blueprint $table) {
+            $table->dropIndex('idx_lot_comments_lot_id');
             if (DB::connection()->getDriverName() !== 'sqlite') {
                 $table->dropForeign('fk_lot_comments_lot_id');
+                $table->dropColumn('lot_id');
             }
-            $table->dropIndex('idx_lot_comments_lot_id');
-            $table->dropColumn('lot_id');
         });
 
         // 5. Rename table

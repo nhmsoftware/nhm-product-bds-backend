@@ -59,9 +59,20 @@ class AreaResource extends Resource
                 Forms\Components\Wizard\Step::make('Hình ảnh & Phân quyền')
                     ->description('Ảnh bảng hàng và phân quyền truy cập')
                     ->schema([
-                        AdminUploads::image('sales_board_image', 'Ảnh bảng hàng', 'admin/area-sales-boards')->columnSpanFull(),
-                        AdminUploads::images('sales_board_images', 'Danh sách ảnh bảng hàng', 'admin/area-sales-board-gallery')->columnSpanFull()->hidden(true),
-                        Forms\Components\TextInput::make('sales_board_iframe')->label('Iframe bảng hàng')->columnSpanFull(),
+                        AdminUploads::image('image', 'Ảnh đại diện khu đất', 'admin/area-thumbnails')
+                            ->helperText('Ảnh thumbnail hiển thị trên danh sách và trang chủ mobile.')
+                            ->columnSpanFull(),
+                        AdminUploads::images('banner', 'Ảnh banner chi tiết (slider)', 'admin/area-banners')
+                            ->helperText('Các ảnh hiển thị dạng slideshow ở trang chi tiết khu đất.')
+                            ->columnSpanFull(),
+                        AdminUploads::image('location_image', 'Ảnh bản đồ vị trí', 'admin/area-location-maps')
+                            ->helperText('Ảnh minh họa vị trí địa lý của khu đất.')
+                            ->columnSpanFull(),
+                        Forms\Components\Fieldset::make('Bảng hàng')
+                            ->schema([
+                                AdminUploads::image('sales_board_image', 'Ảnh bảng hàng (sơ đồ lô)', 'admin/area-sales-boards')->columnSpanFull(),
+                                Forms\Components\TextInput::make('sales_board_iframe')->label('Iframe bảng hàng')->columnSpanFull(),
+                            ]),
                         Forms\Components\CheckboxList::make('role_access')
                             ->label('Vai trò được phép xem khu đất')
                             ->helperText('Nếu không chọn vai trò nào → tất cả mọi người đều xem được')

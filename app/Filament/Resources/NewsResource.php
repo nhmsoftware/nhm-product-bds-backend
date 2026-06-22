@@ -39,11 +39,13 @@ class NewsResource extends Resource
                 ->live()
                 ->dehydrated(false)
                 ->columnSpanFull()
-                ->afterStateUpdated(function (string $state, Forms\Set $set): void {
+                ->afterStateUpdated(function (?string $state, Forms\Get $get, Forms\Set $set): void {
                     if ($state === 'internal') {
                         $set('category', 'internal');
                     } else {
-                        $set('category', null);
+                        if ($get('category') === 'internal') {
+                            $set('category', null);
+                        }
                         $set('branch_id', null);
                         $set('department', null);
                     }
@@ -53,11 +55,15 @@ class NewsResource extends Resource
             Forms\Components\TextInput::make('title')
                 ->label('Tiêu đề')
                 ->required()
+                ->extraInputAttributes(['required' => false])
+                ->validationMessages(['required' => __('common.error.required')])
                 ->live(onBlur: true)
                 ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('slug', Str::slug((string) $state))),
             Forms\Components\TextInput::make('slug')
                 ->label('Slug')
-                ->required(),
+                ->required()
+                ->extraInputAttributes(['required' => false])
+                ->validationMessages(['required' => __('common.error.required')]),
 
             Forms\Components\Hidden::make('author_id')
                 ->default(fn () => auth()->id()),
@@ -67,6 +73,8 @@ class NewsResource extends Resource
                 ->label('Danh mục')
                 ->options(AdminOptions::newsCategories())
                 ->required(fn (Forms\Get $get) => $get('news_type') !== 'internal')
+                ->extraInputAttributes(['required' => false])
+                ->validationMessages(['required' => __('common.error.required')])
                 ->hidden(fn (Forms\Get $get) => $get('news_type') === 'internal')
                 ->searchable(),
 
@@ -110,8 +118,12 @@ class NewsResource extends Resource
                 ->label('Nổi bật'),
             Forms\Components\TextInput::make('sort')
                 ->label('Thứ tự')
-                ->numeric()
-                ->default(0),
+                ->default(1)
+                ->rules(['integer', 'min:1'])
+                ->validationMessages([
+                    'integer' => 'Thứ tự phải là số nguyên.',
+                    'min' => 'Thứ tự phải lớn hơn hoặc bằng 1.',
+                ]),
             Forms\Components\DateTimePicker::make('published_at')
                 ->label('Ngày xuất bản'),
 

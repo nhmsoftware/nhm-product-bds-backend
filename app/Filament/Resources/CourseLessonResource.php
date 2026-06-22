@@ -30,12 +30,31 @@ class CourseLessonResource extends Resource
     public static function lessonFormSchema(): array
     {
         return [
-            Forms\Components\Select::make('course_id')->label('Khóa học')->relationship('course', 'title')->searchable()->preload()->required(),
-            Forms\Components\TextInput::make('title')->label('Tên bài học')->required()->maxLength(255),
+            Forms\Components\Select::make('course_id')
+                ->label('Khóa học')
+                ->relationship('course', 'title')
+                ->searchable()
+                ->preload()
+                ->required()
+                ->extraInputAttributes(['required' => false])
+                ->validationMessages(['required' => __('common.error.required')]),
+            Forms\Components\TextInput::make('title')
+                ->label('Tên bài học')
+                ->required()
+                ->maxLength(255)
+                ->extraInputAttributes(['required' => false])
+                ->validationMessages(['required' => __('common.error.required')]),
             Forms\Components\RichEditor::make('content')->label('Mô tả/Nội dung bài học')->columnSpanFull(),
             AdminUploads::video('video_url', 'Video đào tạo', 'admin/lessons/videos')->columnSpanFull(),
             Forms\Components\Hidden::make('duration_seconds')->default(0),
-            Forms\Components\TextInput::make('order')->label('Thứ tự')->numeric()->default(0),
+            Forms\Components\TextInput::make('order')
+                ->label('Thứ tự')
+                ->default(1)
+                ->rules(['integer', 'min:1'])
+                ->validationMessages([
+                    'integer' => 'Thứ tự phải là số nguyên.',
+                    'min' => 'Thứ tự phải lớn hơn hoặc bằng 1.',
+                ]),
             Forms\Components\Toggle::make('is_active')->label('Mở khóa bài học')->default(true),
             Forms\Components\Repeater::make('attachments')
                 ->label('Tài liệu đính kèm')
@@ -44,6 +63,8 @@ class CourseLessonResource extends Resource
                         ->label('Loại')
                         ->options(['pdf' => 'PDF', 'docx' => 'Word', 'image' => 'Ảnh', 'link' => 'Liên kết ngoài'])
                         ->required()
+                        ->extraInputAttributes(['required' => false])
+                        ->validationMessages(['required' => __('common.error.required')])
                         ->live()
                         ->afterStateUpdated(function (Forms\Set $set, ?string $state): void {
                             $set('url', '');
@@ -58,7 +79,9 @@ class CourseLessonResource extends Resource
 
                     Forms\Components\TextInput::make('name')
                         ->label('Tên tài liệu')
-                        ->required(),
+                        ->required()
+                        ->extraInputAttributes(['required' => false])
+                        ->validationMessages(['required' => __('common.error.required')]),
 
                     // url lưu giá trị cuối — được cập nhật bởi _file_upload (qua mutateFormData*)
                     // hoặc bởi _link_input (qua afterStateUpdated)
@@ -70,11 +93,51 @@ class CourseLessonResource extends Resource
                         ->disk('public')
                         ->directory('learning/attachments')
                         ->visibility('public')
-                        ->acceptedFileTypes([
-                            'application/pdf',
-                            'application/msword',
-                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                        ->acceptedFileTypes(function (Forms\Get $get): array {
+                            $type = $get('type');
+                            if ($type === 'pdf') {
+                                return ['application/pdf'];
+                            }
+                            if ($type === 'docx') {
+                                return [
+                                    'application/msword',
+                                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                ];
+                            }
+                            if ($type === 'image') {
+                                return ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                            }
+                            return [];
+                        })
+                        ->rules([
+                            fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                if (blank($value)) {
+                                    return;
+                                }
+                                $type = $get('type');
+                                $extension = null;
+                                if ($value instanceof \Illuminate\Http\UploadedFile) {
+                                    $extension = $value->getClientOriginalExtension();
+                                } else {
+                                    $extension = pathinfo((string) $value, PATHINFO_EXTENSION);
+                                }
+
+                                if (empty($extension)) {
+                                    return;
+                                }
+
+                                $extension = strtolower($extension);
+
+                                if ($type === 'pdf' && $extension !== 'pdf') {
+                                    $fail('Định dạng tệp phải là PDF (.pdf).');
+                                }
+                                if ($type === 'docx' && !in_array($extension, ['doc', 'docx'])) {
+                                    $fail('Định dạng tệp phải là Word (.doc, .docx).');
+                                }
+                                if ($type === 'image' && !in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                                    $fail('Định dạng tệp phải là hình ảnh (jpg, jpeg, png, gif, webp).');
+                                }
+                            },
                         ])
                         ->maxSize(50 * 1024)
                         ->downloadable()
@@ -143,6 +206,8 @@ class CourseLessonResource extends Resource
                     Forms\Components\TextInput::make('_link_input')
                         ->label('URL liên kết')
                         ->required(fn (Forms\Get $get) => $get('type') === 'link')
+                        ->extraInputAttributes(['required' => false])
+                        ->validationMessages(['required' => __('common.error.required')])
                         ->url()
                         ->live()
                         ->afterStateHydrated(function (Forms\Components\TextInput $component): void {

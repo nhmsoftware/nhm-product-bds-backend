@@ -312,14 +312,35 @@ class NewsDemoSeeder extends Seeder
         if (!empty($area)) {
             $branchId = DB::table('branches')->where('name', $area)->value('id');
         }
+
+        $thumbnail = $this->replacePicsumUrl($item['thumbnail'] ?? '');
+        
+        $contentBlocks = $item['content_blocks'] ?? null;
+        if (is_array($contentBlocks)) {
+            foreach ($contentBlocks as &$block) {
+                if (($block['type'] ?? '') === 'image' && !empty($block['url'])) {
+                    $block['url'] = $this->replacePicsumUrl($block['url']);
+                }
+            }
+        }
+        
+        $attachments = $item['attachments'] ?? null;
+        if (is_array($attachments)) {
+            foreach ($attachments as &$att) {
+                if (($att['type'] ?? '') === 'image' && !empty($att['url'])) {
+                    $att['url'] = $this->replacePicsumUrl($att['url']);
+                }
+            }
+        }
+
         $payload = [
             'title' => $item['title'],
             'slug' => $slug,
             'summary' => $item['summary'],
             'content' => $item['content'],
-            'content_blocks' => $this->jsonOrNull($item['content_blocks'] ?? null),
-            'thumbnail' => $item['thumbnail'],
-            'attachments' => $this->jsonOrNull($item['attachments'] ?? null),
+            'content_blocks' => $this->jsonOrNull($contentBlocks),
+            'thumbnail' => $thumbnail,
+            'attachments' => $this->jsonOrNull($attachments),
             'quote' => $this->jsonOrNull($item['quote'] ?? null),
             'category' => $item['category'],
             'department' => $department,
@@ -327,7 +348,7 @@ class NewsDemoSeeder extends Seeder
             'author_id' => $author->id,
             'is_published' => true,
             'is_featured' => (bool) ($item['featured'] ?? false),
-            'sort' => (int) ($item['sort'] ?? 0),
+            'sort' => (int) ($item['sort'] ?? 1),
             'likes_count' => 0,
             'published_at' => $item['published_at'],
             'updated_at' => $now,
@@ -352,5 +373,31 @@ class NewsDemoSeeder extends Seeder
         }
 
         return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function replacePicsumUrl(string $url): string
+    {
+        if (preg_match('/picsum\.photos\/seed\/(.*?)\/(\d+)\/(\d+)/', $url, $matches)) {
+            $seed = $matches[1];
+            $width = $matches[2];
+            $height = $matches[3];
+            
+            $text = str_replace('-', ' ', $seed);
+            $text = ucwords($text);
+            
+            $colors = [
+                '3b82f6', // blue
+                '10b981', // green
+                'f59e0b', // amber
+                'ef4444', // red
+                '8b5cf6', // purple
+                'ec4899', // pink
+            ];
+            $colorIndex = abs(crc32($seed)) % count($colors);
+            $bgColor = $colors[$colorIndex];
+            
+            return "https://placehold.co/{$width}x{$height}/{$bgColor}/ffffff.png?text=" . urlencode($text);
+        }
+        return $url;
     }
 }

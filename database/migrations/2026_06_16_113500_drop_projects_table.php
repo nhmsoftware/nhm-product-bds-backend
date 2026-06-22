@@ -22,7 +22,9 @@ return new class extends Migration
 
         if (Schema::hasTable('areas') && Schema::hasColumn('areas', 'project_id')) {
             Schema::table('areas', function (Blueprint $table): void {
-                $table->dropColumn('project_id');
+                if (DB::connection()->getDriverName() !== 'sqlite') {
+                    $table->dropColumn('project_id');
+                }
             });
         }
 

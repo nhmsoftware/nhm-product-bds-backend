@@ -20,6 +20,12 @@ class EditNews extends EditRecord
         return $this->getResource()::getUrl('index');
     }
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['news_type'] = ($data['category'] ?? '') === 'internal' ? 'internal' : 'public';
+        return $data;
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         // Khi chi nhánh là "Tất cả" (null) thì xóa phòng ban

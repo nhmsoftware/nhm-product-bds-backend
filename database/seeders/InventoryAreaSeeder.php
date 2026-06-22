@@ -477,14 +477,14 @@ DESC,
                 'name' => $data['name'],
                 'keywords' => $this->json($projectData['keywords']),
                 'location' => $projectData['location'],
-                'image' => "https://picsum.photos/seed/{$data['image_seed']}-area/1200/800",
-                'banner' => $this->json($this->projectBannerImages($data['image_seed'])),
-                'sales_board_image' => "https://picsum.photos/seed/{$data['image_seed']}/1200/800",
+                'image' => $this->getPlaceholderUrl(1200, 800, $data['name'], $data['image_seed']),
+                'banner' => $this->json($this->projectBannerImages($data['image_seed'], $data['name'])),
+                'sales_board_image' => $this->getPlaceholderUrl(1200, 800, "{$data['name']} - Bảng hàng", $data['image_seed']),
                 'sales_board_iframe' => null,
                 'planning_check_url' => $planningUrl,
                 'sales_board_images' => json_encode([
-                    "https://picsum.photos/seed/{$data['image_seed']}-1/1200/800",
-                    "https://picsum.photos/seed/{$data['image_seed']}-2/1200/800",
+                    $this->getPlaceholderUrl(1200, 800, "{$data['name']} - Sơ đồ 1", $data['image_seed'] . '-1'),
+                    $this->getPlaceholderUrl(1200, 800, "{$data['name']} - Sơ đồ 2", $data['image_seed'] . '-2'),
                 ], JSON_UNESCAPED_SLASHES),
                 'total_lots' => $totalLots,
                 'remaining_lots' => $remainingLots,
@@ -496,7 +496,7 @@ DESC,
                 'description' => $projectData['description'],
                 'amenities' => $this->json($this->projectAmenities($data['image_seed'])),
                 'floor_plans' => $this->json([
-                    'Sơ đồ tổng thể' => "https://picsum.photos/seed/{$data['image_seed']}-floor-plan/1200/800",
+                    'Sơ đồ tổng thể' => $this->getPlaceholderUrl(1200, 800, "{$data['name']} - Sơ đồ tổng thể", $data['image_seed'] . '-floor-plan'),
                 ]),
                 'legal_info' => $this->json($projectData['legal_info']),
                 'brochure' => rtrim(config('app.url'), '/') . "/brochures/{$data['planning_ref']}.pdf",
@@ -505,11 +505,11 @@ DESC,
                     'email' => 'kinhdoanh@nhm.vn',
                 ]),
                 'google_maps_url' => $projectData['google_maps_url'],
-                'location_image' => "https://picsum.photos/seed/{$data['image_seed']}-location-map/1200/900",
+                'location_image' => $this->getPlaceholderUrl(1200, 900, "{$data['name']} - Bản đồ vị trí", $data['image_seed'] . '-location-map'),
                 'planning_info' => $this->json([
                     ...$projectData['planning_info'],
                     'Link tra cứu quy hoạch' => $planningUrl,
-                    'Ảnh quy hoạch' => "https://picsum.photos/seed/{$data['image_seed']}-planning-map/1200/800",
+                    'Ảnh quy hoạch' => $this->getPlaceholderUrl(1200, 800, "{$data['name']} - Bản đồ quy hoạch", $data['image_seed'] . '-planning-map'),
                 ]),
                 'branch_id' => DB::table('branches')->where('name', $projectData['branch'])->value('id'),
                 'is_featured' => $data['is_featured'],
@@ -551,7 +551,7 @@ DESC,
 
         $payload = [
             'title' => $areaData['name'],
-            'map_image' => "https://picsum.photos/seed/{$areaData['image_seed']}-planning-map/1200/800",
+            'map_image' => $this->getPlaceholderUrl(1200, 800, "{$areaData['name']} - Bản đồ quy hoạch", $areaData['image_seed'] . '-planning-map'),
             'status' => PlanningStatus::PUBLIC->value,
             'updated_year' => (int) $now->format('Y'),
             'description' => $detail['description'],
@@ -720,12 +720,12 @@ DESC,
         return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    private function projectBannerImages(string $seed): array
+    private function projectBannerImages(string $seed, string $name = ''): array
     {
         $bannerCount = 3 + (abs(crc32($seed)) % 3);
 
         return array_map(
-            fn (int $index) => "https://picsum.photos/seed/{$seed}-banner-{$index}/1600/900",
+            fn (int $index) => $this->getPlaceholderUrl(1600, 900, "{$name} - Banner {$index}", "{$seed}-banner-{$index}"),
             range(1, $bannerCount)
         );
     }
@@ -803,10 +803,10 @@ DESC,
                 'area_id' => $areaId,
                 'code' => $code,
                 'status' => $status,
-                'image_url' => "https://picsum.photos/seed/{$areaData['prefix']}-lot-{$i}/900/600",
+                'image_url' => $this->getPlaceholderUrl(900, 600, "Lô {$code}", "{$areaData['prefix']}-lot-{$i}"),
                 'images' => json_encode([
-                    "https://picsum.photos/seed/{$areaData['prefix']}-lot-{$i}-a/900/600",
-                    "https://picsum.photos/seed/{$areaData['prefix']}-lot-{$i}-b/900/600",
+                    $this->getPlaceholderUrl(900, 600, "Lô {$code} - Góc 1", "{$areaData['prefix']}-lot-{$i}-a"),
+                    $this->getPlaceholderUrl(900, 600, "Lô {$code} - Góc 2", "{$areaData['prefix']}-lot-{$i}-b"),
                 ], JSON_UNESCAPED_SLASHES),
                 'area_size' => $areaSize,
                 'price' => $price,
@@ -982,5 +982,20 @@ DESC,
                 ]);
             }
         }
+    }
+
+    private function getPlaceholderUrl(int $width, int $height, string $text, string $seed): string
+    {
+        $colors = [
+            '3b82f6', // blue
+            '10b981', // green
+            'f59e0b', // amber
+            'ef4444', // red
+            '8b5cf6', // purple
+            'ec4899', // pink
+        ];
+        $colorIndex = abs(crc32($seed)) % count($colors);
+        $bgColor = $colors[$colorIndex];
+        return "https://placehold.co/{$width}x{$height}/{$bgColor}/ffffff.png?text=" . urlencode($text);
     }
 }
