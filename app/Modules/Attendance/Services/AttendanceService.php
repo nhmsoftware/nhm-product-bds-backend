@@ -57,13 +57,21 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             $existingAttendance = $this->attendanceRepository->findByUserAndDate($dto->userId, $today);
             $this->validate($existingAttendance === null, 'Bạn đã check-in hôm nay.', 400);
 
-            // 3. Tải các cấu hình về văn phòng
+            // 3. Tải các cấu hình về văn phòng từ database settings hoặc fallback về config
+            $settings = \App\Modules\Area\Models\InventorySetting::whereIn('key', [
+                'attendance_office_latitude',
+                'attendance_office_longitude',
+                'attendance_office_radius_meters',
+                'attendance_office_wifi_ssid',
+                'attendance_shift_start_time'
+            ])->pluck('value', 'key');
+
             $config = config('attendance');
-            $officeLat = $config['office_latitude'] ?? 10.7769;
-            $officeLng = $config['office_longitude'] ?? 106.7009;
-            $allowedRadius = $config['office_radius_meters'] ?? 100;
-            $allowedWifiSsid = $config['office_wifi_ssid'] ?? 'BDS_Office_Wifi';
-            $shiftStartTimeStr = $config['shift_start_time'] ?? '08:30:00';
+            $officeLat = (float) data_get($settings->get('attendance_office_latitude'), 'latitude', $config['office_latitude'] ?? 10.7769);
+            $officeLng = (float) data_get($settings->get('attendance_office_longitude'), 'longitude', $config['office_longitude'] ?? 106.7009);
+            $allowedRadius = (int) data_get($settings->get('attendance_office_radius_meters'), 'radius', $config['office_radius_meters'] ?? 100);
+            $allowedWifiSsid = (string) data_get($settings->get('attendance_office_wifi_ssid'), 'wifi_ssid', $config['office_wifi_ssid'] ?? 'BDS_Office_Wifi');
+            $shiftStartTimeStr = (string) data_get($settings->get('attendance_shift_start_time'), 'shift_start_time', $config['shift_start_time'] ?? '08:30:00');
 
             // 4. Kiểm tra điều kiện vùng địa lý (GPS) hoặc mạng kết nối (WiFi)
             if ($dto->method === 'gps') {
@@ -165,12 +173,19 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             // 3. Kiểm tra xem nhân viên đã thực hiện check-out hôm nay chưa (A5 - Đã check-out trong ngày)
             $this->validate($existingAttendance->check_out_at === null, 'Bạn đã check-out hôm nay.', 400);
 
-            // 4. Tải các cấu hình về văn phòng
+            // 4. Tải các cấu hình về văn phòng từ database settings hoặc fallback về config
+            $settings = \App\Modules\Area\Models\InventorySetting::whereIn('key', [
+                'attendance_office_latitude',
+                'attendance_office_longitude',
+                'attendance_office_radius_meters',
+                'attendance_office_wifi_ssid',
+            ])->pluck('value', 'key');
+
             $config = config('attendance');
-            $officeLat = $config['office_latitude'] ?? 10.7769;
-            $officeLng = $config['office_longitude'] ?? 106.7009;
-            $allowedRadius = $config['office_radius_meters'] ?? 100;
-            $allowedWifiSsid = $config['office_wifi_ssid'] ?? 'BDS_Office_Wifi';
+            $officeLat = (float) data_get($settings->get('attendance_office_latitude'), 'latitude', $config['office_latitude'] ?? 10.7769);
+            $officeLng = (float) data_get($settings->get('attendance_office_longitude'), 'longitude', $config['office_longitude'] ?? 106.7009);
+            $allowedRadius = (int) data_get($settings->get('attendance_office_radius_meters'), 'radius', $config['office_radius_meters'] ?? 100);
+            $allowedWifiSsid = (string) data_get($settings->get('attendance_office_wifi_ssid'), 'wifi_ssid', $config['office_wifi_ssid'] ?? 'BDS_Office_Wifi');
 
             // 5. Kiểm tra điều kiện vùng địa lý (GPS) hoặc mạng kết nối (WiFi)
             if ($dto->method === 'gps') {
@@ -283,16 +298,30 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             $today = Carbon::today()->toDateString();
             $attendance = $this->attendanceRepository->findByUserAndDate($userId, $today);
 
+            $settings = \App\Modules\Area\Models\InventorySetting::whereIn('key', [
+                'attendance_office_latitude',
+                'attendance_office_longitude',
+                'attendance_office_radius_meters',
+                'attendance_office_wifi_ssid',
+                'attendance_shift_start_time'
+            ])->pluck('value', 'key');
+
             $config = config('attendance');
+            $officeLat = (float) data_get($settings->get('attendance_office_latitude'), 'latitude', $config['office_latitude'] ?? 10.7769);
+            $officeLng = (float) data_get($settings->get('attendance_office_longitude'), 'longitude', $config['office_longitude'] ?? 106.7009);
+            $allowedRadius = (int) data_get($settings->get('attendance_office_radius_meters'), 'radius', $config['office_radius_meters'] ?? 100);
+            $allowedWifiSsid = (string) data_get($settings->get('attendance_office_wifi_ssid'), 'wifi_ssid', $config['office_wifi_ssid'] ?? 'BDS_Office_Wifi');
+            $shiftStartTimeStr = (string) data_get($settings->get('attendance_shift_start_time'), 'shift_start_time', $config['shift_start_time'] ?? '08:30:00');
+
             $data = [
                 'has_checked_in' => $attendance !== null,
                 'attendance' => $attendance ? $attendance->toArray() : null,
                 'office_config' => [
-                    'office_latitude' => $config['office_latitude'] ?? 10.7769,
-                    'office_longitude' => $config['office_longitude'] ?? 106.7009,
-                    'office_radius_meters' => $config['office_radius_meters'] ?? 100,
-                    'office_wifi_ssid' => $config['office_wifi_ssid'] ?? 'BDS_Office_Wifi',
-                    'shift_start_time' => $config['shift_start_time'] ?? '08:30:00',
+                    'office_latitude' => $officeLat,
+                    'office_longitude' => $officeLng,
+                    'office_radius_meters' => $allowedRadius,
+                    'office_wifi_ssid' => $allowedWifiSsid,
+                    'shift_start_time' => $shiftStartTimeStr,
                 ]
             ];
 

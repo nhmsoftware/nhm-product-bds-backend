@@ -4,10 +4,12 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SiteTourResource\Pages;
 use App\Filament\Support\AdminUploads;
+use App\Filament\Support\GoongLocationInput;
 use App\Modules\Area\Models\Lot;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\SiteTour\Models\SiteTour;
 use Filament\Forms;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\Resource;
@@ -93,14 +95,19 @@ class SiteTourResource extends Resource
                 ->label('Tên khách')
                 ->required(),
 
-            // Toạ độ
-            Forms\Components\TextInput::make('latitude')
-                ->label('Vĩ độ')
-                ->numeric(),
+            GoongLocationInput::make('address_lookup')
+                ->label('Vị trí')
+                ->latitudeField('latitude')
+                ->longitudeField('longitude')
+                ->placeholder('Nhập địa chỉ dự án để lấy tọa độ tự động...')
+                ->dehydrated(false)
+                ->columnSpanFull(),
 
-            Forms\Components\TextInput::make('longitude')
-                ->label('Kinh độ')
-                ->numeric(),
+            Hidden::make('latitude')
+                ->required(),
+
+            Hidden::make('longitude')
+                ->required(),
 
             // Minh chứng
             AdminUploads::image('image_path', 'Minh chứng', 'admin/site-tours')

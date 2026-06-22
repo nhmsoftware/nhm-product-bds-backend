@@ -4,11 +4,14 @@ namespace App\Filament\Pages;
 
 use App\Modules\Area\Models\InventorySetting;
 use App\Modules\Auth\Models\Enums\UserRole;
+use App\Filament\Support\GoongLocationInput;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -72,6 +75,24 @@ class ManageSettings extends Page implements HasForms
             ],
             'attendance_under_6_hours_work_day' => [
                 'work_day' => (string) data_get($settings, 'attendance_under_6_hours_work_day.work_day', 0.5),
+            ],
+            'attendance_office_address' => [
+                'address' => data_get($settings, 'attendance_office_address.address', ''),
+            ],
+            'attendance_office_latitude' => [
+                'latitude' => data_get($settings, 'attendance_office_latitude.latitude', '21.029085171034406'),
+            ],
+            'attendance_office_longitude' => [
+                'longitude' => data_get($settings, 'attendance_office_longitude.longitude', '105.79754520314668'),
+            ],
+            'attendance_office_radius_meters' => [
+                'radius' => data_get($settings, 'attendance_office_radius_meters.radius', 100),
+            ],
+            'attendance_office_wifi_ssid' => [
+                'wifi_ssid' => data_get($settings, 'attendance_office_wifi_ssid.wifi_ssid', 'BDS_Office_Wifi'),
+            ],
+            'attendance_shift_start_time' => [
+                'shift_start_time' => data_get($settings, 'attendance_shift_start_time.shift_start_time', '08:30:00'),
             ],
         ]);
     }
@@ -189,6 +210,36 @@ class ManageSettings extends Page implements HasForms
                             ])
                             ->required()
                             ->validationMessages(['required' => 'Vui lòng chọn số công mặc định.']),
+
+                        Grid::make(3)
+                            ->schema([
+                                GoongLocationInput::make('attendance_office_address.address')
+                                    ->label('Địa chỉ trụ sở văn phòng')
+                                    ->latitudeField('attendance_office_latitude.latitude')
+                                    ->longitudeField('attendance_office_longitude.longitude')
+                                    ->placeholder('Nhập địa chỉ văn phòng để tự động định vị...')
+                                    ->columnSpan(3),
+                                
+                                Hidden::make('attendance_office_latitude.latitude'),
+                                Hidden::make('attendance_office_longitude.longitude'),
+
+                                TextInput::make('attendance_office_radius_meters.radius')
+                                    ->label('Bán kính check-in tối đa (mét)')
+                                    ->numeric()
+                                    ->default(100)
+                                    ->columnSpan(1),
+                                TextInput::make('attendance_office_wifi_ssid.wifi_ssid')
+                                    ->label('Tên Wifi văn phòng hợp lệ')
+                                    ->default('BDS_Office_Wifi')
+                                    ->columnSpan(1),
+                                TimePicker::make('attendance_shift_start_time.shift_start_time')
+                                    ->label('Giờ bắt đầu ca làm việc')
+                                    ->native(false)
+                                    ->required()
+                                    ->validationMessages(['required' => 'Vui lòng chọn giờ bắt đầu ca.'])
+                                    ->columnSpan(1),
+                            ])
+                            ->columnSpanFull(),
                     ])->columns(2),
             ])
             ->statePath('data');

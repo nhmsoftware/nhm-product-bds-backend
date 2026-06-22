@@ -8,6 +8,7 @@ use App\Modules\Auth\Models\Enums\UserRole;
 use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminUploads;
 use App\Filament\Support\AdminOptions;
+use App\Filament\Support\GoongLocationInput;
 use Filament\Facades\Filament;
 use Illuminate\Support\Str;
 use Filament\Forms;
@@ -36,7 +37,7 @@ class AreaResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('name')->label('Tên khu')->required()->maxLength(255),
                         Forms\Components\Select::make('branch_id')->relationship('branch', 'name')->label('Chi nhánh')->searchable()->preload(),
-                        Forms\Components\TextInput::make('location')->label('Vị trí')->maxLength(255),
+                        GoongLocationInput::make('location')->label('Vị trí')->maxLength(255),
                         Forms\Components\TextInput::make('type')->label('Loại hình')->maxLength(255),
                         Forms\Components\Select::make('status')->label('Trạng thái')->options(self::enumOptions(AreaStatus::class)),
                         Forms\Components\TextInput::make('total_lots')->label('Tổng lô')->numeric()->default(0),

@@ -6,6 +6,8 @@ use App\Filament\Resources\AttendanceResource\Pages;
 use App\Modules\Attendance\Models\Attendance;
 use App\Modules\Attendance\Models\Enums\AttendanceStatus;
 use App\Modules\Auth\Models\Enums\UserRole;
+use App\Filament\Support\GoongLocationInput;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -69,15 +71,36 @@ class AttendanceResource extends Resource
             Forms\Components\Select::make('check_in_method')
                 ->label('Cách check-in')
                 ->options(['gps' => 'GPS', 'wifi' => 'WiFi'])
-                ->placeholder('Chọn cách check-in'),
+                ->placeholder('Chọn cách check-in')
+                ->live(),
             Forms\Components\Select::make('check_out_method')
                 ->label('Cách check-out')
                 ->options(['gps' => 'GPS', 'wifi' => 'WiFi'])
-                ->placeholder('Chọn cách check-out'),
-            Forms\Components\TextInput::make('check_in_lat')->label('Lat in'),
-            Forms\Components\TextInput::make('check_in_lng')->label('Lng in'),
-            Forms\Components\TextInput::make('check_out_lat')->label('Lat out'),
-            Forms\Components\TextInput::make('check_out_lng')->label('Lng out'),
+                ->placeholder('Chọn cách check-out')
+                ->live(),
+
+            GoongLocationInput::make('check_in_location')
+                ->label('Vị trí Check-in')
+                ->latitudeField('check_in_lat')
+                ->longitudeField('check_in_lng')
+                ->placeholder('Nhập địa chỉ để định vị check-in tự động...')
+                ->dehydrated(false)
+                ->visible(fn (Forms\Get $get) => $get('check_in_method') === 'gps')
+                ->columnSpanFull(),
+
+            GoongLocationInput::make('check_out_location')
+                ->label('Vị trí Check-out')
+                ->latitudeField('check_out_lat')
+                ->longitudeField('check_out_lng')
+                ->placeholder('Nhập địa chỉ để định vị check-out tự động...')
+                ->dehydrated(false)
+                ->visible(fn (Forms\Get $get) => $get('check_out_method') === 'gps')
+                ->columnSpanFull(),
+
+            Hidden::make('check_in_lat'),
+            Hidden::make('check_in_lng'),
+            Hidden::make('check_out_lat'),
+            Hidden::make('check_out_lng'),
             Forms\Components\Textarea::make('note')->label('Ghi chú')->columnSpanFull()
         ])->columns(2);
     }

@@ -49,6 +49,12 @@ return [
         'push_url' => env('EXPO_PUSH_URL', 'https://exp.host/--/api/v2/push/send'),
     ],
 
-    // hiện thị OTP trong response (mặc định: false)
+    // hiển thị OTP trong response (mặc định: false)
     'otp_expose' => env('OTP_EXPOSE_IN_RESPONSE', false),
+
+    // Goong Map API credentials
+    'goong' => [
+        'api_key' => env('GOONG_API_KEY'),
+        'maptiles_key' => env('GOONG_MAPTILES_KEY'),
+    ],
 ];

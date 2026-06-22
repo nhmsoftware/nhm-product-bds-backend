@@ -104,7 +104,7 @@ final class DashboardService extends BaseService implements DashboardServiceInte
                                 + ($userReferrals * $successfulReferralPoints)
                                 + ($workDaysStep > 0 ? floor($userWorkDays / $workDaysStep) * $workDayPoints : 0)
                                 - ($userAbsences * abs($absencePenalty));
-                        })()),
+                        })(),
                         'rank' => $rank,
                         'next_rank_points' => $this->getNextRankPoints($totalPoints),
                     ],
