@@ -154,9 +154,12 @@ class GradeAttempts extends Page implements HasForms
         $correctIdx = $attempt->correct_option;
 
         $rows = '';
-        foreach ($options as $idx => $label) {
-            $isCorrect  = $correctIdx !== null && $correctIdx !== '' && (int) $idx === (int) $correctIdx;
-            $isSelected = $selectedIdx !== null && $selectedIdx !== '' && (int) $idx === (int) $selectedIdx;
+        foreach ($options as $idx => $option) {
+            $optLabel = is_array($option) ? ($option['label'] ?? '') : (string) $option;
+            $optVal = is_array($option) ? ($option['value'] ?? $idx) : $idx;
+
+            $isCorrect  = $correctIdx !== null && $correctIdx !== '' && (int) $optVal === (int) $correctIdx;
+            $isSelected = $selectedIdx !== null && $selectedIdx !== '' && (int) $optVal === (int) $selectedIdx;
 
             if ($isCorrect) {
                 $style = 'color:#15803d;font-weight:600;';
@@ -169,7 +172,7 @@ class GradeAttempts extends Page implements HasForms
                 $note  = '';
             }
 
-            $rows .= "<div style=\"{$style}padding:3px 0\">{$label}{$note}</div>";
+            $rows .= "<div style=\"{$style}padding:3px 0\">{$optLabel}{$note}</div>";
         }
 
         $badge = $attempt->is_correct
