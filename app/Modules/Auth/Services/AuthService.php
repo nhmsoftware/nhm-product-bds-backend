@@ -225,7 +225,10 @@ final class AuthService extends BaseService implements AuthServiceInterface
             // 3. Tạo OTP
             // Nếu chưa cấu hình Mail (MAIL_USERNAME/MAIL_PASSWORD trống) hoặc mailer mặc định là log,
             // thì dùng mã OTP mặc định là '123456' để dễ dàng test. Ngược lại sinh ngẫu nhiên.
-            $hasMailConfig = !empty(env('MAIL_USERNAME')) && !empty(env('MAIL_PASSWORD')) && env('MAIL_HOST') !== '127.0.0.1';
+            $smtpUsername = config('mail.mailers.smtp.username');
+            $smtpPassword = config('mail.mailers.smtp.password');
+            $smtpHost = config('mail.mailers.smtp.host');
+            $hasMailConfig = !empty($smtpUsername) && !empty($smtpPassword) && $smtpHost !== '127.0.0.1';
             
             if (!$hasMailConfig || config('mail.default') === 'log') {
                 $otp = '123456';
