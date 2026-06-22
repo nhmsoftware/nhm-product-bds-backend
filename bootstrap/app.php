@@ -16,6 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'onboarding' => \App\Http\Middleware\RequireOnboardingCompleted::class,
         ]);
+        $middleware->trimStrings(except: [
+            'current_password',
+            'password',
+            'password_confirmation',
+            'new_password',
+            'new_password_confirmation',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, \Illuminate\Http\Request $request) {

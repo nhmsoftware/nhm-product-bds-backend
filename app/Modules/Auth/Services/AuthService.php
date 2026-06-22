@@ -239,7 +239,18 @@ final class AuthService extends BaseService implements AuthServiceInterface
             Cache::put("otp_attempts:{$dto->username}", 0, now()->addMinutes(5));
 
             // 5. Gửi OTP (Giả lập qua log hoặc gọi service gửi SMS/Email)
-            // \Log::info("OTP for {$dto->username}: {$otp}");
+            if (filter_var($dto->username, FILTER_VALIDATE_EMAIL)) {
+                try {
+                    \Illuminate\Support\Facades\Mail::raw("Mã OTP quên mật khẩu của bạn là: {$otp}. Mã có hiệu lực trong vòng 5 phút.", function ($message) use ($dto) {
+                        $message->to($dto->username)
+                            ->subject("[" . config('app.name') . "] Mã OTP xác thực quên mật khẩu");
+                    });
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to send OTP email to {$dto->username}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+                }
+            } else {
+                \Illuminate\Support\Facades\Log::info("OTP for {$dto->username}: {$otp}");
+            }
 
             $responseData = null;
             if ($otp === '123456' || config('services.otp_expose') === true) {
