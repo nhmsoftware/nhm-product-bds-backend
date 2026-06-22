@@ -68,6 +68,7 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
     public function getAssignedAreas(string $userId, FilterDTO $filter): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
+            ->with(['lots'])
             ->where(function ($q) use ($userId): void {
                 // User/role has an explicit assignment
                 $q->whereExists(function ($subQuery) use ($userId): void {
@@ -138,7 +139,7 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
      */
     public function searchAreas(string $userId, string $keyword, bool $isAdmin): \Illuminate\Support\Collection
     {
-        $query = $this->model->newQuery();
+        $query = $this->model->newQuery()->with(['lots']);
 
         if (!$isAdmin) {
             $query->where(function ($q) use ($userId): void {

@@ -28,6 +28,7 @@ class RegisterRequest extends FormRequest
                 'regex:/[@$!%*#?&]/', // ít nhất 1 ký tự đặc biệt
             ],
             'referral_code' => ['nullable', 'string', 'max:50'],
+            'account_type' => ['required', 'string', 'in:investor,broker'],
             'agree_terms' => ['required', 'accepted'],
         ];
     }
@@ -38,6 +39,9 @@ class RegisterRequest extends FormRequest
             'phone.regex' => 'Số điện thoại không hợp lệ.',
             'password.regex' => 'Mật khẩu phải có ít nhất 8 ký tự, bao gồm ký tự đặc biệt và số.',
             'agree_terms.accepted' => 'Vui lòng đồng ý Điều khoản dịch vụ và Chính sách bảo mật.',
+            'account_type.required' => 'Vui lòng chọn loại tài khoản.',
+            'account_type.in' => 'Loại tài khoản không hợp lệ.',
         ];
     }
 }
+

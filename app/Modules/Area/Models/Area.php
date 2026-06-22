@@ -142,6 +142,32 @@ class Area extends Model
     }
 
     /**
+     * Accessor: Lấy giá nhỏ nhất của các lô đất trong khu đất này.
+     *
+     * @return int|null
+     */
+    public function getPriceAttribute(): ?int
+    {
+        if ($this->relationLoaded('lots')) {
+            return $this->lots->min('price');
+        }
+        return $this->lots()->min('price');
+    }
+
+    /**
+     * Accessor: Lấy đơn giá nhỏ nhất của các lô đất trong khu đất này.
+     *
+     * @return int|null
+     */
+    public function getUnitPriceAttribute(): ?int
+    {
+        if ($this->relationLoaded('lots')) {
+            return $this->lots->min('unit_price');
+        }
+        return $this->lots()->min('unit_price');
+    }
+
+    /**
      * Override toArray để luôn include label_status và branch name trong response.
      */
     public function toArray(): array
@@ -149,8 +175,11 @@ class Area extends Model
         $array = parent::toArray();
         $array['label_status'] = $this->label_status;
         $array['branch'] = $this->branch;
+        $array['price'] = $this->price;
+        $array['unit_price'] = $this->unit_price;
         return $array;
     }
+
 
 
     /**

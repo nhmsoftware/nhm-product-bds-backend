@@ -71,12 +71,20 @@ final class AuthService extends BaseService implements AuthServiceInterface
             if (!empty($dto->referral_code)) {
                 $referrer = $this->authRepository->findByStaffCode($dto->referral_code);
                 $this->validate($referrer !== null, 'Mã giới thiệu không hợp lệ hoặc không tồn tại.', 422);
+
+                // Kiểm tra tính khớp giữa loại tài khoản và loại mã giới thiệu
+                if ($referralType === ReferralType::CUSTOMER) {
+                    $this->validate($dto->account_type === 'investor', 'Mã giới thiệu này dành cho Nhà đầu tư.', 422);
+                } else {
+                    $this->validate($dto->account_type === 'broker', 'Mã giới thiệu này dành cho Môi giới.', 422);
+                }
             }
 
             $data = $dto->toArray();
+            unset($data['account_type']); // Loại bỏ trường không thuộc table users
             $data['password']   = Hash::make($dto->password);
             $data['staff_code'] = $this->generateStaffCode();
-            $data['role']       = $referrer && $referralType === ReferralType::RECRUITMENT ? UserRole::EMPLOYEE : UserRole::BUYER;
+            $data['role']       = $dto->account_type === 'broker' ? UserRole::EMPLOYEE : UserRole::BUYER;
             $data['is_active']  = true;
 
             // 3. Tạo user

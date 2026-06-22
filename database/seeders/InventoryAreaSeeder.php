@@ -795,6 +795,10 @@ DESC,
             $column = ($i - 1) % 6;
             $row = intdiv($i - 1, 6);
             $status = $statuses[$i - 1] ?? LotStatus::AVAILABLE->value;
+            $areaSize = 82 + (($i % 8) * 12.5);
+            $unitPrice = 15000000 + (($i % 7) * 3000000);
+            $price = (int) ($unitPrice * $areaSize);
+
             $payload = [
                 'area_id' => $areaId,
                 'code' => $code,
@@ -804,7 +808,9 @@ DESC,
                     "https://picsum.photos/seed/{$areaData['prefix']}-lot-{$i}-a/900/600",
                     "https://picsum.photos/seed/{$areaData['prefix']}-lot-{$i}-b/900/600",
                 ], JSON_UNESCAPED_SLASHES),
-                'area_size' => 82 + (($i % 8) * 12.5),
+                'area_size' => $areaSize,
+                'price' => $price,
+                'unit_price' => $unitPrice,
                 'frontage' => 5 + (($i % 5) * 0.5),
                 'direction' => $areaData['direction'],
                 'legal' => $i % 3 === 0 ? 'Sổ đỏ lâu dài' : 'Sổ hồng riêng',

@@ -11,6 +11,7 @@ final class RegisterDTO
         public readonly string $email,
         public readonly string $phone,
         public readonly string $password,
+        public readonly string $account_type,
         public readonly ?string $referral_code = null,
     ) {
     }
@@ -22,6 +23,7 @@ final class RegisterDTO
             email: $request->validated('email'),
             phone: $request->validated('phone'),
             password: $request->validated('password'),
+            account_type: $request->validated('account_type'),
             referral_code: $request->validated('referral_code'),
         );
     }
@@ -33,6 +35,7 @@ final class RegisterDTO
             'email'         => $this->email,
             'phone'         => $this->phone,
             'password'      => $this->password,
+            'account_type'  => $this->account_type,
             'referral_code' => $this->referral_code,
         ];
     }
