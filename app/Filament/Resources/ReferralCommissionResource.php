@@ -59,8 +59,14 @@ class ReferralCommissionResource extends Resource
                 ->required(),
 
             Forms\Components\TextInput::make('amount')
-                ->label('Số tiền')
+                ->label('Số điểm')
                 ->numeric()
+                ->disabled()
+                ->dehydrated()
+                ->default(function () {
+                    $setting = \App\Modules\Area\Models\InventorySetting::where('key', 'kpi_points_successful_referral')->first()?->value;
+                    return data_get($setting, 'points', 1.0);
+                })
                 ->required(),
 
             Forms\Components\Select::make('status')
@@ -81,8 +87,7 @@ class ReferralCommissionResource extends Resource
                 Tables\Columns\TextColumn::make('referralHistory.name')
                     ->label('Người được giới thiệu'),
                 Tables\Columns\TextColumn::make('amount')
-                    ->label('Số tiền hoa hồng')
-                    ->money('VND')
+                    ->label('Số điểm')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Trạng thái')

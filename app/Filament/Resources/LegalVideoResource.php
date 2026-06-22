@@ -86,7 +86,7 @@ class LegalVideoResource extends Resource
                 Tables\Columns\TextColumn::make('category')
                     ->label('Chủ đề')
                     ->badge()
-                    ->options(AdminOptions::legalVideoCategories()),
+                    ->formatStateUsing(fn ($state) => AdminOptions::legalVideoCategories()[$state] ?? $state),
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Hiển thị')

@@ -11,12 +11,24 @@ final class AdminImageColumn
      *
      * Luôn trả về absolute URL dựa trên request hiện tại thay vì APP_URL config —
      * tránh trường hợp admin truy cập qua IP:port khác với APP_URL được cấu hình.
+     * Hỗ trợ cả field trực tiếp lẫn nested relation (ví dụ: user.avatar).
      */
     public static function make(string $field): ImageColumn
     {
         return ImageColumn::make($field)
             ->getStateUsing(function ($record) use ($field): ?string {
-                $value = $record->getRawOriginal($field);
+                // Hỗ trợ nested relation: user.avatar → $record->user?->avatar
+                $value = null;
+                if (str_contains($field, '.')) {
+                    $parts = explode('.', $field);
+                    $obj = $record;
+                    foreach ($parts as $part) {
+                        $obj = $obj?->{$part} ?? null;
+                    }
+                    $value = is_string($obj) ? $obj : null;
+                } else {
+                    $value = $record->getRawOriginal($field);
+                }
 
                 if (empty($value)) {
                     return null;
@@ -27,8 +39,12 @@ final class AdminImageColumn
                     return $value;
                 }
 
-                // Local path → tạo absolute URL từ request hiện tại (không dùng APP_URL)
-                $path = ltrim((string) preg_replace('#^/?storage/#', 'storage/', $value), '/');
+                // Local path: đảm bảo có /storage/ prefix rồi build absolute URL
+                $path = ltrim($value, '/');
+                if (!str_starts_with($path, 'storage/')) {
+                    $path = 'storage/' . $path;
+                }
+
                 return request()->getSchemeAndHttpHost() . '/' . $path;
             });
     }

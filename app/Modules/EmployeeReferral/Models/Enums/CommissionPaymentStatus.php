@@ -21,8 +21,8 @@ enum CommissionPaymentStatus: int
     public function label(): string
     {
         return match ($this) {
-            self::PENDING => 'Chờ thanh toán',
-            self::PAID => 'Đã thanh toán',
+            self::PENDING => 'Chờ xác nhận',
+            self::PAID => 'Thành công',
         };
     }
 }

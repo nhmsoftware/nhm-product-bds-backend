@@ -3,6 +3,8 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EmployeeProfileResource\Pages;
+use App\Filament\Support\AdminImageColumn;
+use App\Filament\Support\AdminUploads;
 use App\Modules\Auth\Models\EmployeeProfile;
 use App\Modules\Auth\Models\User;
 use Filament\Forms;
@@ -71,11 +73,7 @@ class EmployeeProfileResource extends Resource
                             }
                         }),
 
-                    Forms\Components\FileUpload::make('avatar')
-                        ->label('Ảnh đại diện')
-                        ->image()
-                        ->disk('public')
-                        ->directory('avatars')
+                    AdminUploads::image('avatar', 'Ảnh đại diện', 'avatars')
                         ->avatar()
                         ->columnSpanFull(),
                 ])
@@ -233,11 +231,9 @@ class EmployeeProfileResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('user.avatar')
+                AdminImageColumn::make('user.avatar')
                     ->label('Ảnh')
-                    ->disk('public')
                     ->circular()
-                    ->defaultImageUrl(fn () => null)
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('user.name')
