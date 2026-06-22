@@ -168,9 +168,9 @@ class CourseLessonResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            Tables\Columns\TextColumn::make('course.title')->label('Khóa học')->searchable()->limit(40),
-            Tables\Columns\TextColumn::make('order')->label('Thứ tự')->sortable(),
             Tables\Columns\TextColumn::make('title')->label('Bài học')->searchable()->sortable(),
+            Tables\Columns\TextColumn::make('order')->label('Thứ tự')->sortable(),
+            Tables\Columns\TextColumn::make('course.title')->label('Khóa học')->searchable()->limit(40),
             Tables\Columns\TextColumn::make('duration_seconds')->label('Giây')->sortable(),
             Tables\Columns\IconColumn::make('is_active')->label('Mở')->boolean(),
             Tables\Columns\TextColumn::make('quizzes_count')->label('Câu hỏi')->counts('quizzes'),
