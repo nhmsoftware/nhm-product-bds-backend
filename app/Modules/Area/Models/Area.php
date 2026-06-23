@@ -120,7 +120,13 @@ class Area extends Model
             ])->exists();
 
             if ($hasLockedOrSoldLots) {
-                throw new \Exception('Không thể xóa khu đất vì có chứa lô đất đang giữ chỗ hoặc đã bán.');
+                \Filament\Notifications\Notification::make()
+                    ->title('Không thể xóa khu đất')
+                    ->body('Khu đất này có chứa lô đất đang giữ chỗ hoặc đã bán.')
+                    ->danger()
+                    ->send();
+
+                return false;
             }
 
             // 2. Cascade soft delete các lô đất liên quan
