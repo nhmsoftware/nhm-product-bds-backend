@@ -35,7 +35,15 @@ class AreaResource extends Resource
                 Forms\Components\Wizard\Step::make('Thông tin cơ bản')
                     ->description('Thông tin định danh và vị trí')
                     ->schema([
-                        Forms\Components\TextInput::make('name')->label('Tên khu')->required()->maxLength(255),
+                        Forms\Components\TextInput::make('name')
+                            ->label('Tên khu')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                            ->extraInputAttributes(['required' => false])
+                            ->validationMessages([
+                                'unique' => 'Tên khu đất này đã tồn tại trong hệ thống.',
+                            ])
+                            ->maxLength(255),
                         Forms\Components\Select::make('branch_id')->relationship('branch', 'name')->label('Chi nhánh')->searchable()->preload(),
                         GoongLocationInput::make('location')->label('Vị trí')->maxLength(255),
                         Forms\Components\TextInput::make('type')->label('Loại hình')->maxLength(255),

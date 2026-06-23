@@ -110,6 +110,33 @@ class Area extends Model
         'sales_board_images' => 'array',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Area $area) {
+            // 1. Kiểm tra xem có lô đất nào trong khu đang bị giữ chỗ (cọc) hoặc đã bán không
+            $hasLockedOrSoldLots = $area->lots()->whereIn('status', [
+                \App\Modules\Area\Models\Enums\LotStatus::SOLD->value,
+                \App\Modules\Area\Models\Enums\LotStatus::RESERVED->value,
+            ])->exists();
+
+            if ($hasLockedOrSoldLots) {
+                throw new \Exception('Không thể xóa khu đất vì có chứa lô đất đang giữ chỗ hoặc đã bán.');
+            }
+
+            // 2. Cascade soft delete các lô đất liên quan
+            $area->lots()->delete();
+
+            // 3. Cascade soft delete các phân quyền liên quan (area_assignments)
+            \DB::table('area_assignments')->where('area_id', $area->id)->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // 4. Cascade soft delete các bình luận liên quan (area_comments)
+            $area->comments()->delete();
+        });
+    }
+
     /**
      * Accessor: trả về nhãn tiếng Việt của trạng thái khu đất.
      *
