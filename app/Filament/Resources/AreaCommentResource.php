@@ -73,7 +73,7 @@ class AreaCommentResource extends Resource
             Tables\Columns\TextColumn::make('content')->label('Nội dung')->limit(70),
             Tables\Columns\TextColumn::make('created_at')->label('Ngày')->dateTime('d/m/Y H:i')
         ])->actions([
-            Tables\Actions\EditAction::make(),
+            Tables\Actions\ViewAction::make(),
             Tables\Actions\DeleteAction::make()
         ]);
     }
@@ -96,8 +96,7 @@ class AreaCommentResource extends Resource
     {
         return [
             'index' => Pages\ListAreaComments::route('/'),
-            'create' => Pages\CreateAreaComment::route('/create'),
-            'edit' => Pages\EditAreaComment::route('/{record}/edit')
+            'create' => Pages\CreateAreaComment::route('/create')
         ];
     }
 }

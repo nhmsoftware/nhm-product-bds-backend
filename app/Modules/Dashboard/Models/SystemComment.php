@@ -47,6 +47,8 @@ use OpenApi\Attributes as OA;
 )]
 class SystemComment extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'v_all_comments';
 
     // View is read-only
