@@ -5,6 +5,8 @@ namespace App\Modules\CustomerMeeting\Repositories;
 use App\Core\Repository\BaseRepository;
 use App\Modules\CustomerMeeting\Interfaces\CustomerMeetingRepositoryInterface;
 use App\Modules\CustomerMeeting\Models\CustomerMeeting;
+use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Models\Enums\UserRole;
 use Illuminate\Database\Eloquent\Collection;
 
 final class CustomerMeetingRepository extends BaseRepository implements CustomerMeetingRepositoryInterface
@@ -20,6 +22,43 @@ final class CustomerMeetingRepository extends BaseRepository implements Customer
     }
 
     /**
+     * Áp dụng phạm vi truy cập dữ liệu dựa trên vai trò của user.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $userId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function applyRoleScope($query, string $userId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return $query->where('user_id', $userId);
+        }
+
+        if ($user->role === UserRole::SUPER_ADMIN || $user->role === UserRole::CEO) {
+            return $query;
+        }
+
+        if ($user->role === UserRole::DIRECTOR) {
+            if ($user->branch_id) {
+                $userIds = User::where('branch_id', $user->branch_id)->pluck('id')->all();
+                return $query->whereIn('user_id', $userIds);
+            }
+            return $query->where('user_id', $userId);
+        }
+
+        if ($user->role === UserRole::MANAGER) {
+            if ($user->department_id) {
+                $userIds = User::where('department_id', $user->department_id)->pluck('id')->all();
+                return $query->whereIn('user_id', $userIds);
+            }
+            return $query->where('user_id', $userId);
+        }
+
+        return $query->where('user_id', $userId);
+    }
+
+    /**
      * Tìm danh sách các hoạt động gặp khách hàng gần đây của nhân viên.
      *
      * @param string $userId ID của nhân viên
@@ -28,8 +67,10 @@ final class CustomerMeetingRepository extends BaseRepository implements Customer
      */
     public function getRecentMeetingsByUserId(string $userId, int $limit = 5): Collection
     {
-        return $this->model
-            ->where('user_id', $userId)
+        $query = $this->model->query();
+        $query = $this->applyRoleScope($query, $userId);
+
+        return $query
             ->with('project')
             ->orderBy('created_at', 'desc')
             ->limit($limit)
@@ -38,7 +79,9 @@ final class CustomerMeetingRepository extends BaseRepository implements Customer
 
     public function getHistory(string $employeeId, \App\Core\DTOs\FilterDTO $filter): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $query = $this->model->where('user_id', $employeeId);
+        $query = $this->model->query();
+        $query = $this->applyRoleScope($query, $employeeId);
+
         return $query->orderBy($filter->getSortBy() ?? 'met_at', $filter->getDirection())
                      ->paginate($filter->getPerPage(), ['*'], 'page', $filter->getPage());
     }

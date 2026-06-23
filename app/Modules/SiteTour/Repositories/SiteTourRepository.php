@@ -5,6 +5,8 @@ namespace App\Modules\SiteTour\Repositories;
 use App\Core\Repository\BaseRepository;
 use App\Modules\SiteTour\Interfaces\SiteTourRepositoryInterface;
 use App\Modules\SiteTour\Models\SiteTour;
+use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Models\Enums\UserRole;
 use Illuminate\Database\Eloquent\Collection;
 use App\Core\DTOs\FilterDTO;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -22,6 +24,43 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
     }
 
     /**
+     * Áp dụng phạm vi truy cập dữ liệu dựa trên vai trò của user.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $userId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function applyRoleScope($query, string $userId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return $query->where('user_id', $userId);
+        }
+
+        if ($user->role === UserRole::SUPER_ADMIN || $user->role === UserRole::CEO) {
+            return $query;
+        }
+
+        if ($user->role === UserRole::DIRECTOR) {
+            if ($user->branch_id) {
+                $userIds = User::where('branch_id', $user->branch_id)->pluck('id')->all();
+                return $query->whereIn('user_id', $userIds);
+            }
+            return $query->where('user_id', $userId);
+        }
+
+        if ($user->role === UserRole::MANAGER) {
+            if ($user->department_id) {
+                $userIds = User::where('department_id', $user->department_id)->pluck('id')->all();
+                return $query->whereIn('user_id', $userIds);
+            }
+            return $query->where('user_id', $userId);
+        }
+
+        return $query->where('user_id', $userId);
+    }
+
+    /**
      * Tìm danh sách các hoạt động dẫn khách gần đây nhất của nhân viên.
      *
      * @param string $userId ID của nhân viên (UUID)
@@ -30,8 +69,10 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
      */
     public function getRecentToursByUserId(string $userId, int $limit = 5): Collection
     {
-        return $this->model
-            ->where('user_id', $userId)
+        $query = $this->model->query();
+        $query = $this->applyRoleScope($query, $userId);
+
+        return $query
             ->with('project')
             ->orderBy('created_at', 'desc')
             ->limit($limit)
@@ -47,9 +88,10 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
      */
     public function getTourHistory(string $userId, array $filters = []): Collection
     {
-        $query = $this->model
-            ->where('user_id', $userId)
-            ->with('project')
+        $query = $this->model->query();
+        $query = $this->applyRoleScope($query, $userId);
+
+        $query->with('project')
             ->orderBy('created_at', 'desc');
 
         if (!empty($filters['project_id'])) {
@@ -120,7 +162,9 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
      */
     public function getHistory(string $employeeId, FilterDTO $filter): LengthAwarePaginator
     {
-        $query = $this->model->where('user_id', $employeeId);
+        $query = $this->model->query();
+        $query = $this->applyRoleScope($query, $employeeId);
+
         return $query->orderBy($filter->getSortBy() ?? 'created_at', $filter->getDirection())
                      ->paginate($filter->getPerPage(), ['*'], 'page', $filter->getPage());
     }
