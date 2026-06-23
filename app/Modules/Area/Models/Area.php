@@ -114,10 +114,14 @@ class Area extends Model
     {
         static::deleting(function (Area $area) {
             // 1. Kiểm tra xem có lô đất nào trong khu đang bị giữ chỗ (cọc) hoặc đã bán không
-            $hasLockedOrSoldLots = $area->lots()->whereIn('status', [
-                \App\Modules\Area\Models\Enums\LotStatus::SOLD->value,
-                \App\Modules\Area\Models\Enums\LotStatus::RESERVED->value,
-            ])->exists();
+            $hasLockedOrSoldLots = $area->lots()
+                ->where(function ($q) {
+                    $q->whereIn('status', [
+                        \App\Modules\Area\Models\Enums\LotStatus::SOLD->value,
+                        \App\Modules\Area\Models\Enums\LotStatus::RESERVED->value,
+                    ])->orWhere('is_locked', true);
+                })
+                ->exists();
 
             if ($hasLockedOrSoldLots) {
                 \Filament\Notifications\Notification::make()

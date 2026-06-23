@@ -76,6 +76,16 @@ class Course extends Model
         'order' => 'integer',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Course $course) {
+            foreach ($course->lessons as $lesson) {
+                $lesson->delete();
+            }
+            $course->enrollments()->delete();
+        });
+    }
+
     // ─── Relationships ───────────────────────────────────────────
 
     /**

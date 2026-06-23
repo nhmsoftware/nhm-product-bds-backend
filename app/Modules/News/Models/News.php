@@ -104,6 +104,14 @@ class News extends Model
         'branch_id' => 'string',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (News $news) {
+            $news->comments()->delete();
+            $news->likes()->delete();
+        });
+    }
+
    // ─── Relationships ───────────────────────────────────────────
 
     public function author(): \Illuminate\Database\Eloquent\Relations\BelongsTo

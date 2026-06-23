@@ -75,6 +75,13 @@ class CourseEnrollment extends Model
         'status' => CourseEnrollmentStatus::class,
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (CourseEnrollment $enrollment) {
+            $enrollment->lessonProgress()->delete();
+        });
+    }
+
     // ─── Relationships ───────────────────────────────────────────
 
     /**

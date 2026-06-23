@@ -88,6 +88,13 @@ class CourseLesson extends Model
         'attachments' => 'array',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (CourseLesson $lesson) {
+            $lesson->quizzes()->delete();
+        });
+    }
+
     // ─── Relationships ───────────────────────────────────────────
 
     /**

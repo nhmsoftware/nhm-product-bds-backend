@@ -21,4 +21,28 @@ class Branch extends Model
         'is_active' => 'boolean',
         'sort' => 'integer',
     ];
+    protected static function booted(): void
+    {
+        static::deleting(function (Branch $branch) {
+            $hasUsers = \App\Modules\Auth\Models\User::where('branch_id', $branch->id)->exists();
+            if ($hasUsers) {
+                \Filament\Notifications\Notification::make()
+                    ->title('Không thể xóa chi nhánh')
+                    ->body('Chi nhánh này đang có nhân sự trực thuộc.')
+                    ->danger()
+                    ->send();
+                return false;
+            }
+
+            $hasAreas = \App\Modules\Area\Models\Area::where('branch_id', $branch->id)->exists();
+            if ($hasAreas) {
+                \Filament\Notifications\Notification::make()
+                    ->title('Không thể xóa chi nhánh')
+                    ->body('Chi nhánh này đang chứa các khu đất.')
+                    ->danger()
+                    ->send();
+                return false;
+            }
+        });
+    }
 }
