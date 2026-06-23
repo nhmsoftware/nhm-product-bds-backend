@@ -53,8 +53,8 @@ class LearningPathDemoSeeder extends Seeder
                     ],
                 ],
                 'quiz' => [
-                    ['question' => 'Nhân viên cần làm gì trước khi tư vấn một lô đất cho khách hàng?', 'options' => ['Kiểm tra trạng thái bảng hàng', 'Báo giá theo trí nhớ', 'Bỏ qua lịch sử khách hàng', 'Giữ chỗ không cần xác nhận'], 'correct_option' => 0],
-                    ['question' => 'Lộ trình học bắt buộc yêu cầu nhân viên học theo nguyên tắc nào?', 'options' => ['Xem lần lượt và hoàn thành video', 'Bỏ qua bài chưa xem', 'Chỉ làm quiz cuối khóa', 'Tự đánh dấu hoàn thành'], 'correct_option' => 0],
+                    ['question' => 'Nhân viên cần làm gì trước khi tư vấn một lô đất cho khách hàng?', 'options' => ['Kiểm tra trạng thái bảng hàng', 'Báo giá theo trí nhớ', 'Bỏ qua lịch sử khách hàng', 'Giữ chỗ không cần xác nhận'], 'correct_option' => 1],
+                    ['question' => 'Lộ trình học bắt buộc yêu cầu nhân viên học theo nguyên tắc nào?', 'options' => ['Xem lần lượt và hoàn thành video', 'Bỏ qua bài chưa xem', 'Chỉ làm quiz cuối khóa', 'Tự đánh dấu hoàn thành'], 'correct_option' => 1],
                     ['type' => 'essay', 'question' => 'Mô tả ngắn gọn quy trình bạn sẽ thực hiện khi lần đầu tư vấn khách hàng mua bất động sản.', 'placeholder' => 'Nhập câu trả lời của bạn (tối thiểu 2–3 câu)...'],
                 ],
             ],
@@ -79,7 +79,7 @@ class LearningPathDemoSeeder extends Seeder
                     ],
                 ],
                 'quiz' => [
-                    ['question' => 'Thông tin nào cần kiểm tra trước khi tư vấn bảng hàng?', 'options' => ['Trạng thái lô và pháp lý', 'Màu giao diện app', 'Tên file ảnh', 'Số lượt thích tin tức'], 'correct_option' => 0],
+                    ['question' => 'Thông tin nào cần kiểm tra trước khi tư vấn bảng hàng?', 'options' => ['Trạng thái lô và pháp lý', 'Màu giao diện app', 'Tên file ảnh', 'Số lượt thích tin tức'], 'correct_option' => 1],
                 ],
             ],
             [
@@ -103,8 +103,8 @@ class LearningPathDemoSeeder extends Seeder
                     ],
                 ],
                 'quiz' => [
-                    ['question' => 'Sau buổi tư vấn, nhân viên nên ưu tiên việc gì?', 'options' => ['Ghi nhận nhu cầu và đặt lịch chăm sóc', 'Xóa thông tin khách hàng', 'Chỉ gửi bảng giá chung', 'Không cần cập nhật CRM'], 'correct_option' => 0],
-                    ['question' => 'Mục tiêu chính của chăm sóc sau site tour là gì?', 'options' => ['Xác định bước tiếp theo với khách hàng', 'Đổi mã lô ngẫu nhiên', 'Tăng số thông báo hệ thống', 'Bỏ qua phản hồi'], 'correct_option' => 0],
+                    ['question' => 'Sau buổi tư vấn, nhân viên nên ưu tiên việc gì?', 'options' => ['Ghi nhận nhu cầu và đặt lịch chăm sóc', 'Xóa thông tin khách hàng', 'Chỉ gửi bảng giá chung', 'Không cần cập nhật CRM'], 'correct_option' => 1],
+                    ['question' => 'Mục tiêu chính của chăm sóc sau site tour là gì?', 'options' => ['Xác định bước tiếp theo với khách hàng', 'Đổi mã lô ngẫu nhiên', 'Tăng số thông báo hệ thống', 'Bỏ qua phản hồi'], 'correct_option' => 1],
                 ],
             ],
             [
@@ -128,8 +128,8 @@ class LearningPathDemoSeeder extends Seeder
                     ],
                 ],
                 'quiz' => [
-                    ['question' => 'Yếu tố nào cần hỏi khi phân tích nhu cầu đầu tư?', 'options' => ['Mục tiêu lợi nhuận và thời gian nắm giữ', 'Màu yêu thích của nút bấm', 'Số lượng tab trên app', 'Tên file video'], 'correct_option' => 0],
-                    ['question' => 'Khi tư vấn sản phẩm theo dòng tiền, nhân viên cần đối chiếu điều gì?', 'options' => ['Ngân sách và tiến độ thanh toán', 'Ảnh đại diện nội bộ', 'Số bình luận tin tức', 'Màu bản đồ'], 'correct_option' => 0],
+                    ['question' => 'Yếu tố nào cần hỏi khi phân tích nhu cầu đầu tư?', 'options' => ['Mục tiêu lợi nhuận và thời gian nắm giữ', 'Màu yêu thích của nút bấm', 'Số lượng tab trên app', 'Tên file video'], 'correct_option' => 1],
+                    ['question' => 'Khi tư vấn sản phẩm theo dòng tiền, nhân viên cần đối chiếu điều gì?', 'options' => ['Ngân sách và tiến độ thanh toán', 'Ảnh đại diện nội bộ', 'Số bình luận tin tức', 'Màu bản đồ'], 'correct_option' => 1],
                 ],
             ],
         ];
@@ -220,7 +220,7 @@ class LearningPathDemoSeeder extends Seeder
                 'title'          => 'Câu ' . ($index + 1),
                 'question'       => $quizData['question'],
                 'options'        => $type === 'essay' ? [] : array_map(
-                    fn (string $label, int $value) => ['value' => $value, 'label' => $label],
+                    fn (string $label, int $value) => ['value' => $value + 1, 'label' => $label],
                     $quizData['options'],
                     array_keys($quizData['options'])
                 ),

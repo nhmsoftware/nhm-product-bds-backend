@@ -21,7 +21,7 @@ class AdminCreateQuizRequest extends FormRequest
             'question' => 'required|string',
             'options' => 'required|array|min:2',
             'options.*' => 'required|string',
-            'correct_option' => 'required|integer|min:0',
+            'correct_option' => 'required|integer|min:1',
         ];
     }
 }

@@ -24,7 +24,7 @@ class RequestCallbackRequest extends FormRequest
                 'regex:/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/',
             ],
             'preferred_callback_time' => 'required|string|max:255',
-            'email' => 'nullable|email|max:100',
+            'email' => 'nullable|email:filter|max:100',
             'project_id' => 'nullable|uuid|exists:areas,id',
             'project_name' => 'nullable|string|max:255',
         ];

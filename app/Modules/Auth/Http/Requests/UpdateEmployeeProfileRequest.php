@@ -32,10 +32,10 @@ class UpdateEmployeeProfileRequest extends FormRequest
                 'regex:/^(03|05|07|08|09)\d{8}$/',
                 'unique:users,phone,' . $userId . ',id',
             ],
-            'email'               => [
+            'email'                => [
                 'required',
                 'string',
-                'email',
+                'email:filter',
                 'max:255',
                 'unique:users,email,' . $userId . ',id',
             ],

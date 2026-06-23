@@ -43,7 +43,22 @@ class CourseLessonResource extends Resource
                 ->required()
                 ->maxLength(255)
                 ->extraInputAttributes(['required' => false])
-                ->validationMessages(['required' => __('common.error.required')]),
+                ->unique(
+                    table: 'course_lessons',
+                    column: 'title',
+                    ignoreRecord: true,
+                    modifyRuleUsing: function (\Illuminate\Validation\Rules\Unique $rule, Forms\Get $get, $record, $livewire) {
+                        $courseId = $get('course_id');
+                        if (!$courseId && $livewire && method_exists($livewire, 'getOwnerRecord')) {
+                            $courseId = $livewire->getOwnerRecord()?->id;
+                        }
+                        return $rule->where('course_id', $courseId);
+                    }
+                )
+                ->validationMessages([
+                    'required' => __('common.error.required'),
+                    'unique' => 'Tên bài học đã tồn tại trong khóa học này.',
+                ]),
             Forms\Components\RichEditor::make('content')->label('Mô tả/Nội dung bài học')->columnSpanFull(),
             AdminUploads::video('video_url', 'Video đào tạo', 'admin/lessons/videos')->columnSpanFull(),
             Forms\Components\Hidden::make('duration_seconds')->default(0),

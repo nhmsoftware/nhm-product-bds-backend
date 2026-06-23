@@ -25,7 +25,7 @@ class AdminUpdateCourseQuizRequest extends FormRequest
             'questions.*.question' => 'required|string',
             'questions.*.options' => 'required|array|min:2',
             'questions.*.options.*' => 'required|string',
-            'questions.*.correct_option' => 'required|integer|min:0',
+            'questions.*.correct_option' => 'required|integer|min:1',
         ];
     }
 

@@ -40,7 +40,7 @@ class AdminCreateCourseRequest extends FormRequest
             'lessons.*.quizzes.*.question' => 'required_with:lessons.*.quizzes|string',
             'lessons.*.quizzes.*.options' => 'required_with:lessons.*.quizzes|array|min:2',
             'lessons.*.quizzes.*.options.*' => 'required_with:lessons.*.quizzes|string',
-            'lessons.*.quizzes.*.correct_option' => 'required_with:lessons.*.quizzes|integer|min:0',
+            'lessons.*.quizzes.*.correct_option' => 'required_with:lessons.*.quizzes|integer|min:1',
         ];
     }
 

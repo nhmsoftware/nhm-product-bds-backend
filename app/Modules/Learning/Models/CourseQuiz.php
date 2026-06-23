@@ -87,9 +87,36 @@ class CourseQuiz extends Model
         'lesson_id' => 'string',
         'type' => 'string',
         'order' => 'integer',
-        'options' => 'array',
         'correct_option' => 'integer',
     ];
+
+    public function getOptionsAttribute($value)
+    {
+        return json_decode($value ?? '[]', true);
+    }
+
+    public function setOptionsAttribute($value): void
+    {
+        if (is_array($value)) {
+            $normalized = [];
+            foreach ($value as $idx => $item) {
+                if (is_array($item)) {
+                    $normalized[] = [
+                        'value' => isset($item['value']) ? (int) $item['value'] : $idx + 1,
+                        'label' => $item['label'] ?? ''
+                    ];
+                } else {
+                    $normalized[] = [
+                        'value' => $idx + 1,
+                        'label' => (string) $item
+                    ];
+                }
+            }
+            $this->attributes['options'] = json_encode($normalized);
+        } else {
+            $this->attributes['options'] = null;
+        }
+    }
 
     // ─── Relationships ───────────────────────────────────────────
 

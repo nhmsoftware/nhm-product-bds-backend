@@ -18,7 +18,7 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email'    => ['required', 'string', 'email:filter', 'max:255', 'unique:users,email'],
             'phone'    => ['required', 'string', 'max:20', 'unique:users,phone', 'regex:/^(0[3|5|7|8|9])[0-9]{8}$/'],
             'password' => [
                 'required',
@@ -36,6 +36,9 @@ class RegisterRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'email.required' => 'Vui lòng nhập email.',
+            'email.email' => 'Email không hợp lệ.',
+            'email.unique' => 'Email đã được sử dụng.',
             'phone.regex' => 'Số điện thoại không hợp lệ.',
             'password.regex' => 'Mật khẩu phải có ít nhất 8 ký tự, bao gồm ký tự đặc biệt và số.',
             'agree_terms.accepted' => 'Vui lòng đồng ý Điều khoản dịch vụ và Chính sách bảo mật.',

@@ -17,7 +17,24 @@ class AdminUpdateLessonRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'nullable|string|max:255',
+            'title' => [
+                'nullable',
+                'string',
+                'max:255',
+                function (string $attribute, $value, \Closure $fail) {
+                    $lessonId = $this->route('id');
+                    $lesson = \App\Modules\Learning\Models\CourseLesson::find($lessonId);
+                    if ($lesson) {
+                        $exists = \App\Modules\Learning\Models\CourseLesson::where('course_id', $lesson->course_id)
+                            ->where('title', $value)
+                            ->where('id', '!=', $lessonId)
+                            ->exists();
+                        if ($exists) {
+                            $fail('Tên bài học đã tồn tại trong khóa học này.');
+                        }
+                    }
+                }
+            ],
             'content' => 'nullable|string',
             'video_url' => 'nullable|string',
             'duration_seconds' => 'nullable|integer|min:0',

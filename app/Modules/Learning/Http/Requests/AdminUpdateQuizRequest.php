@@ -20,7 +20,7 @@ class AdminUpdateQuizRequest extends FormRequest
             'question' => 'nullable|string',
             'options' => 'nullable|array|min:2',
             'options.*' => 'required_with:options|string',
-            'correct_option' => 'nullable|integer|min:0',
+            'correct_option' => 'nullable|integer|min:1',
         ];
     }
 }

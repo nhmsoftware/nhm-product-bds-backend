@@ -142,11 +142,25 @@ class CourseQuizResource extends Resource
                         ->label('Mã')
                         ->required()
                         ->extraInputAttributes(['required' => false])
+                        ->disabled()
+                        ->dehydrated(true)
+                        ->default(function ($component) {
+                            $repeater = $component->getContainer()->getParentComponent();
+                            $state = $repeater->getState() ?? [];
+                            $max = 0;
+                            foreach ($state as $item) {
+                                $val = intval($item['value'] ?? 0);
+                                if ($val > $max) {
+                                    $max = $val;
+                                }
+                            }
+                            return $max + 1;
+                        })
                         ->validationMessages(['required' => __('common.error.required')])
-                        ->rules(['integer', 'min:0'])
+                        ->rules(['integer', 'min:1'])
                         ->validationMessages([
                             'integer' => 'Mã phải là số nguyên.',
-                            'min' => 'Mã không được nhỏ hơn 0.',
+                            'min' => 'Mã không được nhỏ hơn 1.',
                         ]),
                     Forms\Components\TextInput::make('label')
                         ->label('Nội dung đáp án')
@@ -154,16 +168,21 @@ class CourseQuizResource extends Resource
                         ->extraInputAttributes(['required' => false])
                         ->validationMessages(['required' => __('common.error.required')]),
                 ])
-                ->defaultItems(4)
+                ->default([
+                    ['value' => 1, 'label' => ''],
+                    ['value' => 2, 'label' => ''],
+                    ['value' => 3, 'label' => ''],
+                    ['value' => 4, 'label' => ''],
+                ])
                 ->columns(2)
                 ->visible(fn (Forms\Get $get): bool => $get('type') === 'multiple_choice')
                 ->columnSpanFull(),
             Forms\Components\TextInput::make('correct_option')
-                ->label('Mã đáp án đúng (ví dụ: 0 cho đáp án 1, 1 cho đáp án 2)')
-                ->rules(['integer', 'min:0'])
+                ->label('Mã đáp án đúng (ví dụ: 1 cho đáp án 1, 2 cho đáp án 2)')
+                ->rules(['integer', 'min:1'])
                 ->validationMessages([
                     'integer' => 'Mã đáp án đúng phải là số nguyên.',
-                    'min' => 'Mã đáp án đúng không được nhỏ hơn 0.',
+                    'min' => 'Mã đáp án đúng không được nhỏ hơn 1.',
                 ])
                 ->visible(fn (Forms\Get $get): bool => $get('type') === 'multiple_choice'),
             Forms\Components\TextInput::make('placeholder')

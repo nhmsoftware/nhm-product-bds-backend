@@ -18,7 +18,20 @@ class AdminCreateLessonRequest extends FormRequest
     {
         return [
             'course_id' => 'required|uuid|exists:courses,id',
-            'title' => 'required|string|max:255',
+            'title' => [
+                'required',
+                'string',
+                'max:255',
+                function (string $attribute, $value, \Closure $fail) {
+                    $courseId = $this->input('course_id');
+                    $exists = \App\Modules\Learning\Models\CourseLesson::where('course_id', $courseId)
+                        ->where('title', $value)
+                        ->exists();
+                    if ($exists) {
+                        $fail('Tên bài học đã tồn tại trong khóa học này.');
+                    }
+                }
+            ],
             'content' => 'nullable|string',
             'video_url' => 'nullable|string',
             'duration_seconds' => 'required|integer|min:0',

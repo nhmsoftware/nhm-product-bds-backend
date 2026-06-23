@@ -870,10 +870,17 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
                 $mappedOptions = [];
                 foreach ($q->options ?? [] as $idx => $content) {
-                    $mappedOptions[] = [
-                        'value' => $idx,
-                        'label' => $content
-                    ];
+                    if (is_array($content)) {
+                        $mappedOptions[] = [
+                            'value' => isset($content['value']) ? (int) $content['value'] : $idx + 1,
+                            'label' => $content['label'] ?? ''
+                        ];
+                    } else {
+                        $mappedOptions[] = [
+                            'value' => $idx + 1,
+                            'label' => (string) $content
+                        ];
+                    }
                 }
 
                 $details[] = [
@@ -1013,10 +1020,17 @@ final class LearningService extends BaseService implements LearningServiceInterf
 
                 $mappedOptions = [];
                 foreach ($q->options ?? [] as $idx => $content) {
-                    $mappedOptions[] = [
-                        'value' => $idx,
-                        'label' => $content
-                    ];
+                    if (is_array($content)) {
+                        $mappedOptions[] = [
+                            'value' => isset($content['value']) ? (int) $content['value'] : $idx + 1,
+                            'label' => $content['label'] ?? ''
+                        ];
+                    } else {
+                        $mappedOptions[] = [
+                            'value' => $idx + 1,
+                            'label' => (string) $content
+                        ];
+                    }
                 }
 
                 $details[] = [
@@ -1772,7 +1786,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 // Ensure correct_option index is valid for options
                 $optionsCount = isset($q['options']) ? count($q['options']) : 0;
                 $this->validate(
-                    $optionsCount >= 2 && isset($q['correct_option']) && $q['correct_option'] >= 0 && $q['correct_option'] < $optionsCount,
+                    $optionsCount >= 2 && isset($q['correct_option']) && $q['correct_option'] >= 1 && $q['correct_option'] <= $optionsCount,
                     'Vui lòng nhập đầy đủ thông tin bài quiz.',
                     422
                 );
@@ -1847,7 +1861,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 // Ensure correct_option index is valid for options
                 $optionsCount = isset($q['options']) ? count($q['options']) : 0;
                 $this->validate(
-                    $optionsCount >= 2 && isset($q['correct_option']) && $q['correct_option'] >= 0 && $q['correct_option'] < $optionsCount,
+                    $optionsCount >= 2 && isset($q['correct_option']) && $q['correct_option'] >= 1 && $q['correct_option'] <= $optionsCount,
                     'Thông tin bài quiz không hợp lệ.',
                     422
                 );
