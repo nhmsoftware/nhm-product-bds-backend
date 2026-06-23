@@ -94,7 +94,7 @@ class InventoryAreaSeeder extends Seeder
                 'staff_code' => 'ST-EMP001',
                 'role' => UserRole::EMPLOYEE->value,
                 'department' => 'Kinh doanh',
-                'job_position' => 'Nhân viên kinh doanh',
+                'job_position' => 'Chuyên viên kinh doanh',
                 'area' => 'Hà Nội',
                 'branch' => 'Hà Nội',
             ],
@@ -105,7 +105,7 @@ class InventoryAreaSeeder extends Seeder
                 'staff_code' => 'ST-EMP002',
                 'role' => UserRole::EMPLOYEE->value,
                 'department' => 'Kinh doanh',
-                'job_position' => 'Nhân viên kinh doanh',
+                'job_position' => 'Cộng tác viên',
                 'area' => 'Hồ Chí Minh',
                 'branch' => 'Hồ Chí Minh',
             ],
@@ -180,29 +180,18 @@ class InventoryAreaSeeder extends Seeder
 
         $users = [];
 
-        $getJobPositionId = function (?string $name, ?string $deptName, ?string $branchId = null) use ($now) {
+        $getJobPositionId = function (?string $name) use ($now) {
             if (empty($name)) return null;
-            $deptId = null;
-            if (!empty($deptName)) {
-                $deptId = DB::table('departments')
-                    ->where('name', $deptName)
-                    ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
-                    ->value('id');
-            }
             $existingId = DB::table('job_positions')->where('name', $name)->value('id');
             if ($existingId) return $existingId;
 
-            $id = (string) Str::uuid();
             $code = strtoupper(Str::slug($name, '_'));
-            DB::table('job_positions')->insert([
-                'id' => $id,
+            return DB::table('job_positions')->insertGetId([
                 'name' => $name,
                 'code' => $code,
-                'department_id' => $deptId,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
-            return $id;
         };
 
         foreach ($usersData as $data) {
@@ -219,7 +208,7 @@ class InventoryAreaSeeder extends Seeder
                     ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
                     ->value('id');
             }
-            $jobPosId = $getJobPositionId($data['job_position'], $data['department'], $branchId);
+            $jobPosId = $getJobPositionId($data['job_position']);
 
             $payload = [
                 'staff_code' => $data['staff_code'],
