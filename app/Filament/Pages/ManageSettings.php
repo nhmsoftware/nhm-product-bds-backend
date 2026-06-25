@@ -235,11 +235,13 @@ class ManageSettings extends Page implements HasForms
                                     ->label('Vĩ độ (Latitude)')
                                     ->placeholder('Tự động cập nhật khi chọn địa chỉ')
                                     ->disabled()
+                                    ->dehydrated()
                                     ->columnSpan(2),
                                 TextInput::make('attendance_office_longitude.longitude')
                                     ->label('Kinh độ (Longitude)')
                                     ->placeholder('Tự động cập nhật khi chọn địa chỉ')
                                     ->disabled()
+                                    ->dehydrated()
                                     ->columnSpan(2),
 
                                 TextInput::make('attendance_office_radius_meters.radius')
