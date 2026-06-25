@@ -15,7 +15,24 @@ class GoongLocationInput extends TextInput
     protected ?string $longitudeField = null;
 
     /**
-     * Cấu hình tên của trường liên kết bản đồ Google Maps URL (để tự động đồng bộ khi chọn vị trí).
+     * Chế độ rút gọn: chỉ lưu phần đầu tiên của tên địa danh (trước dấu phẩy đầu tiên).
+     * Phù hợp cho trường Tỉnh/Thành, Quận/Huyện.
+     */
+    protected bool $shortName = false;
+
+    public function shortName(bool $condition = true): static
+    {
+        $this->shortName = $condition;
+        return $this;
+    }
+
+    public function isShortName(): bool
+    {
+        return $this->shortName;
+    }
+
+    /**
+     * Cấu hình tên của trường liên kết bản đồ Google Maps URL.
      */
     public function googleMapsUrlField(?string $field): static
     {
@@ -23,9 +40,6 @@ class GoongLocationInput extends TextInput
         return $this;
     }
 
-    /**
-     * Lấy tên trường liên kết bản đồ Google Maps URL.
-     */
     public function getGoogleMapsUrlField(): ?string
     {
         return $this->googleMapsUrlField;
@@ -40,9 +54,6 @@ class GoongLocationInput extends TextInput
         return $this;
     }
 
-    /**
-     * Lấy tên trường Vĩ độ.
-     */
     public function getLatitudeField(): ?string
     {
         return $this->latitudeField;
@@ -57,9 +68,6 @@ class GoongLocationInput extends TextInput
         return $this;
     }
 
-    /**
-     * Lấy tên trường Kinh độ.
-     */
     public function getLongitudeField(): ?string
     {
         return $this->longitudeField;

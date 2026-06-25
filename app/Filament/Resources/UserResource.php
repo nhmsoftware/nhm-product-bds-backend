@@ -6,6 +6,7 @@ use App\Filament\Resources\UserResource\Pages;
 use App\Modules\Area\Models\Area;
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Auth\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -39,7 +40,24 @@ class UserResource extends Resource
                     ->dehydrated(fn (?string $state): bool => filled($state)),
                 Forms\Components\Select::make('role')
                     ->label('Vai trò')
-                    ->options(self::enumOptions(UserRole::class))
+                    ->options(function () {
+                        $currentUser = auth()->user();
+                        $options = self::enumOptions(UserRole::class);
+                        if (!$currentUser) {
+                            return $options;
+                        }
+                        $currentRoleVal = $currentUser->role instanceof UserRole ? $currentUser->role->value : (int) $currentUser->role;
+                        
+                        return collect(UserRole::cases())
+                            ->filter(function ($case) use ($currentRoleVal) {
+                                if ($case === UserRole::BUYER) {
+                                    return true;
+                                }
+                                return $case->value <= $currentRoleVal;
+                            })
+                            ->mapWithKeys(fn ($case) => [$case->value => $case->label()])
+                            ->all();
+                    })
                     ->required()
                     ->live(),
                 Forms\Components\Toggle::make('is_active')->label('Đang hoạt động')->default(true),
@@ -133,6 +151,29 @@ class UserResource extends Resource
         ])->bulkActions([
             Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()]),
         ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $currentUser = auth()->user();
+
+        if ($currentUser) {
+            // 1. Ẩn tài khoản của chính mình
+            $query->where('id', '!=', $currentUser->id);
+
+            // 2. Ẩn các tài khoản có vai trò cao hơn vai trò của bản thân
+            $currentRoleVal = $currentUser->role instanceof UserRole ? $currentUser->role->value : (int) $currentUser->role;
+
+            if ($currentRoleVal !== UserRole::SUPER_ADMIN->value) {
+                $query->where(function ($q) use ($currentRoleVal) {
+                    $q->where('role', '<=', $currentRoleVal)
+                      ->orWhere('role', UserRole::BUYER->value);
+                });
+            }
+        }
+
+        return $query;
     }
 
     public static function getPages(): array

@@ -56,12 +56,36 @@ class LotResource extends Resource
             ->dehydrated(true),
         Forms\Components\TextInput::make('code')->label('Mã lô')->required(),
         Forms\Components\Select::make('status')->label('Trạng thái')->options(self::enumOptions(LotStatus::class))->required(),
-        Forms\Components\TextInput::make('area_size')->label('Diện tích')->numeric(),
+        Forms\Components\TextInput::make('area_size')
+            ->label('Diện tích')
+            ->rules([
+                'nullable',
+                fn () => function (string $attribute, $value, \Closure $fail) {
+                    if ($value !== null && $value !== '') {
+                        if (AdminOptions::parseDecimal($value) === null) {
+                            $fail('Diện tích phải là một số hợp lệ.');
+                        }
+                    }
+                }
+            ])
+            ->dehydrateStateUsing(fn ($state) => AdminOptions::parseDecimal($state)),
         Forms\Components\TextInput::make('direction')->label('Hướng'),
         Forms\Components\TextInput::make('price')->label('Giá')->mask(\Filament\Support\RawJs::make('$money($input, \'.\', \',\', 0)'))->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
         Forms\Components\TextInput::make('unit_price')->label('Đơn giá/m²')->mask(\Filament\Support\RawJs::make('$money($input, \'.\', \',\', 0)'))->stripCharacters(',')->dehydrateStateUsing(fn (mixed $state) => AdminOptions::normalizeMoney($state)),
         Forms\Components\TextInput::make('legal')->label('Pháp lý'),
-        Forms\Components\TextInput::make('frontage')->label('Mặt tiền')->numeric(),
+        Forms\Components\TextInput::make('frontage')
+            ->label('Mặt tiền')
+            ->rules([
+                'nullable',
+                fn () => function (string $attribute, $value, \Closure $fail) {
+                    if ($value !== null && $value !== '') {
+                        if (AdminOptions::parseDecimal($value) === null) {
+                            $fail('Mặt tiền phải là một số hợp lệ.');
+                        }
+                    }
+                }
+            ])
+            ->dehydrateStateUsing(fn ($state) => AdminOptions::parseDecimal($state)),
         Forms\Components\Toggle::make('is_corner')->label('Lô góc'),
         Forms\Components\Toggle::make('is_locked')->label('Đã lock'),
         Forms\Components\RichEditor::make('description')->label('Mô tả')->columnSpanFull(),

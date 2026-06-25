@@ -103,6 +103,62 @@ final class AdminOptions
         return is_string($state) ? str_replace(',', '', $state) : $state;
     }
 
+    public static function parseDecimal(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+
+        $value = trim((string) $value);
+        $value = str_replace(' ', '', $value); // Loại bỏ khoảng trắng
+
+        // Nếu có cả dấu phẩy và dấu chấm
+        if (str_contains($value, ',') && str_contains($value, '.')) {
+            $lastComma = strrpos($value, ',');
+            $lastDot = strrpos($value, '.');
+            if ($lastComma > $lastDot) {
+                // Kiểu Việt Nam: 1.500.000,50 -> Xoá dấu chấm, thay phẩy bằng chấm
+                $value = str_replace('.', '', $value);
+                $value = str_replace(',', '.', $value);
+            } else {
+                // Kiểu Anh: 1,500,000.50 -> Xoá phẩy
+                $value = str_replace(',', '', $value);
+            }
+        } else {
+            // Chỉ chứa phẩy hoặc chỉ chứa chấm
+            if (str_contains($value, ',')) {
+                if (substr_count($value, ',') > 1) {
+                    // Nhiều dấu phẩy: 1,500,000 -> Xoá phẩy
+                    $value = str_replace(',', '', $value);
+                } else {
+                    // 1 dấu phẩy: 100,1 hoặc 1,500
+                    $afterComma = substr($value, strrpos($value, ',') + 1);
+                    if (strlen($afterComma) === 3 && preg_match('/^\d{3}$/', $afterComma)) {
+                        $value = str_replace(',', '', $value);
+                    } else {
+                        $value = str_replace(',', '.', $value);
+                    }
+                }
+            }
+
+            if (str_contains($value, '.')) {
+                if (substr_count($value, '.') > 1) {
+                    // Nhiều dấu chấm: 1.500.000 -> Xoá chấm
+                    $value = str_replace('.', '', $value);
+                }
+            }
+        }
+
+        // Giữ lại số, dấu chấm và dấu trừ
+        $value = preg_replace('/[^\d.-]/', '', $value);
+
+        return is_numeric($value) ? (float) $value : null;
+    }
+
     public static function legalVideoCategories(): array
     {
         return [

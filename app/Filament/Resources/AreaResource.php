@@ -50,7 +50,19 @@ class AreaResource extends Resource
                         Forms\Components\Select::make('status')->label('Trạng thái')->options(self::enumOptions(AreaStatus::class)),
                         Forms\Components\TextInput::make('total_lots')->label('Tổng lô')->numeric()->default(0),
                         Forms\Components\TextInput::make('remaining_lots')->label('Còn hàng')->numeric()->default(0),
-                        Forms\Components\TextInput::make('area_size')->label('Diện tích')->numeric(),
+                        Forms\Components\TextInput::make('area_size')
+                            ->label('Diện tích')
+                            ->rules([
+                                'nullable',
+                                fn () => function (string $attribute, $value, \Closure $fail) {
+                                    if ($value !== null && $value !== '') {
+                                        if (AdminOptions::parseDecimal($value) === null) {
+                                            $fail('Diện tích phải là một số hợp lệ.');
+                                        }
+                                    }
+                                }
+                            ])
+                            ->dehydrateStateUsing(fn ($state) => AdminOptions::parseDecimal($state)),
                         Forms\Components\TextInput::make('direction')->label('Hướng'),
                     ])->columns(2),
                 Forms\Components\Wizard\Step::make('Giá & Tài liệu')

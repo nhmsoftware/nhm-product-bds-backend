@@ -240,28 +240,16 @@ class ListLots extends ListRecords
                             $unitPriceVal = ($unitPriceIdx !== -1 && isset($row[$unitPriceIdx])) ? $row[$unitPriceIdx] : null;
                             $areaSizeVal = ($areaSizeIdx !== -1 && isset($row[$areaSizeIdx])) ? $row[$areaSizeIdx] : null;
                             
-                            $price = null;
-                            if ($priceVal !== null && $priceVal !== '') {
-                                $price = (float) preg_replace('/[^\d.]/', '', (string) $priceVal);
-                            }
+                            $price = \App\Filament\Support\AdminOptions::parseDecimal($priceVal);
                             
-                            $unitPrice = null;
-                            if ($unitPriceVal !== null && $unitPriceVal !== '') {
-                                $unitPrice = (float) preg_replace('/[^\d.]/', '', (string) $unitPriceVal);
-                            }
+                            $unitPrice = \App\Filament\Support\AdminOptions::parseDecimal($unitPriceVal);
                             
-                            $areaSize = null;
-                            if ($areaSizeVal !== null && $areaSizeVal !== '') {
-                                $areaSize = (float) preg_replace('/[^\d.]/', '', (string) $areaSizeVal);
-                            }
+                            $areaSize = \App\Filament\Support\AdminOptions::parseDecimal($areaSizeVal);
                             
                             $direction = ($directionIdx !== -1 && isset($row[$directionIdx])) ? trim((string) $row[$directionIdx]) : null;
                             $legal = ($legalIdx !== -1 && isset($row[$legalIdx])) ? trim((string) $row[$legalIdx]) : null;
                             
-                            $frontage = null;
-                            if ($frontageIdx !== -1 && isset($row[$frontageIdx]) && $row[$frontageIdx] !== '') {
-                                $frontage = (float) preg_replace('/[^\d.]/', '', (string) $row[$frontageIdx]);
-                            }
+                            $frontage = ($frontageIdx !== -1 && isset($row[$frontageIdx])) ? \App\Filament\Support\AdminOptions::parseDecimal($row[$frontageIdx]) : null;
                             
                             $isCornerVal = ($isCornerIdx !== -1 && isset($row[$isCornerIdx])) ? mb_strtolower(trim((string) $row[$isCornerIdx])) : '';
                             $isCorner = in_array($isCornerVal, ['1', 'có', 'co', 'x', 'yes', 'true']);

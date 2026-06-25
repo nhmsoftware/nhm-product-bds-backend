@@ -7,6 +7,7 @@
         $mapsField = $getGoogleMapsUrlField();
         $latField = $getLatitudeField();
         $lngField = $getLongitudeField();
+        $isShortName = $isShortName();
         
         // Resolve sibling field paths
         $mapsStatePath = null;
@@ -43,6 +44,7 @@
             showDropdown: false,
             isLoading: false,
             apiKey: '{{ $apiKey }}',
+            shortName: {{ $isShortName ? 'true' : 'false' }},
             search(query) {
                 if (!this.apiKey) return;
                 if (!query || query.length < 2) {
@@ -64,7 +66,13 @@
                     });
             },
             select(prediction) {
-                this.state = prediction.description;
+                // Nếu shortName mode: chỉ lưu phần đầu tiên (trước dấu phẩy đầu tiên)
+                if (this.shortName) {
+                    const parts = prediction.description.split(',');
+                    this.state = parts[0].trim();
+                } else {
+                    this.state = prediction.description;
+                }
                 this.showDropdown = false;
                 
                 if (prediction.place_id && this.apiKey) {

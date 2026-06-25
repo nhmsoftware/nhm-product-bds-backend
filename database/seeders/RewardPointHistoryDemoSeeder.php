@@ -39,6 +39,20 @@ class RewardPointHistoryDemoSeeder extends Seeder
                     [180,  'Hỗ trợ cập nhật thông tin kho hàng', -2],
                 ],
             ],
+            'manager@test.com' => [
+                'title' => 'Trưởng phòng kinh doanh',
+                'identity_card' => '001200400003',
+                'histories' => [
+                    [100,  'Thành tích quản lý xuất sắc', -10],
+                ],
+            ],
+            'director@test.com' => [
+                'title' => 'Giám đốc khu vực',
+                'identity_card' => '001200400004',
+                'histories' => [
+                    [150,  'Hoạt động phát triển chi nhánh tích cực', -15],
+                ],
+            ],
         ];
 
         DB::transaction(function () use ($employees) {

@@ -6,6 +6,7 @@ use App\Core\Repository\BaseRepository;
 use App\Modules\Planning\DTO\PlanningListDTO;
 use App\Modules\Planning\Interfaces\PlanningRepositoryInterface;
 use App\Modules\Planning\Models\Planning;
+use App\Modules\Planning\Models\Enums\PlanningStatus;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -32,7 +33,8 @@ final class PlanningRepository extends BaseRepository implements PlanningReposit
      */
     public function getList(PlanningListDTO $dto): LengthAwarePaginator
     {
-        $query = $this->model->newQuery();
+        $query = $this->model->newQuery()
+            ->where('status', PlanningStatus::PUBLIC->value);
 
         if ($dto->search) {
             $query->where(function ($q) use ($dto) {
@@ -59,6 +61,7 @@ final class PlanningRepository extends BaseRepository implements PlanningReposit
     public function getAvailableCities(): array
     {
         return $this->model->newQuery()
+            ->where('status', PlanningStatus::PUBLIC->value)
             ->distinct()
             ->pluck('city')
             ->filter()

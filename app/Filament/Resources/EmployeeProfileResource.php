@@ -14,6 +14,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -41,20 +42,27 @@ class EmployeeProfileResource extends Resource
                         ->relationship('user', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
                             $currentUser = auth()->user();
                             if (!$currentUser) return $query;
-                            $query->where('id', '!=', $currentUser->id)
-                                ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::BUYER->value)
-                                ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value)
-                                ->whereNotNull('job_position_id');
 
-                            if ($currentUser->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
+                            // Chỉ cho phép EMPLOYEE, MANAGER, DIRECTOR
+                            $query->where('id', '!=', $currentUser->id)
+                                ->whereIn('role', [
+                                    UserRole::EMPLOYEE->value,
+                                    UserRole::MANAGER->value,
+                                    UserRole::DIRECTOR->value,
+                                ]);
+
+                            // Không cho phép quản lý tài khoản cấp cao hơn mình
+                            if ($currentUser->role !== UserRole::SUPER_ADMIN) {
                                 $query->where('role', '<=', $currentUser->role->value);
                             }
 
-                            if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $currentUser->branch_id) {
+                            // Giám đốc chỉ quản lý trong chi nhánh của mình
+                            if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
                                 $query->where('branch_id', $currentUser->branch_id);
                             }
 
-                            if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER && $currentUser->department_id) {
+                            // Trưởng phòng chỉ quản lý trong phòng ban của mình
+                            if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
                                 $query->where('department_id', $currentUser->department_id);
                             }
 
@@ -245,6 +253,17 @@ class EmployeeProfileResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('user.role')
+                    ->label('Vai trò')
+                    ->formatStateUsing(fn ($state) => $state instanceof UserRole ? $state->label() : ($state ? UserRole::from((int) $state)->label() : '—'))
+                    ->badge()
+                    ->color(fn ($state): string => match (is_int($state) ? $state : (int) ($state?->value ?? 0)) {
+                        UserRole::EMPLOYEE->value  => 'gray',
+                        UserRole::MANAGER->value   => 'info',
+                        UserRole::DIRECTOR->value  => 'warning',
+                        default => 'gray',
+                    }),
+
                 Tables\Columns\TextColumn::make('user.branch.name')
                     ->label('Chi nhánh')
                     ->placeholder('—')
@@ -271,52 +290,107 @@ class EmployeeProfileResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\Filter::make('organization')
-                    ->label('Chi nhánh / phòng ban')
+                Tables\Filters\Filter::make('branch_id')
+                    ->columnSpan(1)
                     ->form([
-                        Forms\Components\Select::make('branch_id')
+                        Forms\Components\Select::make('value')
                             ->label('Chi nhánh')
                             ->options(function (): array {
                                 $query = Branch::query()->orderBy('sort')->orderBy('name');
                                 $currentUser = auth()->user();
-                                if ($currentUser?->role === UserRole::DIRECTOR && $currentUser->branch_id) {
-                                    $query->where('id', $currentUser->branch_id);
-                                }
-                                if ($currentUser?->role === UserRole::MANAGER && $currentUser->branch_id) {
+                                if (in_array($currentUser?->role, [UserRole::DIRECTOR, UserRole::MANAGER], true) && $currentUser->branch_id) {
                                     $query->where('id', $currentUser->branch_id);
                                 }
                                 return $query->pluck('name', 'id')->all();
                             })
+                            ->placeholder('Tất cả chi nhánh')
                             ->searchable()
                             ->preload()
                             ->live()
-                            ->afterStateUpdated(fn (Forms\Set $set) => $set('department_id', null)),
+                            ->afterStateUpdated(fn (Forms\Set $set) => $set('../department_id.value', null)),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder =>
+                        $query->when($data['value'] ?? null, fn (Builder $q, string $v) =>
+                            $q->whereHas('user', fn (Builder $u) => $u->where('branch_id', $v))
+                        )
+                    )
+                    ->indicateUsing(function (array $data): ?string {
+                        if (blank($data['value'] ?? null)) {
+                            return null;
+                        }
+                        $branch = Branch::find($data['value']);
+                        return $branch ? "Chi nhánh: {$branch->name}" : null;
+                    }),
 
-                        Forms\Components\Select::make('department_id')
+                Tables\Filters\Filter::make('department_id')
+                    ->columnSpan(2)
+                    ->form([
+                        Forms\Components\Select::make('value')
                             ->label('Phòng ban')
                             ->options(function (Forms\Get $get): array {
                                 $query = Department::query()->where('is_active', true)->orderBy('name');
                                 $currentUser = auth()->user();
-                                if ($get('branch_id')) {
-                                    $query->where('branch_id', $get('branch_id'));
-                                }
+                                
                                 if ($currentUser?->role === UserRole::DIRECTOR && $currentUser->branch_id) {
                                     $query->where('branch_id', $currentUser->branch_id);
-                                }
-                                if ($currentUser?->role === UserRole::MANAGER && $currentUser->department_id) {
+                                } elseif ($currentUser?->role === UserRole::MANAGER && $currentUser->department_id) {
                                     $query->where('id', $currentUser->department_id);
+                                } else {
+                                    $branchId = $get('../branch_id.value');
+                                    if ($branchId) {
+                                        $query->where('branch_id', $branchId);
+                                    } else {
+                                        return [];
+                                    }
                                 }
                                 return $query->pluck('name', 'id')->all();
                             })
+                            ->placeholder(function (Forms\Get $get): string {
+                                $currentUser = auth()->user();
+                                if ($currentUser?->branch_id) {
+                                    return 'Tất cả phòng ban';
+                                }
+                                return $get('../branch_id.value') ? 'Tất cả phòng ban' : 'Chọn chi nhánh trước';
+                            })
+                            ->disabled(function (Forms\Get $get): bool {
+                                $currentUser = auth()->user();
+                                if ($currentUser?->branch_id) {
+                                    return false;
+                                }
+                                return !$get('../branch_id.value');
+                            })
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->live(),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when($data['branch_id'] ?? null, fn (Builder $query, string $branchId) => $query->whereHas('user', fn (Builder $userQuery) => $userQuery->where('branch_id', $branchId)))
-                            ->when($data['department_id'] ?? null, fn (Builder $query, string $departmentId) => $query->whereHas('user', fn (Builder $userQuery) => $userQuery->where('department_id', $departmentId)));
+                    ->query(fn (Builder $query, array $data): Builder =>
+                        $query->when($data['value'] ?? null, fn (Builder $q, string $v) =>
+                            $q->whereHas('user', fn (Builder $u) => $u->where('department_id', $v))
+                        )
+                    )
+                    ->indicateUsing(function (array $data): ?string {
+                        if (blank($data['value'] ?? null)) {
+                            return null;
+                        }
+                        $dept = Department::find($data['value']);
+                        return $dept ? "Phòng ban: {$dept->name}" : null;
                     }),
-            ])
+
+                Tables\Filters\SelectFilter::make('role')
+                    ->columnSpan(1)
+                    ->label('Vai trò')
+                    ->options([
+                        UserRole::EMPLOYEE->value  => UserRole::EMPLOYEE->label(),
+                        UserRole::MANAGER->value   => UserRole::MANAGER->label(),
+                        UserRole::DIRECTOR->value  => UserRole::DIRECTOR->label(),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder =>
+                        $query->when($data['value'] ?? null, fn (Builder $q, string $v) =>
+                            $q->whereHas('user', fn (Builder $u) => $u->where('role', $v))
+                        )
+                    ),
+            ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(4)
             ->defaultSort('created_at', 'desc')
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -328,7 +402,12 @@ class EmployeeProfileResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->with(['user.branch', 'user.departmentRel', 'user.jobPosition']);
+        $allowedRoles = [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value];
+
+        $query = parent::getEloquentQuery()
+            ->with(['user.branch', 'user.departmentRel', 'user.jobPosition'])
+            ->whereHas('user', fn (Builder $userQuery) => $userQuery->whereIn('role', $allowedRoles));
+
         $currentUser = auth()->user();
 
         if (!$currentUser) {

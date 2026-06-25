@@ -97,11 +97,12 @@ class Planning extends Model
     ];
 
     protected $casts = [
-        'id' => 'string',
-        'updated_year' => 'integer',
-        'latitude' => 'float',
-        'longitude' => 'float',
-        'status' => PlanningStatus::class,
+        'id'              => 'string',
+        'updated_year'    => 'integer',
+        'latitude'        => 'float',
+        'longitude'       => 'float',
+        'status'          => PlanningStatus::class,
+        'land_type_notes' => 'array',
     ];
 
     public function toArray()
