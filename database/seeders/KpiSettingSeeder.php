@@ -50,6 +50,30 @@ class KpiSettingSeeder extends Seeder
                 'key' => 'attendance_under_6_hours_work_day',
                 'value' => json_encode(['work_day' => 0.5], JSON_UNESCAPED_UNICODE),
             ],
+            [
+                'key' => 'attendance_office_address',
+                'value' => json_encode(['address' => 'Trụ sở văn phòng NHM BDS'], JSON_UNESCAPED_UNICODE),
+            ],
+            [
+                'key' => 'attendance_office_latitude',
+                'value' => json_encode(['latitude' => '21.029085171034406'], JSON_UNESCAPED_UNICODE),
+            ],
+            [
+                'key' => 'attendance_office_longitude',
+                'value' => json_encode(['longitude' => '105.79754520314668'], JSON_UNESCAPED_UNICODE),
+            ],
+            [
+                'key' => 'attendance_office_radius_meters',
+                'value' => json_encode(['radius' => 100], JSON_UNESCAPED_UNICODE),
+            ],
+            [
+                'key' => 'attendance_office_wifi_ssid',
+                'value' => json_encode(['wifi_ssid' => 'BDS_Office_Wifi'], JSON_UNESCAPED_UNICODE),
+            ],
+            [
+                'key' => 'attendance_shift_start_time',
+                'value' => json_encode(['shift_start_time' => '08:30:00'], JSON_UNESCAPED_UNICODE),
+            ],
         ];
 
         foreach ($settings as $setting) {

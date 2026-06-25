@@ -57,11 +57,13 @@ class AttendanceResource extends Resource
             Forms\Components\DateTimePicker::make('check_in_at')
                 ->label('Check-in')
                 ->native(false)
+                ->timezone('Asia/Ho_Chi_Minh')
                 ->displayFormat('d/m/Y H:i')
                 ->beforeOrEqual('check_out_at'),
             Forms\Components\DateTimePicker::make('check_out_at')
                 ->label('Check-out')
                 ->native(false)
+                ->timezone('Asia/Ho_Chi_Minh')
                 ->displayFormat('d/m/Y H:i')
                 ->afterOrEqual('check_in_at'),
             Forms\Components\Select::make('status')
@@ -110,8 +112,8 @@ class AttendanceResource extends Resource
         return $table->columns([
             Tables\Columns\TextColumn::make('user.name')->label('Nhân viên')->searchable(),
             Tables\Columns\TextColumn::make('work_date')->label('Ngày')->date('d/m/Y'),
-            Tables\Columns\TextColumn::make('check_in_at')->label('Vào')->dateTime('H:i'),
-            Tables\Columns\TextColumn::make('check_out_at')->label('Ra')->dateTime('H:i'),
+            Tables\Columns\TextColumn::make('check_in_at')->label('Vào')->dateTime('H:i', 'Asia/Ho_Chi_Minh'),
+            Tables\Columns\TextColumn::make('check_out_at')->label('Ra')->dateTime('H:i', 'Asia/Ho_Chi_Minh'),
             Tables\Columns\TextColumn::make('status')
                 ->label('Trạng thái')
                 ->formatStateUsing(fn ($state) => $state instanceof AttendanceStatus ? $state->label() : AttendanceStatus::tryFrom((int)$state)?->label())
