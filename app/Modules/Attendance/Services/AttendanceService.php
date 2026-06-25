@@ -54,7 +54,8 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             $today = Carbon::today()->toDateString();
 
             // 2. Kiểm tra xem nhân viên đã thực hiện check-in hôm nay chưa (A4 - Đã check-in trong ngày)
-            $existingAttendance = $this->attendanceRepository->findByUserAndDate($dto->userId, $today);
+            // Dùng withTrashed để phát hiện cả bản ghi bị xoá mềm — tránh duplicate key khi insert mới
+            $existingAttendance = $this->attendanceRepository->findByUserAndDateWithTrashed($dto->userId, $today);
             $this->validate($existingAttendance === null, 'Bạn đã check-in hôm nay.', 400);
 
             // 3. Tải các cấu hình về văn phòng từ database settings hoặc fallback về config

@@ -118,6 +118,15 @@ class AttendanceResource extends Resource
                 ->label('Trạng thái')
                 ->formatStateUsing(fn ($state) => $state instanceof AttendanceStatus ? $state->label() : AttendanceStatus::tryFrom((int)$state)?->label())
                 ->badge()
+                ->color(fn ($state): string => match (
+                    $state instanceof AttendanceStatus ? $state : AttendanceStatus::tryFrom((int)$state)
+                ) {
+                    AttendanceStatus::PRESENT   => 'success',   // xanh lá — Có mặt
+                    AttendanceStatus::LATE      => 'warning',   // cam     — Đi muộn
+                    AttendanceStatus::ABSENT    => 'danger',    // đỏ      — Vắng mặt
+                    AttendanceStatus::HALF_DAY  => 'info',      // xanh dương — Nửa ngày
+                    default                     => 'gray',
+                })
         ])->defaultSort('created_at', 'desc')->actions([
             Tables\Actions\EditAction::make(),
             Tables\Actions\DeleteAction::make()

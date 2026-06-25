@@ -16,6 +16,11 @@ interface AttendanceRepositoryInterface extends BaseRepositoryInterface
     public function findByUserAndDate(string $userId, string $date);
 
     /**
+     * Tìm bản ghi chấm công kể cả đã soft-delete — dùng để kiểm tra duplicate trước INSERT.
+     */
+    public function findByUserAndDateWithTrashed(string $userId, string $date);
+
+    /**
      * Đếm số ngày đi làm của danh sách userIds trong khoảng thời gian.
      */
     public function countWorkDays(array|string $userIds, ?string $fromDate, ?string $toDate): float;
