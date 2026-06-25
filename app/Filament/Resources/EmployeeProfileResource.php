@@ -224,6 +224,35 @@ class EmployeeProfileResource extends Resource
                                     'image/png',
                                 ])
                                 ->maxSize(10240) // 10 MB
+                                ->afterStateHydrated(function (Forms\Components\FileUpload $component, $state) {
+                                    if (blank($state)) {
+                                        return;
+                                    }
+                                    if (is_array($state)) {
+                                        $state = array_map(fn ($item) => is_string($item) ? preg_replace('#^/?storage/#', '', $item) : $item, $state);
+                                    } elseif (is_string($state)) {
+                                        $state = preg_replace('#^/?storage/#', '', $state);
+                                    }
+                                    $component->state($state);
+                                })
+                                ->dehydrateStateUsing(function ($state) {
+                                    if (blank($state)) {
+                                        return null;
+                                    }
+                                    $normalize = function ($value) {
+                                        if (blank($value)) {
+                                            return null;
+                                        }
+                                        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '/storage/')) {
+                                            return $value;
+                                        }
+                                        return '/storage/' . ltrim($value, '/');
+                                    };
+                                    if (is_array($state)) {
+                                        return array_map($normalize, $state);
+                                    }
+                                    return $normalize($state);
+                                })
                                 ->required()
                                 ->validationMessages([
                                     'required'    => 'Vui lòng chọn file cần tải lên.',
