@@ -111,6 +111,7 @@ final class AttendanceRepository extends BaseRepository implements AttendanceRep
     public function findByUserAndDate(string $userId, string $date)
     {
         return $this->model
+            ->withTrashed()  // Bao gồm cả bản ghi đã soft-delete để tránh duplicate constraint
             ->where('user_id', $userId)
             ->where('work_date', $date)
             ->first();

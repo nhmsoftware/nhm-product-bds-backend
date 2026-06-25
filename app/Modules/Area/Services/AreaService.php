@@ -721,6 +721,14 @@ final class AreaService extends BaseService implements AreaServiceInterface
                     $this->lotRepository->updateById($lotId, $lotData);
                 } else {
                     $lotData['area_id'] = $areaId;
+                    // Kiểm tra trùng mã lô (kể cả đã bị soft-delete) trước khi tạo mới
+                    $existingLot = \App\Modules\Area\Models\Lot::withTrashed()
+                        ->where('area_id', $areaId)
+                        ->where('code', $lotData['code'] ?? '')
+                        ->first();
+                    if ($existingLot !== null) {
+                        $this->throw("Mã lô '{$lotData['code']}' đã tồn tại trong khu đất này.", 400);
+                    }
                     $lot = $this->lotRepository->create($lotData);
                     $lotId = $lot->id;
                 }

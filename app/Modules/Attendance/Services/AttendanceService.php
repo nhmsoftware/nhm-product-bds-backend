@@ -139,7 +139,17 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
                 data: $attendance->toArray(),
                 message: 'Check-in thành công.'
             );
-        }, useTransaction: true);
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+            // Bắt lỗi unique constraint (race condition hoặc bản ghi bị soft-delete)
+            if ($e instanceof \Illuminate\Database\UniqueConstraintViolationException) {
+                return \App\Core\Services\ServiceReturn::error(
+                    message: 'Bạn đã check-in hôm nay.',
+                    exception: $e,
+                    code: 400,
+                );
+            }
+            return null; // Các lỗi khác vẫn xử lý theo mặc định
+        });
      }
 
     /**
