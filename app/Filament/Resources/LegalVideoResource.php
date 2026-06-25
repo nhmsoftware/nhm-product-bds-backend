@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\LegalVideoResource\Pages;
 use App\Modules\LegalVideo\Models\LegalVideo;
-use App\Filament\Support\AdminOptions;
 use App\Filament\Support\AdminUploads;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -21,9 +20,11 @@ class LegalVideoResource extends Resource
 
     protected static ?string $navigationGroup = 'Nội dung';
 
-    protected static ?string $modelLabel = 'Video pháp lý';
+    protected static ?string $navigationLabel = 'Danh sách pháp lý';
 
-    protected static ?string $pluralModelLabel = 'Video pháp lý';
+    protected static ?string $modelLabel = 'Danh sách pháp lý';
+
+    protected static ?string $pluralModelLabel = 'Danh sách pháp lý';
 
     public static function form(Form $form): Form
     {
@@ -39,10 +40,11 @@ class LegalVideoResource extends Resource
                     ->label('Slug')
                     ->required(),
 
-                Forms\Components\Select::make('category')
+                Forms\Components\Select::make('legal_topic_id')
                     ->label('Chủ đề')
-                    ->options(AdminOptions::legalVideoCategories())
+                    ->relationship('legalTopic', 'name')
                     ->searchable()
+                    ->preload()
                     ->required(),
 
                 Forms\Components\TextInput::make('duration_seconds')
@@ -53,11 +55,8 @@ class LegalVideoResource extends Resource
                     ->label('Đang hiển thị')
                     ->default(true),
 
-                Forms\Components\DateTimePicker::make('published_at')
-                    ->label('Ngày xuất bản'),
-
                 AdminUploads::video('video_url', 'URL video', 'admin/legal-videos')
-                    ->required()
+                    ->required(fn ($record) => $record === null || blank($record->video_url))
                     ->columnSpanFull(),
 
                 AdminUploads::image('thumbnail_url', 'Ảnh thumbnail', 'admin/legal-videos')
@@ -79,22 +78,24 @@ class LegalVideoResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
-                    ->label('Video')
+                    ->label('Tiêu đề')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('category')
+                Tables\Columns\TextColumn::make('legalTopic.name')
                     ->label('Chủ đề')
                     ->badge()
-                    ->formatStateUsing(fn ($state) => AdminOptions::legalVideoCategories()[$state] ?? $state),
+                    ->sortable(),
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Hiển thị')
-                    ->boolean(),
+                    ->boolean()
+                    ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('published_at')
-                    ->label('Ngày đăng')
-                    ->dateTime('d/m/Y H:i'),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Ngày cập nhật')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

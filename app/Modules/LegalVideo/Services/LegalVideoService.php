@@ -72,7 +72,7 @@ final class LegalVideoService extends BaseService implements LegalVideoServiceIn
             $this->validate($video !== null, 'Video không tồn tại hoặc đã bị xóa.', 404);
 
             // A2 – Video bị ẩn hoặc ngừng hiển thị
-            $isPublic = $video->is_active === true && ($video->published_at === null || $video->published_at <= now());
+            $isPublic = $video->is_active === true;
             $this->validate($isPublic, 'Video hiện không khả dụng.', 404);
 
             // Bắn Domain Event
@@ -94,13 +94,23 @@ final class LegalVideoService extends BaseService implements LegalVideoServiceIn
      */
     private function getStaticCategories(): array
     {
-        return [
+        $categories = [
             ['id' => 'all', 'name' => 'Tất cả'],
-            ['id' => 'project_legal', 'name' => 'Pháp lý dự án'],
-            ['id' => 'contract', 'name' => 'Hợp đồng'],
-            ['id' => 'planning', 'name' => 'Quy hoạch'],
-            ['id' => 'transaction_process', 'name' => 'Quy trình giao dịch'],
-            ['id' => 'other', 'name' => 'Khác'],
         ];
+
+        $topics = \App\Modules\LegalVideo\Models\LegalTopic::query()
+            ->where('is_active', true)
+            ->orderBy('sort')
+            ->get();
+
+        foreach ($topics as $topic) {
+            $categories[] = [
+                'id' => $topic->id,
+                'name' => $topic->name,
+                'slug' => $topic->slug,
+            ];
+        }
+
+        return $categories;
     }
 }

@@ -86,6 +86,7 @@ class DatabaseSeeder extends Seeder
             'course_lessons',
             'courses',
             'legal_videos',
+            'legal_topics',
             'news',
             'recruitment_posts',
             'consultation_settings',

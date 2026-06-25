@@ -15,6 +15,40 @@ class LegalVideoSeeder extends Seeder
      */
     public function run(): void
     {
+        // Predefined categories mapping
+        $categoriesMap = [
+            'project_legal' => 'Pháp lý dự án',
+            'contract' => 'Hợp đồng',
+            'planning' => 'Quy hoạch',
+            'transaction_process' => 'Quy trình giao dịch',
+            'tax' => 'Thuế phí',
+            'investment' => 'Đầu tư',
+            'legal' => 'Pháp lý',
+            'other' => 'Khác',
+        ];
+
+        // Seed topics first
+        $topicIds = [];
+        $index = 0;
+        foreach ($categoriesMap as $key => $name) {
+            $topic = DB::table('legal_topics')->where('name', $name)->first();
+            if ($topic) {
+                $topicIds[$key] = $topic->id;
+            } else {
+                $id = (string) Str::uuid();
+                DB::table('legal_topics')->insert([
+                    'id' => $id,
+                    'name' => $name,
+                    'slug' => Str::slug($name),
+                    'is_active' => true,
+                    'sort' => ++$index,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $topicIds[$key] = $id;
+            }
+        }
+
         $videos = [
             [
                 'id' => Str::uuid()->toString(),
@@ -26,6 +60,7 @@ class LegalVideoSeeder extends Seeder
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&q=80',
                 'duration_seconds' => 30,
                 'category' => 'project_legal',
+                'legal_topic_id' => $topicIds['project_legal'] ?? null,
                 'is_active' => true,
                 'published_at' => now(),
                 'created_at' => now(),
@@ -41,6 +76,7 @@ class LegalVideoSeeder extends Seeder
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=600&q=80',
                 'duration_seconds' => 30,
                 'category' => 'contract',
+                'legal_topic_id' => $topicIds['contract'] ?? null,
                 'is_active' => true,
                 'published_at' => now(),
                 'created_at' => now(),
@@ -56,6 +92,7 @@ class LegalVideoSeeder extends Seeder
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=80',
                 'duration_seconds' => 30,
                 'category' => 'planning',
+                'legal_topic_id' => $topicIds['planning'] ?? null,
                 'is_active' => true,
                 'published_at' => now(),
                 'created_at' => now(),
@@ -71,6 +108,7 @@ class LegalVideoSeeder extends Seeder
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?auto=format&fit=crop&w=600&q=80',
                 'duration_seconds' => 30,
                 'category' => 'transaction_process',
+                'legal_topic_id' => $topicIds['transaction_process'] ?? null,
                 'is_active' => true,
                 'published_at' => now(),
                 'created_at' => now(),
@@ -86,6 +124,7 @@ class LegalVideoSeeder extends Seeder
                 'thumbnail_url' => 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
                 'duration_seconds' => 30,
                 'category' => 'project_legal',
+                'legal_topic_id' => $topicIds['project_legal'] ?? null,
                 'is_active' => false,
                 'published_at' => now(),
                 'created_at' => now(),

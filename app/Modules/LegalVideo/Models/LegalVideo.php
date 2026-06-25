@@ -42,9 +42,13 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'video_url', type: 'string'),
         new OA\Property(property: 'thumbnail_url', type: 'string', nullable: true),
         new OA\Property(property: 'duration_seconds', type: 'integer', nullable: true),
-        new OA\Property(property: 'category', type: 'string'),
+        new OA\Property(property: 'category', type: 'string', nullable: true),
+        new OA\Property(property: 'legal_topic_id', type: 'string', format: 'uuid', nullable: true),
+        new OA\Property(property: 'legal_topic', ref: '#/components/schemas/LegalTopic', nullable: true),
         new OA\Property(property: 'is_active', type: 'boolean'),
         new OA\Property(property: 'published_at', type: 'string', format: 'date-time', nullable: true),
+        new OA\Property(property: 'created_at', type: 'string', format: 'date-time', nullable: true),
+        new OA\Property(property: 'updated_at', type: 'string', format: 'date-time', nullable: true),
     ]
 )]
 class LegalVideo extends Model
@@ -62,6 +66,7 @@ class LegalVideo extends Model
         'thumbnail_url',
         'duration_seconds',
         'category',
+        'legal_topic_id',
         'is_active',
         'published_at',
     ];
@@ -71,4 +76,9 @@ class LegalVideo extends Model
         'duration_seconds' => 'integer',
         'published_at' => 'datetime',
     ];
+
+    public function legalTopic()
+    {
+        return $this->belongsTo(LegalTopic::class, 'legal_topic_id');
+    }
 }

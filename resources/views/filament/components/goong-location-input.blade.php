@@ -8,32 +8,36 @@
         $latField = $getLatitudeField();
         $lngField = $getLongitudeField();
         $isShortName = $isShortName();
-        
-        // Resolve sibling field paths
-        $mapsStatePath = null;
-        if ($mapsField) {
-            $parts = explode('.', $statePath);
-            array_pop($parts);
-            $parts[] = $mapsField;
-            $mapsStatePath = implode('.', $parts);
-        }
-        
-        $latStatePath = null;
-        if ($latField) {
-            $parts = explode('.', $statePath);
-            array_pop($parts);
-            $parts[] = $latField;
-            $latStatePath = implode('.', $parts);
-        }
 
-        $lngStatePath = null;
-        if ($lngField) {
+        // Resolve target field paths - supports both sibling fields (same parent)
+        // and cross-parent fields (different parent keys like attendance_office_latitude.latitude)
+        $resolveTargetPath = function($targetField) use ($statePath) {
+            if (!$targetField) return null;
+
+            // If targetField contains a dot, it's a full path like "attendance_office_latitude.latitude"
+            // We need to replace the last segment of statePath's parent with this targetField
+            if (str_contains($targetField, '.')) {
+                $parts = explode('.', $statePath);
+                // Remove the last segment (the current field name)
+                array_pop($parts);
+                // Remove the parent key (e.g., "attendance_office_address")
+                array_pop($parts);
+                // Add the target field path
+                $parts[] = $targetField;
+                return implode('.', $parts);
+            }
+
+            // Otherwise treat as sibling field (same parent)
             $parts = explode('.', $statePath);
             array_pop($parts);
-            $parts[] = $lngField;
-            $lngStatePath = implode('.', $parts);
-        }
-        
+            $parts[] = $targetField;
+            return implode('.', $parts);
+        };
+
+        $mapsStatePath = $resolveTargetPath($mapsField);
+        $latStatePath = $resolveTargetPath($latField);
+        $lngStatePath = $resolveTargetPath($lngField);
+
         $apiKey = config('services.goong.api_key') ?? env('GOONG_API_KEY');
     @endphp
 

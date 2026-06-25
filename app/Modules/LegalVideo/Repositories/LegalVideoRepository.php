@@ -28,11 +28,18 @@ final class LegalVideoRepository extends BaseRepository implements LegalVideoRep
     public function getPublishedVideos(array $filters): LengthAwarePaginator
     {
         $query = $this->query()
-            ->where('is_active', true)
-            ->where('published_at', '<=', now());
+            ->with('legalTopic')
+            ->where('is_active', true);
 
         if (!empty($filters['category'])) {
-            $query->where('category', $filters['category']);
+            $category = $filters['category'];
+            $query->where(function ($q) use ($category) {
+                $q->where('category', $category)
+                  ->orWhere('legal_topic_id', $category)
+                  ->orWhereHas('legalTopic', function ($sq) use ($category) {
+                      $sq->where('slug', $category);
+                  });
+            });
         }
 
         if (!empty($filters['search'])) {
@@ -60,7 +67,10 @@ final class LegalVideoRepository extends BaseRepository implements LegalVideoRep
             $query->where(function ($q) use ($search, $matchedCategories) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('short_description', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('legalTopic', function ($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%");
+                  });
                 
                 if (!empty($matchedCategories)) {
                     $q->orWhereIn('category', $matchedCategories);
@@ -70,7 +80,7 @@ final class LegalVideoRepository extends BaseRepository implements LegalVideoRep
             });
         }
 
-        return $query->orderBy('published_at', 'desc')
+        return $query->orderBy('updated_at', 'desc')
             ->paginate($filters['per_page'] ?? 10);
     }
 
