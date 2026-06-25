@@ -2,12 +2,12 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Support\GoongLocationInput;
 use App\Modules\Area\Models\InventorySetting;
 use App\Modules\Auth\Models\Enums\UserRole;
-use App\Filament\Support\GoongLocationInput;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -15,17 +15,24 @@ use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\HtmlString;
 
 class ManageSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
+
     protected static ?string $navigationGroup = 'Cấu hình';
+
     protected static ?string $navigationLabel = 'Cấu hình';
+
     protected static ?string $title = 'Cấu hình hệ thống';
+
     protected static ?string $slug = 'setting';
+
     protected static string $view = 'filament.pages.manage-settings';
 
     public ?array $data = [];
@@ -33,14 +40,17 @@ class ManageSettings extends Page implements HasForms
     public static function shouldRegisterNavigation(): bool
     {
         $user = Filament::auth()->user();
-        if (!$user) return false;
+        if (! $user) {
+            return false;
+        }
+
         return in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO]);
     }
 
     public function mount(): void
     {
         $user = Filament::auth()->user();
-        if (!$user || !in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO])) {
+        if (! $user || ! in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO])) {
             abort(403);
         }
 
@@ -155,9 +165,9 @@ class ManageSettings extends Page implements HasForms
                             ->validationMessages(['required' => 'Vui lòng nhập điểm số.']),
                         Grid::make(2)
                             ->schema([
-                                \Filament\Forms\Components\Placeholder::make('kpi_points_work_day_rate_explanation')
+                                Placeholder::make('kpi_points_work_day_rate_explanation')
                                     ->hiddenLabel()
-                                    ->content(new \Illuminate\Support\HtmlString('
+                                    ->content(new HtmlString('
                                         <div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-150 dark:border-gray-800">
                                             <strong>Quy tắc tính điểm chuyên cần:</strong> Điểm được tính theo từng tuần (Thứ 2 – Thứ 6). Nhân viên đi đủ số ngày công quy định trong một tuần sẽ được cộng điểm cho tuần đó.<br/>
                                             <em>Lưu ý:</em> Điểm tính theo tuần, không cộng dồn ngày công qua tuần khác. Nghỉ cuối tuần (Thứ 7, Chủ nhật) không tính vào ngày công.<br/>
@@ -212,17 +222,25 @@ class ManageSettings extends Page implements HasForms
                             ->required()
                             ->validationMessages(['required' => 'Vui lòng chọn số công mặc định.']),
 
-                        Grid::make(3)
+                        Grid::make(4)
                             ->schema([
                                 GoongLocationInput::make('attendance_office_address.address')
                                     ->label('Địa chỉ trụ sở văn phòng')
                                     ->latitudeField('attendance_office_latitude.latitude')
                                     ->longitudeField('attendance_office_longitude.longitude')
                                     ->placeholder('Nhập địa chỉ văn phòng để tự động định vị...')
-                                    ->columnSpan(3),
-                                
-                                Hidden::make('attendance_office_latitude.latitude'),
-                                Hidden::make('attendance_office_longitude.longitude'),
+                                    ->columnSpan(4),
+
+                                TextInput::make('attendance_office_latitude.latitude')
+                                    ->label('Vĩ độ (Latitude)')
+                                    ->placeholder('Tự động cập nhật khi chọn địa chỉ')
+                                    ->disabled()
+                                    ->columnSpan(2),
+                                TextInput::make('attendance_office_longitude.longitude')
+                                    ->label('Kinh độ (Longitude)')
+                                    ->placeholder('Tự động cập nhật khi chọn địa chỉ')
+                                    ->disabled()
+                                    ->columnSpan(2),
 
                                 TextInput::make('attendance_office_radius_meters.radius')
                                     ->label('Bán kính check-in tối đa (mét)')
@@ -238,7 +256,7 @@ class ManageSettings extends Page implements HasForms
                                     ->native(false)
                                     ->required()
                                     ->validationMessages(['required' => 'Vui lòng chọn giờ bắt đầu ca.'])
-                                    ->columnSpan(1),
+                                    ->columnSpan(2),
                             ])
                             ->columnSpanFull(),
                     ])->columns(2),
@@ -257,7 +275,7 @@ class ManageSettings extends Page implements HasForms
             );
         }
 
-        \Filament\Notifications\Notification::make()
+        Notification::make()
             ->title('Đã lưu các cấu hình thành công!')
             ->success()
             ->send();
