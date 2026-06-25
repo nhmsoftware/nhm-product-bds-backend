@@ -198,7 +198,12 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
      */
     public function findByStaffCode(string $staffCode)
     {
-        return $this->model->where('staff_code', $this->normalizeReferralStaffCode($staffCode))->first();
+        $normalized = $this->normalizeReferralStaffCode($staffCode);
+        $user = $this->model->where('staff_code', $normalized)->first();
+        if (!$user) {
+            $user = $this->model->where('phone', $normalized)->first();
+        }
+        return $user;
     }
 
     private function normalizeReferralStaffCode(string $referralCode): string

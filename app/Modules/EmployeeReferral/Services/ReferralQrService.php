@@ -22,12 +22,12 @@ class ReferralQrService extends BaseService
     public function getRecruitmentQr(User $user): ServiceReturn
     {
         return $this->execute(function () use ($user) {
-            $staffCode = $user->staff_code;
-            $this->validate(!empty($staffCode), 'Bạn chưa có mã giới thiệu tuyển dụng.', 404);
+            $phone = $user->phone;
+            $this->validate(!empty($phone), 'Bạn chưa có số điện thoại để tạo mã giới thiệu.', 404);
 
-            $recruitmentCode = 'REC-' . $staffCode;
+            $recruitmentCode = $phone;
             $qrValue = $this->buildAppDownloadUrl($recruitmentCode, 'recruitment');
-            $qrUrl = $this->generateQrUrl($qrValue, 'recruitment', $staffCode);
+            $qrUrl = $this->generateQrUrl($qrValue, 'recruitment', $phone);
 
             return [
                 'qr_value' => $qrValue,
@@ -49,12 +49,12 @@ class ReferralQrService extends BaseService
     public function getCustomerQr(User $user): ServiceReturn
     {
         return $this->execute(function () use ($user) {
-            $staffCode = $user->staff_code;
-            $this->validate(!empty($staffCode), 'Bạn chưa có mã giới thiệu khách hàng.', 404);
+            $phone = $user->phone;
+            $this->validate(!empty($phone), 'Bạn chưa có số điện thoại để tạo mã giới thiệu.', 404);
 
-            $customerCode = 'CUS-' . $staffCode;
+            $customerCode = $phone;
             $qrValue = $this->buildAppDownloadUrl($customerCode, 'customer');
-            $qrUrl = $this->generateQrUrl($qrValue, 'customer', $staffCode);
+            $qrUrl = $this->generateQrUrl($qrValue, 'customer', $phone);
 
             return [
                 'qr_value' => $qrValue,

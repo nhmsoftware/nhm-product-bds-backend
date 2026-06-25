@@ -30,18 +30,31 @@ class RequireOnboardingCompleted
             ], 401);
         }
 
-        $requiredCourse = Course::where('is_required', true)->first();
+        $role = $user->role?->value;
+        $requiredCourseIds = Course::query()
+            ->where('is_active', true)
+            ->where('is_required', true)
+            ->where(function ($query) use ($role) {
+                $query->whereNull('allowed_roles')
+                    ->orWhereJsonLength('allowed_roles', 0);
 
-        if ($requiredCourse === null) {
+                if ($role !== null) {
+                    $query->orWhereJsonContains('allowed_roles', $role);
+                }
+            })
+            ->pluck('id');
+
+        if ($requiredCourseIds->isEmpty()) {
             return $next($request);
         }
 
-        $completed = CourseEnrollment::where('user_id', $user->id)
-            ->where('course_id', $requiredCourse->id)
+        $completedCount = CourseEnrollment::where('user_id', $user->id)
+            ->whereIn('course_id', $requiredCourseIds)
             ->where('status', CourseEnrollmentStatus::COMPLETED)
-            ->exists();
+            ->distinct('course_id')
+            ->count('course_id');
 
-        if (!$completed) {
+        if ($completedCount < $requiredCourseIds->count()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bạn cần hoàn thành khóa học onboarding và được admin xác nhận trước khi truy cập kho hàng.',

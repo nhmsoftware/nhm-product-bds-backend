@@ -36,11 +36,19 @@ final class CourseRepository extends BaseRepository implements CourseRepositoryI
      * @param string|null $jobPosition
      * @return Collection
      */
-    public function getMandatoryCourses(string $userId, ?string $department, ?string $jobPosition): Collection
+    public function getMandatoryCourses(string $userId, ?string $department, ?string $jobPosition, ?int $role): Collection
     {
         return $this->query()
             ->where('is_active', true)
             ->where('is_required', true)
+            ->where(function ($q) use ($role) {
+                $q->whereNull('allowed_roles')
+                    ->orWhereJsonLength('allowed_roles', 0);
+
+                if ($role !== null) {
+                    $q->orWhereJsonContains('allowed_roles', $role);
+                }
+            })
             ->where(function ($q) use ($department, $jobPosition) {
                 $q->where(function ($query) {
                     $query->whereNull('department')

@@ -159,7 +159,11 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
             });
         }
 
-        return $query->where('areas.name', 'like', "%{$keyword}%")->get();
+        return $query->where(function ($q) use ($keyword) {
+            $q->where('areas.name', 'ilike', "%{$keyword}%")
+                ->orWhere('areas.project_name', 'ilike', "%{$keyword}%")
+                ->orWhere('areas.location', 'ilike', "%{$keyword}%");
+        })->get();
     }
 
 }

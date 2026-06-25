@@ -29,6 +29,8 @@ class AdminUpdateCourseRequest extends FormRequest
             'description' => 'nullable|string',
             'thumbnail' => 'nullable|string|max:500',
             'is_required' => 'nullable|boolean',
+            'allowed_roles' => 'nullable|array',
+            'allowed_roles.*' => 'integer|in:1,2,3,4',
             'department' => 'nullable|string|max:100',
             'job_position' => 'nullable|string|max:100',
             'order' => 'nullable|integer|min:1',

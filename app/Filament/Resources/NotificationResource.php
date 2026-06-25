@@ -59,10 +59,35 @@ class NotificationResource extends Resource
                         ->visible(fn (Forms\Get $get): bool => $get('target_type') === 'role')
                         ->required(fn (Forms\Get $get): bool => $get('target_type') === 'role'),
 
+                    Forms\Components\Select::make('target_branch')
+                        ->label('Chọn chi nhánh')
+                        ->options(function () {
+                            return \App\Modules\Branch\Models\Branch::where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->toArray();
+                        })
+                        ->searchable()
+                        ->preload()
+                        ->live()
+                        ->visible(fn (Forms\Get $get): bool => $get('target_type') === 'department')
+                        ->required(fn (Forms\Get $get): bool => $get('target_type') === 'department'),
+
                     Forms\Components\Select::make('target_department')
                         ->label('Chọn phòng ban')
-                        ->options(AdminOptions::departments())
-                        ->visible(fn (Forms\Get $get): bool => $get('target_type') === 'department')
+                        ->options(function (Forms\Get $get) {
+                            $branchId = $get('target_branch');
+                            if (!$branchId) {
+                                return [];
+                            }
+                            return \App\Modules\Auth\Models\Department::where('branch_id', $branchId)
+                                ->where('is_active', true)
+                                ->pluck('name', 'id')
+                                ->toArray();
+                        })
+                        ->searchable()
+                        ->preload()
+                        ->visible(fn (Forms\Get $get): bool => $get('target_type') === 'department' && !empty($get('target_branch')))
                         ->required(fn (Forms\Get $get): bool => $get('target_type') === 'department'),
 
                     Forms\Components\Select::make('target_area')

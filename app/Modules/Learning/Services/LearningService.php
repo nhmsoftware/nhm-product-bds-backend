@@ -102,7 +102,8 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $courses = $this->courseRepository->getMandatoryCourses(
                 $dto->userId,
                 $dto->department,
-                $dto->jobPosition
+                $dto->jobPosition,
+                $dto->role
             );
 
             // A1 – Không có khóa học bắt buộc
@@ -1446,6 +1447,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                     'description' => $course->description,
                     'thumbnail' => $course->thumbnail,
                     'is_required' => (bool) $course->is_required,
+                    'allowed_roles' => $course->allowed_roles,
                     'department' => $course->department,
                     'job_position' => $course->job_position,
                     'order' => (int) $course->order,
@@ -1510,6 +1512,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 'description' => $course->description,
                 'thumbnail' => $course->thumbnail,
                 'is_required' => (bool) $course->is_required,
+                'allowed_roles' => $course->allowed_roles,
                 'department' => $course->department,
                 'job_position' => $course->job_position,
                 'order' => (int) $course->order,

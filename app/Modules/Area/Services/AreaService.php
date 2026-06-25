@@ -790,7 +790,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                 'key' => 'legal',
                 'label' => 'Pháp lý',
                 'title' => 'Thông tin pháp lý',
-                'content' => $legalText,
+                'content' => !empty($area->legal_text) ? $area->legal_text : $legalText,
                 'action_label' => null,
                 'action_url' => null,
             ],

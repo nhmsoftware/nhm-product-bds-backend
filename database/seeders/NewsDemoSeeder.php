@@ -34,7 +34,7 @@ class NewsDemoSeeder extends Seeder
                 [
                     'email' => 'manager@test.com',
                     'name' => 'Trần Thị Trưởng Phòng',
-                    'staff_code' => 'ST-MGR001',
+                    'staff_code' => '0900000002',
                     'phone' => '0900000002',
                     'role' => UserRole::MANAGER->value,
                     'department' => 'Kinh doanh',
@@ -48,7 +48,7 @@ class NewsDemoSeeder extends Seeder
                 [
                     'email' => 'manager.hcm@test.com',
                     'name' => 'Nguyễn Thị Trưởng Nhóm HCM',
-                    'staff_code' => 'ST-MGR002',
+                    'staff_code' => '0900000017',
                     'phone' => '0900000017',
                     'role' => UserRole::MANAGER->value,
                     'department' => 'Kinh doanh',
@@ -62,7 +62,7 @@ class NewsDemoSeeder extends Seeder
                 [
                     'email' => 'director@test.com',
                     'name' => 'Lê Văn Giám Đốc',
-                    'staff_code' => 'ST-DIR001',
+                    'staff_code' => '0900000003',
                     'phone' => '0900000003',
                     'role' => UserRole::DIRECTOR->value,
                     'department' => 'Kinh doanh',

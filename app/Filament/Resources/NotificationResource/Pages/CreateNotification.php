@@ -22,9 +22,7 @@ class CreateNotification extends CreateRecord
         if ($data['target_type'] === 'role') {
             $usersQuery->where('role', (int) $data['target_role']);
         } elseif ($data['target_type'] === 'department') {
-            $usersQuery->where('department_id', function ($q) use ($data) {
-                $q->select('id')->from('departments')->where('name', $data['target_department']);
-            });
+            $usersQuery->where('department_id', $data['target_department']);
         } elseif ($data['target_type'] === 'area') {
             // target_area lưu branch_id (UUID)
             $usersQuery->where('branch_id', $data['target_area']);
@@ -43,7 +41,10 @@ class CreateNotification extends CreateRecord
         $targetLabel = match ($data['target_type']) {
             'all' => 'Tất cả nhân sự',
             'role' => 'Vai trò: ' . (UserRole::from((int) $data['target_role'])->label()),
-            'department' => 'Phòng ban: ' . $data['target_department'],
+            'department' => 'Phòng ban: ' . (function () use ($data) {
+                $dept = \App\Modules\Auth\Models\Department::with('branch')->find($data['target_department']);
+                return $dept ? "{$dept->name} ({$dept->branch?->name})" : 'Không xác định';
+            })(),
             'area' => 'Chi nhánh: ' . (\App\Modules\Branch\Models\Branch::find($data['target_area'])?->name ?? 'Không xác định'),
             'users' => 'Đích danh (' . count($recipientIds) . ' nhân sự)',
             default => 'Không xác định',

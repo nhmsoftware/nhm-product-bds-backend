@@ -30,6 +30,7 @@ use OpenApi\Attributes as OA;
  * @property string $setback
  * @property string $land_type_notes
  * @property string $pdf_url
+ * @property string $check_planning_link
  * @property float $latitude
  * @property float $longitude
  * @property string $content
@@ -59,6 +60,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'setback', type: 'string', nullable: true, example: '6m'),
         new OA\Property(property: 'land_type_notes', type: 'string', nullable: true, example: 'Chú giải về các loại đất...'),
         new OA\Property(property: 'pdf_url', type: 'string', nullable: true, example: 'https://example.com/plan.pdf'),
+        new OA\Property(property: 'check_planning_link', type: 'string', nullable: true, example: 'https://example.com/check'),
         new OA\Property(property: 'latitude', type: 'number', format: 'float', nullable: true, example: 10.7769),
         new OA\Property(property: 'longitude', type: 'number', format: 'float', nullable: true, example: 106.7009),
         new OA\Property(property: 'content', type: 'string', nullable: true, example: 'Nội dung chi tiết quy hoạch...'),
@@ -88,6 +90,7 @@ class Planning extends Model
         'setback',
         'land_type_notes',
         'pdf_url',
+        'check_planning_link',
         'latitude',
         'longitude',
         'content',

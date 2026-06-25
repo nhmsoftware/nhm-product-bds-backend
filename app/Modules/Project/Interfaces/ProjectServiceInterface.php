@@ -59,6 +59,13 @@ interface ProjectServiceInterface
     public function getHotline(string $id): ServiceReturn;
 
     /**
+     * Lấy danh sách tất cả loại hình khu đất.
+     * 
+     * @return ServiceReturn
+     */
+    public function getPublicTypes(): ServiceReturn;
+
+    /**
      * [Admin] Lấy danh sách dự án.
      *
      * @param string $userId

@@ -64,7 +64,7 @@ class LotResource extends Resource
         Forms\Components\TextInput::make('frontage')->label('Mặt tiền')->numeric(),
         Forms\Components\Toggle::make('is_corner')->label('Lô góc'),
         Forms\Components\Toggle::make('is_locked')->label('Đã lock'),
-        Forms\Components\Textarea::make('description')->label('Mô tả')->columnSpanFull(),
+        Forms\Components\RichEditor::make('description')->label('Mô tả')->columnSpanFull(),
         AdminUploads::image('image_url', 'Ảnh đại diện', 'admin/lots')->columnSpanFull(),
         AdminUploads::images('images', 'Danh sách ảnh lô đất', 'admin/lot-gallery')->columnSpanFull(),
     ])->columns(2); }

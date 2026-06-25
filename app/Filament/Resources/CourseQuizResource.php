@@ -32,7 +32,7 @@ class CourseQuizResource extends Resource
             Forms\Components\TextInput::make('title')
                 ->label('Tên khóa học')
                 ->disabled(),
-            Forms\Components\Textarea::make('description')
+            Forms\Components\RichEditor::make('description')
                 ->label('Mô tả khóa học')
                 ->disabled()
                 ->columnSpanFull(),

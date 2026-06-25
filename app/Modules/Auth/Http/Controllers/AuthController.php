@@ -375,7 +375,8 @@ final class AuthController extends BaseController
     public function departments(): JsonResponse
     {
         $userId = (string) auth('api')->id();
-        $result = $this->authService->getDepartments($userId);
+        $branchId = request()->query('branch_id');
+        $result = $this->authService->getDepartments($userId, $branchId ?: null);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());

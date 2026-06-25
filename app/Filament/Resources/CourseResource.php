@@ -5,6 +5,7 @@ use App\Filament\Resources\CourseResource\Pages;
 use App\Filament\Resources\CourseResource\RelationManagers\EnrollmentsRelationManager;
 use App\Filament\Resources\CourseResource\RelationManagers\LessonsRelationManager;
 use App\Modules\Learning\Models\Course;
+use App\Modules\Auth\Models\Enums\UserRole;
 use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminUploads;
 use Filament\Forms;
@@ -28,8 +29,19 @@ class CourseResource extends Resource
             Forms\Components\Section::make('Thông tin khóa học')->schema([
                 Forms\Components\TextInput::make('title')->label('Tên khóa học')->required()->maxLength(255)->unique(ignoreRecord: true, modifyRuleUsing: fn ($rule) => $rule->whereNull('deleted_at'))->extraInputAttributes(['required' => false])->validationMessages(['required' => __('common.error.required'), 'unique' => 'Tên khóa học đã tồn tại']),
                 AdminUploads::image('thumbnail', 'Ảnh khóa học', 'admin/courses')->columnSpanFull(),
-                Forms\Components\Textarea::make('description')->label('Mô tả')->rows(4)->columnSpanFull(),
-                Forms\Components\Toggle::make('is_required')->label('Khóa học bắt buộc')->helperText('Chỉ được có 1 khóa học bắt buộc trong hệ thống.')->default(false),
+                Forms\Components\RichEditor::make('description')->label('Mô tả')->columnSpanFull(),
+                Forms\Components\Toggle::make('is_required')->label('Khóa học bắt buộc')->helperText('Có thể có nhiều khóa học bắt buộc trong hệ thống.')->default(false),
+                Forms\Components\CheckboxList::make('allowed_roles')
+                    ->label('Vai trò được phép làm khóa học')
+                    ->options([
+                        UserRole::EMPLOYEE->value => 'Nhân viên',
+                        UserRole::MANAGER->value => 'Trưởng phòng',
+                        UserRole::DIRECTOR->value => 'Giám đốc',
+                        UserRole::CEO->value => 'Tổng giám đốc',
+                    ])
+                    ->columns(2)
+                    ->helperText('Nếu không chọn vai trò nào -> tất cả mọi người đều làm được')
+                    ->columnSpanFull(),
                 Forms\Components\TextInput::make('order')
                     ->label('Thứ tự hiển thị')
                     ->default(1)
@@ -54,6 +66,10 @@ class CourseResource extends Resource
             AdminImageColumn::make('thumbnail')->label('Ảnh')->square(),
             Tables\Columns\TextColumn::make('title')->label('Khóa học')->searchable()->sortable()->limit(45),
             Tables\Columns\IconColumn::make('is_required')->label('Bắt buộc')->boolean()->alignCenter(),
+            Tables\Columns\TextColumn::make('allowed_roles')
+                ->label('Vai trò được học')
+                ->formatStateUsing(fn ($state): string => collect($state ?: [])->map(fn ($role) => UserRole::tryFrom((int) $role)?->label())->filter()->implode(', ') ?: 'Tất cả')
+                ->toggleable(),
             Tables\Columns\IconColumn::make('is_active')->label('Mở')->boolean()->alignCenter(),
             Tables\Columns\IconColumn::make('has_certificate')->label('Chứng chỉ')->boolean()->alignCenter(),
             Tables\Columns\TextColumn::make('lessons_count')->label('Bài học')->counts('lessons')->alignCenter(),

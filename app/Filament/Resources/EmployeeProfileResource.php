@@ -5,13 +5,17 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\EmployeeProfileResource\Pages;
 use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminUploads;
+use App\Modules\Auth\Models\Department;
 use App\Modules\Auth\Models\EmployeeProfile;
+use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Auth\Models\User;
+use App\Modules\Branch\Models\Branch;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class EmployeeProfileResource extends Resource
 {
@@ -241,6 +245,16 @@ class EmployeeProfileResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('user.branch.name')
+                    ->label('Chi nhánh')
+                    ->placeholder('—')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('user.departmentRel.name')
+                    ->label('Phòng ban')
+                    ->placeholder('—')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('user.jobPosition.name')
                     ->label('Chức vụ')
                     ->placeholder('—'),
@@ -256,12 +270,80 @@ class EmployeeProfileResource extends Resource
                     ->label('Email')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->filters([
+                Tables\Filters\Filter::make('organization')
+                    ->label('Chi nhánh / phòng ban')
+                    ->form([
+                        Forms\Components\Select::make('branch_id')
+                            ->label('Chi nhánh')
+                            ->options(function (): array {
+                                $query = Branch::query()->orderBy('sort')->orderBy('name');
+                                $currentUser = auth()->user();
+                                if ($currentUser?->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                                    $query->where('id', $currentUser->branch_id);
+                                }
+                                if ($currentUser?->role === UserRole::MANAGER && $currentUser->branch_id) {
+                                    $query->where('id', $currentUser->branch_id);
+                                }
+                                return $query->pluck('name', 'id')->all();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->afterStateUpdated(fn (Forms\Set $set) => $set('department_id', null)),
+
+                        Forms\Components\Select::make('department_id')
+                            ->label('Phòng ban')
+                            ->options(function (Forms\Get $get): array {
+                                $query = Department::query()->where('is_active', true)->orderBy('name');
+                                $currentUser = auth()->user();
+                                if ($get('branch_id')) {
+                                    $query->where('branch_id', $get('branch_id'));
+                                }
+                                if ($currentUser?->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                                    $query->where('branch_id', $currentUser->branch_id);
+                                }
+                                if ($currentUser?->role === UserRole::MANAGER && $currentUser->department_id) {
+                                    $query->where('id', $currentUser->department_id);
+                                }
+                                return $query->pluck('name', 'id')->all();
+                            })
+                            ->searchable()
+                            ->preload(),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['branch_id'] ?? null, fn (Builder $query, string $branchId) => $query->whereHas('user', fn (Builder $userQuery) => $userQuery->where('branch_id', $branchId)))
+                            ->when($data['department_id'] ?? null, fn (Builder $query, string $departmentId) => $query->whereHas('user', fn (Builder $userQuery) => $userQuery->where('department_id', $departmentId)));
+                    }),
+            ])
             ->defaultSort('created_at', 'desc')
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ]);
+    }
+
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery()->with(['user.branch', 'user.departmentRel', 'user.jobPosition']);
+        $currentUser = auth()->user();
+
+        if (!$currentUser) {
+            return $query;
+        }
+
+        if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+            return $query->whereHas('user', fn (Builder $userQuery) => $userQuery->where('branch_id', $currentUser->branch_id));
+        }
+
+        if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+            return $query->whereHas('user', fn (Builder $userQuery) => $userQuery->where('department_id', $currentUser->department_id));
+        }
+
+        return $query;
     }
 
     public static function getPages(): array

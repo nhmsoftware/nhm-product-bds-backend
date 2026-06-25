@@ -49,12 +49,12 @@ class ReferralQrController extends BaseController
                         new OA\Property(
                             property: 'data',
                             properties: [
-                                new OA\Property(property: 'qr_url', type: 'string', example: 'https://api.bdsapp.vn/storage/qrs/recruitment_ST-ABCXYZ.svg'),
-                                new OA\Property(property: 'qr_value', type: 'string', example: 'https://api.bdsapp.vn/api/v1/referrals/open?ref=REC-ST-ABCXYZ&type=recruitment'),
-                                new OA\Property(property: 'referral_code', type: 'string', example: 'REC-ST-ABCXYZ'),
+                                new OA\Property(property: 'qr_url', type: 'string', example: 'https://api.bdsapp.vn/storage/qrs/recruitment_0900000001.svg'),
+                                new OA\Property(property: 'qr_value', type: 'string', example: 'https://api.bdsapp.vn/api/v1/referrals/open?ref=0900000001&type=recruitment'),
+                                new OA\Property(property: 'referral_code', type: 'string', example: '0900000001'),
                                 new OA\Property(property: 'referral_type', type: 'string', example: 'recruitment'),
                                 new OA\Property(property: 'description', type: 'string', example: 'Sử dụng mã này để giới thiệu nhân sự mới tham gia hệ thống.'),
-                                new OA\Property(property: 'share_text', type: 'string', example: 'Hãy tham gia mạng lưới của chúng tôi trên BDS App! Mã giới thiệu của tôi: ST-ABCXYZ'),
+                                new OA\Property(property: 'share_text', type: 'string', example: 'Hãy tham gia mạng lưới của chúng tôi trên BDS App! Mã giới thiệu của tôi: 0900000001'),
                             ],
                             type: 'object'
                         ),
@@ -115,12 +115,12 @@ class ReferralQrController extends BaseController
                         new OA\Property(
                             property: 'data',
                             properties: [
-                                new OA\Property(property: 'qr_url', type: 'string', example: 'https://api.bdsapp.vn/storage/qrs/customer_ST-ABCXYZ.svg'),
-                                new OA\Property(property: 'qr_value', type: 'string', example: 'https://api.bdsapp.vn/api/v1/referrals/open?ref=CUS-ST-ABCXYZ&type=customer'),
-                                new OA\Property(property: 'referral_code', type: 'string', example: 'CUS-ST-ABCXYZ'),
+                                new OA\Property(property: 'qr_url', type: 'string', example: 'https://api.bdsapp.vn/storage/qrs/customer_0900000001.svg'),
+                                new OA\Property(property: 'qr_value', type: 'string', example: 'https://api.bdsapp.vn/api/v1/referrals/open?ref=0900000001&type=customer'),
+                                new OA\Property(property: 'referral_code', type: 'string', example: '0900000001'),
                                 new OA\Property(property: 'referral_type', type: 'string', example: 'customer'),
                                 new OA\Property(property: 'description', type: 'string', example: 'Sử dụng mã này để giới thiệu khách hàng tham gia hệ thống.'),
-                                new OA\Property(property: 'share_text', type: 'string', example: 'Tìm hiểu các dự án hấp dẫn tại BDS App! Mã giới thiệu khách hàng của tôi: ST-ABCXYZ'),
+                                new OA\Property(property: 'share_text', type: 'string', example: 'Tìm hiểu các dự án hấp dẫn tại BDS App! Mã giới thiệu khách hàng của tôi: 0900000001'),
                             ],
                             type: 'object'
                         ),

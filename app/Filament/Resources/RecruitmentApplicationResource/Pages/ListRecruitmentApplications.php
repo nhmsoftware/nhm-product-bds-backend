@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\RecruitmentApplicationResource\Pages;
 
 use App\Filament\Resources\RecruitmentApplicationResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListRecruitmentApplications extends ListRecords
@@ -12,8 +11,6 @@ class ListRecruitmentApplications extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\CreateAction::make(),
-        ];
+        return [];
     }
 }

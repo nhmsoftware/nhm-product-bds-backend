@@ -82,9 +82,10 @@ interface AuthServiceInterface
      * Lấy danh sách phòng ban đang hoạt động để chọn khi gửi yêu cầu nhân sự.
      *
      * @param string $userId
+     * @param string|null $branchId
      * @return ServiceReturn
      */
-    public function getDepartments(string $userId): ServiceReturn;
+    public function getDepartments(string $userId, ?string $branchId = null): ServiceReturn;
 
     /**
      * Cập nhật thông tin hồ sơ cá nhân của người dùng (UC-031).

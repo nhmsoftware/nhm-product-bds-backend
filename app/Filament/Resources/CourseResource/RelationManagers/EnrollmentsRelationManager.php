@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\CourseResource\RelationManagers;
 
+use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\User;
 use App\Modules\Learning\Models\CourseEnrollment;
 use App\Modules\Learning\Models\Enums\CourseEnrollmentStatus;
 use Filament\Forms;
@@ -10,6 +12,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
+use Filament\Notifications\Notification;
 
 class EnrollmentsRelationManager extends RelationManager
 {
@@ -110,7 +113,66 @@ class EnrollmentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('completed_at')->label('Hoàn thành')->dateTime('d/m/Y H:i'),
             ])
             ->filters([Tables\Filters\SelectFilter::make('status')->label('Trạng thái')->options($this->enumOptions(CourseEnrollmentStatus::class))])
-            ->headerActions([Tables\Actions\CreateAction::make()->label('Gán nhân viên học')])
+            ->headerActions([
+                Tables\Actions\Action::make('assignRoles')
+                    ->label('Gán vai trò học')
+                    ->icon('heroicon-o-user-group')
+                    ->color('warning')
+                    ->fillForm(fn (): array => [
+                        'allowed_roles' => $this->getOwnerRecord()->allowed_roles ?? [],
+                    ])
+                    ->form([
+                        Forms\Components\CheckboxList::make('allowed_roles')
+                            ->label('Vai trò được phép làm khóa học')
+                            ->options([
+                                UserRole::EMPLOYEE->value => 'Nhân viên',
+                                UserRole::MANAGER->value => 'Trưởng phòng',
+                                UserRole::DIRECTOR->value => 'Giám đốc',
+                                UserRole::CEO->value => 'Tổng giám đốc',
+                            ])
+                            ->columns(2)
+                            ->required()
+                            ->validationMessages([
+                                'required' => 'Vui lòng chọn ít nhất một vai trò.',
+                            ]),
+                    ])
+                    ->action(function (array $data): void {
+                        $course = $this->getOwnerRecord();
+                        $roles = collect($data['allowed_roles'] ?? [])
+                            ->map(fn ($role) => (int) $role)
+                            ->filter(fn ($role) => UserRole::tryFrom($role) !== null && !in_array($role, [UserRole::SUPER_ADMIN->value, UserRole::BUYER->value], true))
+                            ->unique()
+                            ->values()
+                            ->all();
+
+                        $course->forceFill(['allowed_roles' => $roles])->save();
+
+                        $users = User::query()
+                            ->whereIn('role', $roles)
+                            ->where('is_active', true)
+                            ->whereNotNull('job_position_id')
+                            ->get(['id']);
+
+                        foreach ($users as $user) {
+                            CourseEnrollment::firstOrCreate(
+                                [
+                                    'course_id' => $course->id,
+                                    'user_id' => $user->id,
+                                ],
+                                [
+                                    'status' => CourseEnrollmentStatus::NOT_STARTED,
+                                    'progress_percent' => 0,
+                                ]
+                            );
+                        }
+
+                        Notification::make()
+                            ->title('Đã gán vai trò học')
+                            ->body('Đã cập nhật vai trò được phép học và tạo lượt học cho ' . $users->count() . ' nhân sự phù hợp.')
+                            ->success()
+                            ->send();
+                    }),
+            ])
             ->actions([
                 Tables\Actions\Action::make('confirmOnboarding')
                     ->label('Duyệt onboarding')

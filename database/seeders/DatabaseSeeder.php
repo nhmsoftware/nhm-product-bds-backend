@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             DepartmentSeeder::class,
+            AreaTypeSeeder::class,
             InventoryAreaSeeder::class,
             ConsultationSettingSeeder::class,
             KpiSettingSeeder::class,
@@ -94,6 +95,7 @@ class DatabaseSeeder extends Seeder
             'lots',
             'plannings',
             'areas',
+            'area_types',
             'projects',
             'branches',
             'attendances',

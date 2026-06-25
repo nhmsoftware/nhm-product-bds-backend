@@ -46,7 +46,7 @@ class AreaResource extends Resource
                             ->maxLength(255),
                         Forms\Components\Select::make('branch_id')->relationship('branch', 'name')->label('Chi nhánh')->searchable()->preload(),
                         GoongLocationInput::make('location')->label('Vị trí')->maxLength(255),
-                        Forms\Components\TextInput::make('type')->label('Loại hình')->maxLength(255),
+                        Forms\Components\Select::make('area_type_id')->relationship('areaType', 'name')->label('Loại hình')->searchable()->preload(),
                         Forms\Components\Select::make('status')->label('Trạng thái')->options(self::enumOptions(AreaStatus::class)),
                         Forms\Components\TextInput::make('total_lots')->label('Tổng lô')->numeric()->default(0),
                         Forms\Components\TextInput::make('remaining_lots')->label('Còn hàng')->numeric()->default(0),
@@ -61,8 +61,9 @@ class AreaResource extends Resource
                         Forms\Components\Toggle::make('is_public')->label('Hiển thị công khai')->default(true),
                         Forms\Components\TextInput::make('planning_check_url')->label('Link kiểm tra quy hoạch')->columnSpanFull(),
                         Forms\Components\TextInput::make('google_maps_url')->label('Google Maps URL')->url()->columnSpanFull(),
-                        AdminUploads::file('brochure', 'Brochure (PDF)', 'admin/area-brochures')->columnSpanFull(),
-                        Forms\Components\Textarea::make('description')->label('Mô tả')->columnSpanFull(),
+                        AdminUploads::file('brochure', 'Tài liệu Brochure', 'admin/area-brochures')->columnSpanFull(),
+                        Forms\Components\RichEditor::make('legal_text')->label('Thông tin pháp lý')->columnSpanFull(),
+                        Forms\Components\RichEditor::make('description')->label('Mô tả')->columnSpanFull(),
                     ])->columns(2),
                 Forms\Components\Wizard\Step::make('Hình ảnh & Phân quyền')
                     ->description('Ảnh bảng hàng và phân quyền truy cập')

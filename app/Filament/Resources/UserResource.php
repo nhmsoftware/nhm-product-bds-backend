@@ -45,17 +45,26 @@ class UserResource extends Resource
                 Forms\Components\Toggle::make('is_active')->label('Đang hoạt động')->default(true),
             ])->columns(2),
             Forms\Components\Section::make('Phân quyền và phòng ban')->schema([
-                Forms\Components\Select::make('department_id')
-                    ->label('Phòng ban')
-                    ->relationship('departmentRel', 'name')
-                    ->searchable()
-                    ->preload(),
                 Forms\Components\Select::make('branch_id')
                     ->label('Chi nhánh')
                     ->relationship('branch', 'name')
                     ->searchable()
                     ->preload()
+                    ->live()
+                    ->afterStateUpdated(fn (Forms\Set $set) => $set('department_id', null))
                     ->required(fn (Forms\Get $get): bool => (int) $get('role') === UserRole::DIRECTOR->value),
+                Forms\Components\Select::make('department_id')
+                    ->label('Phòng ban')
+                    ->relationship(
+                        name: 'departmentRel',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (\Illuminate\Database\Eloquent\Builder $query, Forms\Get $get) => $query
+                            ->when($get('branch_id'), fn ($q, $branchId) => $q->where('branch_id', $branchId))
+                            ->when(!$get('branch_id'), fn ($q) => $q->whereNull('id'))
+                    )
+                    ->searchable()
+                    ->preload()
+                    ->disabled(fn (Forms\Get $get): bool => !$get('branch_id')),
                 Forms\Components\Select::make('job_position_id')
                     ->label('Chức danh')
                     ->relationship('jobPosition', 'name')

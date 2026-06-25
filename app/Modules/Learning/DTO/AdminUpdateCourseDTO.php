@@ -11,6 +11,7 @@ final class AdminUpdateCourseDTO
         public readonly ?string $description,
         public readonly ?string $thumbnail,
         public readonly ?bool $isRequired,
+        public readonly ?array $allowedRoles,
         public readonly ?string $department,
         public readonly ?string $jobPosition,
         public readonly ?int $order,
@@ -27,6 +28,7 @@ final class AdminUpdateCourseDTO
             description: $request->input('description'),
             thumbnail: $request->input('thumbnail'),
             isRequired: $request->has('is_required') ? $request->boolean('is_required') : null,
+            allowedRoles: $request->has('allowed_roles') ? $request->input('allowed_roles') : null,
             department: $request->input('department'),
             jobPosition: $request->input('job_position'),
             order: $request->has('order') ? (int) $request->input('order') : null,
@@ -43,6 +45,7 @@ final class AdminUpdateCourseDTO
         if ($this->description !== null) $data['description'] = $this->description;
         if ($this->thumbnail !== null) $data['thumbnail'] = $this->thumbnail;
         if ($this->isRequired !== null) $data['is_required'] = $this->isRequired;
+        if ($this->allowedRoles !== null) $data['allowed_roles'] = $this->allowedRoles ?: null;
         if ($this->department !== null) $data['department'] = $this->department;
         if ($this->jobPosition !== null) $data['job_position'] = $this->jobPosition;
         if ($this->order !== null) $data['order'] = $this->order;

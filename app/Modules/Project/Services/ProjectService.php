@@ -376,5 +376,18 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
                 201
             );
         }, useTransaction: true);
+     }
+
+    /**
+     * Lấy danh sách tất cả loại hình khu đất.
+     * 
+     * @return ServiceReturn
+     */
+    public function getPublicTypes(): ServiceReturn
+    {
+        return $this->execute(function () {
+            $types = \App\Modules\Area\Models\AreaType::orderBy('name')->pluck('name')->toArray();
+            return $this->success($types, 'Tải danh sách loại hình khu đất thành công.');
+        });
     }
 }

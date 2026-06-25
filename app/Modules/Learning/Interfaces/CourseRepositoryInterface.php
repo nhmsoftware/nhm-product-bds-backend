@@ -23,7 +23,7 @@ interface CourseRepositoryInterface extends BaseRepositoryInterface
      * @param string|null $jobPosition Vị trí công việc của nhân viên
      * @return Collection Danh sách khóa học kèm mối quan hệ enrollment của user đó (nếu có)
      */
-    public function getMandatoryCourses(string $userId, ?string $department, ?string $jobPosition): Collection;
+    public function getMandatoryCourses(string $userId, ?string $department, ?string $jobPosition, ?int $role): Collection;
 
     /**
      * Lấy thông tin chi tiết của một khóa học kèm danh sách bài học và thông tin tiến độ của User.

@@ -76,11 +76,30 @@ class DepartmentTransferRequestResource extends Resource
                     ->disabled()
                     ->dehydrated(true),
 
+                Forms\Components\Select::make('target_branch_id')
+                    ->label('Chi nhánh muốn chuyển')
+                    ->options(\App\Modules\Branch\Models\Branch::where('is_active', true)->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->live()
+                    ->dehydrated(false)
+                    ->afterStateHydrated(fn (Forms\Components\Select $component, ?DepartmentTransferRequest $record) => $component->state(
+                        $record?->target_department ? Department::where('name', $record->target_department)->value('branch_id') : null
+                    ))
+                    ->afterStateUpdated(fn (Forms\Set $set) => $set('target_department', null)),
+
                 Forms\Components\Select::make('target_department')
                     ->label('Phòng ban muốn chuyển')
-                    ->options(fn () => Department::where('is_active', true)->pluck('name', 'name'))
+                    ->options(fn (Forms\Get $get) => Department::query()
+                        ->where('is_active', true)
+                        ->when($get('target_branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
+                        ->when(!$get('target_branch_id'), fn ($query) => $query->whereNull('id'))
+                        ->pluck('name', 'name')
+                    )
                     ->searchable()
-                    ->required(),
+                    ->preload()
+                    ->required()
+                    ->disabled(fn (Forms\Get $get): bool => !$get('target_branch_id')),
 
                 Forms\Components\DatePicker::make('desired_transfer_date')
                     ->label('Ngày mong muốn chuyển')

@@ -41,6 +41,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Giới thiệu về giá trị cốt lõi và sứ mệnh của công ty.', description: 'Mô tả khóa học'),
         new OA\Property(property: 'thumbnail', type: 'string', nullable: true, example: 'https://bds-app.s3.amazonaws.com/thumbnails/culture.jpg', description: 'URL ảnh cover'),
         new OA\Property(property: 'is_required', type: 'boolean', example: true, description: 'Có bắt buộc hay không'),
+        new OA\Property(property: 'allowed_roles', type: 'array', nullable: true, items: new OA\Items(type: 'integer'), example: [1, 2], description: 'Danh sách vai trò được phép học; rỗng hoặc null là tất cả vai trò'),
         new OA\Property(property: 'department', type: 'string', nullable: true, example: 'Kinh doanh', description: 'Phòng ban được phân bổ'),
         new OA\Property(property: 'job_position', type: 'string', nullable: true, example: 'Nhân viên', description: 'Vị trí công việc được phân bổ'),
         new OA\Property(property: 'order', type: 'integer', example: 1, description: 'Thứ tự hiển thị'),
@@ -61,6 +62,7 @@ class Course extends Model
         'description',
         'thumbnail',
         'is_required',
+        'allowed_roles',
         'department',
         'job_position',
         'order',
@@ -71,6 +73,7 @@ class Course extends Model
     protected $casts = [
         'id' => 'string',
         'is_required' => 'boolean',
+        'allowed_roles' => 'array',
         'is_active' => 'boolean',
         'has_certificate' => 'boolean',
         'order' => 'integer',

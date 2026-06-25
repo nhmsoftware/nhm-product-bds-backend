@@ -26,6 +26,7 @@ use OpenApi\Attributes as OA;
  * @property string|null $direction
  * @property AreaStatus|null $status
  * @property string|null $label_status
+ * @property string|null $legal_text
  * @property bool $is_featured
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -47,6 +48,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'direction', type: 'string', nullable: true, example: 'Đông Nam'),
         new OA\Property(property: 'status', type: 'integer', nullable: true, example: 1),
         new OA\Property(property: 'label_status', type: 'string', nullable: true, example: 'Đang mở bán'),
+        new OA\Property(property: 'legal_text', type: 'string', nullable: true, example: 'Quyết định 1/500, Sổ hồng từng phân khu'),
         new OA\Property(property: 'total_lots', type: 'integer', example: 100),
         new OA\Property(property: 'remaining_lots', type: 'integer', example: 45),
         new OA\Property(property: 'is_featured', type: 'boolean', example: true),
@@ -81,12 +83,14 @@ class Area extends Model
         'amenities',
         'floor_plans',
         'legal_info',
+        'legal_text',
         'brochure',
         'contact_info',
         'google_maps_url',
         'location_image',
         'planning_info',
         'branch_id',
+        'area_type_id',
         'is_featured',
         'is_locked',
     ];
@@ -214,10 +218,35 @@ class Area extends Model
         $array['branch'] = $this->branch;
         $array['price'] = $this->price;
         $array['unit_price'] = $this->unit_price;
+        $array['type'] = $this->type;
+        $array['area_type_id'] = $this->area_type_id;
         return $array;
     }
 
 
+
+    /**
+     * Loại hình khu đất.
+     */
+    public function areaType(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(AreaType::class, 'area_type_id');
+    }
+
+    /**
+     * Accessor trả về tên loại hình khu đất.
+     */
+    public function getTypeAttribute(): ?string
+    {
+        $areaTypeModel = $this->getRelationValue('areaType');
+        if (!$areaTypeModel && $this->area_type_id) {
+            $areaTypeModel = $this->areaType()->first();
+            if ($areaTypeModel) {
+                $this->setRelation('areaType', $areaTypeModel);
+            }
+        }
+        return $areaTypeModel?->name ?? $this->attributes['type'] ?? null;
+    }
 
     /**
      * Chi nhánh quản lý khu đất này.

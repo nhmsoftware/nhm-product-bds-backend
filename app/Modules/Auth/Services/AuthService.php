@@ -65,7 +65,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
             );
 
             // 2. Chuẩn bị dữ liệu
-            $referralType = $this->detectReferralType($dto->referral_code);
+            $referralType = $this->detectReferralType($dto->referral_code, $dto->account_type);
             $referrer = null;
 
             if (!empty($dto->referral_code)) {
@@ -122,7 +122,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
         }, useTransaction: true);
     }
 
-    private function detectReferralType(?string $referralCode): ?ReferralType
+    private function detectReferralType(?string $referralCode, string $accountType): ?ReferralType
     {
         $code = strtoupper(trim((string) $referralCode));
 
@@ -134,7 +134,11 @@ final class AuthService extends BaseService implements AuthServiceInterface
             return ReferralType::CUSTOMER;
         }
 
-        return ReferralType::RECRUITMENT;
+        if (str_starts_with($code, 'REC-')) {
+            return ReferralType::RECRUITMENT;
+        }
+
+        return $accountType === 'broker' ? ReferralType::RECRUITMENT : ReferralType::CUSTOMER;
     }
 
     /**
@@ -397,9 +401,9 @@ final class AuthService extends BaseService implements AuthServiceInterface
         });
     }
 
-    public function getDepartments(string $userId): ServiceReturn
+    public function getDepartments(string $userId, ?string $branchId = null): ServiceReturn
     {
-        return $this->execute(function () use ($userId) {
+        return $this->execute(function () use ($userId, $branchId) {
             $user = $this->authRepository->findById($userId);
 
             $this->validate(
@@ -414,7 +418,9 @@ final class AuthService extends BaseService implements AuthServiceInterface
                 403
             );
 
-            $departments = collect($this->authRepository->getActiveDepartmentNames($user->branch_id))
+            $targetBranchId = $branchId ?: $user->branch_id;
+
+            $departments = collect($this->authRepository->getActiveDepartmentNames($targetBranchId))
                 ->map(fn (string $department) => [
                     'label' => $department,
                     'value' => $department,
@@ -1133,7 +1139,7 @@ final class AuthService extends BaseService implements AuthServiceInterface
      */
     private function generateStaffCode(): string
     {
-        return 'ST-' . strtoupper(Str::random(6));
+        return strtoupper(Str::random(6));
     }
 
     /**

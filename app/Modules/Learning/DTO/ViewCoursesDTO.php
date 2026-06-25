@@ -20,6 +20,7 @@ final class ViewCoursesDTO
         public readonly string $userId,
         public readonly ?string $department,
         public readonly ?string $jobPosition,
+        public readonly ?int $role,
     ) {
     }
 
@@ -37,6 +38,7 @@ final class ViewCoursesDTO
             userId: $userId,
             department: $user?->department,
             jobPosition: $user?->job_position,
+            role: $user?->role?->value,
         );
     }
 }

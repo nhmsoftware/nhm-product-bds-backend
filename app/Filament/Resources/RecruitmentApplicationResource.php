@@ -3,8 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RecruitmentApplicationResource\Pages;
+use App\Modules\Auth\Models\Department;
+use App\Modules\Auth\Models\EmployeeProfile;
 use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\JobPosition;
 use App\Modules\Auth\Models\User;
+use App\Modules\Branch\Models\Branch;
 use App\Modules\Recruitment\Models\RecruitmentApplication;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -24,6 +28,11 @@ class RecruitmentApplicationResource extends Resource
     protected static ?string $modelLabel = 'Duyệt đơn ứng tuyển';
 
     protected static ?string $pluralModelLabel = 'Duyệt đơn ứng tuyển';
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -123,6 +132,11 @@ class RecruitmentApplicationResource extends Resource
                     ->label('Chi nhánh ứng tuyển')
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('user.departmentRel.name')
+                    ->label('Phòng ban')
+                    ->placeholder('—')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('applied_position')
                     ->label('Vị trí ứng tuyển')
                     ->formatStateUsing(fn ($state) => $state instanceof UserRole ? $state->label() : (UserRole::tryFrom((int)$state)?->label() ?? '—')),
@@ -161,25 +175,114 @@ class RecruitmentApplicationResource extends Resource
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->visible(fn (RecruitmentApplication $record): bool => $record->status === 'pending')
-                    ->requiresConfirmation()
-                    ->action(function (RecruitmentApplication $record): void {
+                    ->fillForm(fn (RecruitmentApplication $record): array => [
+                        'role' => $record->applied_position?->value ?? UserRole::EMPLOYEE->value,
+                        'branch_id' => $record->applied_branch_id,
+                        'department_id' => $record->user?->department_id,
+                        'job_position_id' => self::defaultJobPositionId($record->applied_position),
+                    ])
+                    ->form([
+                        Forms\Components\Select::make('role')
+                            ->label('Vai trò sau duyệt')
+                            ->options([
+                                UserRole::EMPLOYEE->value => 'Nhân viên',
+                                UserRole::MANAGER->value => 'Quản lý',
+                                UserRole::DIRECTOR->value => 'Giám đốc',
+                                UserRole::CEO->value => 'Tổng giám đốc (CEO)',
+                            ])
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(fn (Forms\Set $set, $state) => $set('job_position_id', self::defaultJobPositionId(UserRole::tryFrom((int) $state)))),
+
+                        Forms\Components\Select::make('branch_id')
+                            ->label('Chi nhánh')
+                            ->options(function (): array {
+                                $query = Branch::query()->where('is_active', true)->orderBy('sort')->orderBy('name');
+                                $currentUser = auth()->user();
+                                if ($currentUser?->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                                    $query->where('id', $currentUser->branch_id);
+                                }
+                                return $query->pluck('name', 'id')->all();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(fn (Forms\Set $set) => $set('department_id', null)),
+
+                        Forms\Components\Select::make('department_id')
+                            ->label('Phòng ban')
+                            ->options(fn (Forms\Get $get): array => Department::query()
+                                ->when($get('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
+                                ->where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+
+                        Forms\Components\Select::make('job_position_id')
+                            ->label('Chức danh')
+                            ->options(fn (): array => JobPosition::query()->orderBy('id')->pluck('name', 'id')->all())
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                    ])
+                    ->action(function (RecruitmentApplication $record, array $data): void {
+                        $user = $record->user;
+                        if (!$user) {
+                            Notification::make()
+                                ->title('Không tìm thấy tài khoản ứng viên')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        $department = Department::find($data['department_id']);
+                        if (!$department || $department->branch_id !== $data['branch_id']) {
+                            Notification::make()
+                                ->title('Phòng ban không thuộc chi nhánh đã chọn')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        $role = UserRole::tryFrom((int) $data['role']) ?? UserRole::EMPLOYEE;
+
+                        $user->forceFill([
+                            'role' => $role,
+                            'branch_id' => $data['branch_id'],
+                            'department_id' => $data['department_id'],
+                            'job_position_id' => (int) $data['job_position_id'],
+                            'is_active' => true,
+                        ])->save();
+
+                        EmployeeProfile::updateOrCreate(
+                            ['user_id' => $user->id],
+                            [
+                                'employee_title' => JobPosition::find($data['job_position_id'])?->name,
+                                'education' => $record->education,
+                                'experience' => $record->experience,
+                                'attachments' => $record->cv_url ? [[
+                                    'type' => 'CV ứng tuyển',
+                                    'name' => 'CV ứng tuyển',
+                                    'url' => $record->cv_url,
+                                ]] : null,
+                            ]
+                        );
+
                         $record->update([
+                            'applied_position' => $role,
+                            'applied_branch_id' => $data['branch_id'],
                             'status' => 'approved',
                             'approved_by' => auth()->id(),
                             'processed_at' => now(),
                         ]);
 
-                        // Update the user's role and branch
-                        $user = $record->user;
-                        if ($user) {
-                            $user->role = $record->applied_position;
-                            $user->branch_id = $record->applied_branch_id;
-                            $user->save();
-                        }
-
                         Notification::make()
                             ->title('Duyệt đơn ứng tuyển thành công')
-                            ->body('Vai trò và chi nhánh của nhân viên đã được cập nhật.')
+                            ->body('Đã cập nhật vai trò, chi nhánh, phòng ban và tạo hồ sơ nhân sự cho ứng viên.')
                             ->success()
                             ->send();
                     }),
@@ -216,6 +319,17 @@ class RecruitmentApplicationResource extends Resource
             ]);
     }
 
+
+    private static function defaultJobPositionId(?UserRole $role): int
+    {
+        return match ($role) {
+            UserRole::MANAGER => JobPosition::BUSINESS_MANAGER,
+            UserRole::DIRECTOR => JobPosition::BUSINESS_DIRECTOR,
+            UserRole::CEO => JobPosition::CEO,
+            default => JobPosition::BUSINESS_SPECIALIST,
+        };
+    }
+
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $query = parent::getEloquentQuery();
@@ -239,7 +353,6 @@ class RecruitmentApplicationResource extends Resource
     {
         return [
             'index' => Pages\ListRecruitmentApplications::route('/'),
-            'create' => Pages\CreateRecruitmentApplication::route('/create'),
             'edit' => Pages\EditRecruitmentApplication::route('/{record}/edit'),
         ];
     }

@@ -219,4 +219,35 @@ final class PublicProjectController extends BaseController
 
         return $this->sendSuccess($result->getData(), $result->getMessage());
     }
+
+    #[OA\Get(
+        path: '/api/v1/public/projects/types',
+        description: 'Lấy danh sách tất cả loại hình khu đất.',
+        summary: 'Lấy danh sách loại hình khu đất',
+        tags: ['Public Project'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Thành công',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Lấy danh sách loại hình khu đất thành công.'),
+                        new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'string')),
+                    ]
+                )
+            ),
+            new OA\Response(response: 500, description: 'Lỗi hệ thống')
+        ]
+    )]
+    public function types(): JsonResponse
+    {
+        $result = $this->projectService->getPublicTypes();
+
+        if ($result->isError()) {
+            return $this->sendError($result->getMessage(), $result->getCode());
+        }
+
+        return $this->sendSuccess($result->getData(), $result->getMessage());
+    }
 }
