@@ -75,6 +75,7 @@ class InventoryAreaSeeder extends Seeder
             }
 
             $users = $this->ensureDemoUsers($now);
+            $this->seedPlanningSubAreas($now);
             $areas = $this->seedAreas($now);
             $this->backfillAreaGoogleMapsUrls($now);
 
@@ -537,30 +538,43 @@ DESC,
             ->orWhere('pdf_url', $planningUrl)
             ->first();
         $planningId = $existing->id ?? (string) Str::uuid();
-        [$city, $district] = $this->planningLocationParts($projectData['location']);
-
-        $payload = [
-            'title' => $areaData['name'],
-            'map_image' => $this->getPlaceholderUrl(1200, 800, "{$areaData['name']} - Bản đồ quy hoạch", $areaData['image_seed'] . '-planning-map'),
-            'status' => PlanningStatus::PUBLIC->value,
-            'updated_year' => (int) $now->format('Y'),
-            'description' => $detail['description'],
-            'city' => $city,
-            'district' => $district,
-            'sub_area' => $detail['zone_title'],
-            'symbol' => $detail['symbol'],
-            'density' => $detail['density'],
-            'max_height' => $detail['max_height'],
-            'land_use_ratio' => $detail['land_use_ratio'],
-            'setback' => $detail['setback'],
-            'land_type_notes' => implode("\n", $detail['land_types']),
-            'pdf_url' => $pdfUrl,
-            'latitude' => null,
-            'longitude' => null,
-            'content' => "Hồ sơ quy hoạch demo của {$areaData['name']} gồm chỉ tiêu xây dựng, tầng cao, hệ số sử dụng đất, khoảng lùi và chú giải loại đất.",
-            'updated_at' => $now,
-            'deleted_at' => null,
-        ];
+        $loc = $this->resolveLocationComponents($projectData['location']);
+ 
+         $defaultColors = [
+             '#EF4444', '#F97316', '#EAB308', '#22C55E',
+             '#14B8A6', '#3B82F6', '#8B5CF6', '#EC4899',
+             '#6B7280', '#78350F',
+         ];
+ 
+         $landTypeNotes = array_map(function ($label, $index) use ($defaultColors) {
+             return [
+                 'label' => $label,
+                 'color' => $defaultColors[$index % count($defaultColors)],
+             ];
+         }, $detail['land_types'], array_keys($detail['land_types']));
+ 
+         $payload = [
+             'title' => $areaData['name'],
+             'map_image' => $this->getPlaceholderUrl(1200, 800, "{$areaData['name']} - Bản đồ quy hoạch", $areaData['image_seed'] . '-planning-map'),
+             'status' => PlanningStatus::PUBLIC->value,
+             'updated_year' => (int) $now->format('Y'),
+             'description' => $detail['description'],
+             'city' => $loc['city'],
+             'district' => $loc['district'],
+             'sub_area' => $detail['zone_title'],
+             'symbol' => $detail['symbol'],
+             'density' => $detail['density'],
+             'max_height' => $detail['max_height'],
+             'land_use_ratio' => $detail['land_use_ratio'],
+             'setback' => $detail['setback'],
+             'land_type_notes' => $this->json($landTypeNotes),
+             'pdf_url' => $pdfUrl,
+             'latitude' => $loc['latitude'],
+             'longitude' => $loc['longitude'],
+             'content' => "Hồ sơ quy hoạch demo của {$areaData['name']} gồm chỉ tiêu xây dựng, tầng cao, hệ số sử dụng đất, khoảng lùi và chú giải loại đất.",
+             'updated_at' => $now,
+             'deleted_at' => null,
+         ];
 
         if ($existing) {
             DB::table('plannings')->where('id', $planningId)->update($payload);
@@ -696,13 +710,156 @@ DESC,
         return $pdf;
     }
 
-    private function planningLocationParts(string $location): array
+    private function resolveLocationComponents(string $location): array
     {
+        $apiKey = config('services.goong.api_key') ?? env('GOONG_API_KEY');
+
+        if ($apiKey) {
+            try {
+                $response = \Illuminate\Support\Facades\Http::timeout(5)
+                    ->get('https://rsapi.goong.io/geocode', [
+                        'address' => $location,
+                        'api_key' => $apiKey,
+                    ]);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $compound = $data['results'][0]['compound'] ?? null;
+                    $geometry = $data['results'][0]['geometry'] ?? null;
+
+                    if ($compound) {
+                        $province = $compound['province'] ?? null;
+                        $district = $compound['district'] ?? null;
+                        $lat = $geometry['location']['lat'] ?? null;
+                        $lng = $geometry['location']['lng'] ?? null;
+
+                        if ($province && $district) {
+                            return [
+                                'city' => $province,
+                                'district' => $district,
+                                'latitude' => $lat,
+                                'longitude' => $lng,
+                            ];
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Fallback
+            }
+        }
+
+        // Hardcoded fallback mapping
+        if (str_contains($location, 'Quảng Ninh')) {
+            return [
+                'city' => 'Quảng Ninh',
+                'district' => 'Hạ Long',
+                'latitude' => 20.9587,
+                'longitude' => 107.0406,
+            ];
+        }
+        if (str_contains($location, 'Gia Lâm') || str_contains($location, 'Hà Nội')) {
+            return [
+                'city' => 'Hà Nội',
+                'district' => 'Gia Lâm',
+                'latitude' => 21.0083,
+                'longitude' => 105.9340,
+            ];
+        }
+        if (str_contains($location, 'Thảo Điền') || str_contains($location, 'Hồ Chí Minh')) {
+            return [
+                'city' => 'Hồ Chí Minh',
+                'district' => 'Quận 2',
+                'latitude' => 10.8076,
+                'longitude' => 106.7326,
+            ];
+        }
+        if (str_contains($location, 'Đà Lạt') || str_contains($location, 'Lâm Đồng')) {
+            return [
+                'city' => 'Lâm Đồng',
+                'district' => 'Đà Lạt',
+                'latitude' => 11.9259,
+                'longitude' => 108.4389,
+            ];
+        }
+        if (str_contains($location, 'Thủ Đức')) {
+            return [
+                'city' => 'Hồ Chí Minh',
+                'district' => 'Thủ Đức',
+                'latitude' => 10.8027,
+                'longitude' => 106.7427,
+            ];
+        }
+        if (str_contains($location, 'Phan Thiết') || str_contains($location, 'Bình Thuận')) {
+            return [
+                'city' => 'Bình Thuận',
+                'district' => 'Phan Thiết',
+                'latitude' => 10.9454,
+                'longitude' => 108.2879,
+            ];
+        }
+
+        // Naive fallback
         $parts = array_values(array_filter(array_map('trim', explode(',', $location))));
         $city = $parts[count($parts) - 1] ?? 'Khác';
         $district = $parts[count($parts) - 2] ?? null;
 
-        return [$city, $district];
+        return [
+            'city' => $city,
+            'district' => $district,
+            'latitude' => null,
+            'longitude' => null,
+        ];
+    }
+
+    private function seedPlanningSubAreas(Carbon $now): void
+    {
+        $subAreas = [
+            [
+                'name' => 'Khu trung tâm tài chính',
+                'color' => '#EF4444',
+                'description' => 'Phân khu tài chính và thương mại cao tầng',
+            ],
+            [
+                'name' => 'Khu nhà ở sinh thái',
+                'color' => '#22C55E',
+                'description' => 'Phân khu sinh thái sinh hoạt xanh',
+            ],
+            [
+                'name' => 'Khu thương mại ven sông',
+                'color' => '#3B82F6',
+                'description' => 'Phân khu phố đi bộ và shophouse ven sông',
+            ],
+            [
+                'name' => 'Khu biệt thự đồi thông',
+                'color' => '#F97316',
+                'description' => 'Phân khu nghỉ dưỡng biệt thự đồi thông mật độ thấp',
+            ],
+            [
+                'name' => 'Khu căn hộ dịch vụ',
+                'color' => '#8B5CF6',
+                'description' => 'Phân khu tổ hợp căn hộ dịch vụ và khách sạn',
+            ],
+            [
+                'name' => 'Khu nghỉ dưỡng biển',
+                'color' => '#EC4899',
+                'description' => 'Phân khu resort ven biển và dịch vụ du lịch',
+            ],
+        ];
+
+        foreach ($subAreas as $sa) {
+            $existingId = DB::table('planning_sub_areas')->where('name', $sa['name'])->value('id');
+            DB::table('planning_sub_areas')->updateOrInsert(
+                ['name' => $sa['name']],
+                [
+                    'id' => $existingId ?? (string) Str::uuid(),
+                    'color' => $sa['color'],
+                    'description' => $sa['description'],
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
+        }
     }
 
     private function json(array $value): string

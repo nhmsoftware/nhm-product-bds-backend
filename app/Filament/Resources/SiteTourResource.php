@@ -22,8 +22,9 @@ class SiteTourResource extends Resource
     protected static ?string $model = SiteTour::class;
     protected static ?string $navigationIcon = 'heroicon-o-map';
     protected static ?string $navigationGroup = 'Hoạt động bán hàng';
-    protected static ?string $modelLabel = 'Site tour';
-    protected static ?string $pluralModelLabel = 'Site tour';
+    protected static ?string $modelLabel = 'Dẫn khách';
+    protected static ?string $pluralModelLabel = 'Quản lý dẫn khách';
+    protected static ?string $navigationLabel = 'Quản lý dẫn khách';
 
     public static function form(Form $form): Form
     {

@@ -93,6 +93,7 @@ class DatabaseSeeder extends Seeder
             'area_assignments',
             'project_assignments',
             'lots',
+            'planning_sub_areas',
             'plannings',
             'areas',
             'area_types',
