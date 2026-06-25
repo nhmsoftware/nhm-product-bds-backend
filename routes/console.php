@@ -48,10 +48,29 @@ Schedule::call(function () {
     $noCheckoutWorkDay = floatval(data_get($noCheckoutSetting?->value, 'work_day', 0.5));
 
     foreach ($missingCheckoutAttendances as $attendance) {
-        $status = AttendanceStatus::HALF_DAY; // Mặc định 0.5 công
+        // Tính thời gian làm việc thực tế (check-in đến hết ngày)
+        $checkInAt = \Carbon\Carbon::parse($attendance->check_in_at);
+        $endOfDay = \Carbon\Carbon::parse($attendance->work_date)->endOfDay();
+        $durationInSeconds = max(0, (int) abs($endOfDay->diffInSeconds($checkInAt)));
+        $hours = intdiv($durationInSeconds, 3600);
+        $minutes = intdiv($durationInSeconds % 3600, 60);
+        $durationText = "{$hours} giờ {$minutes} phút";
+
+        // Xác định trạng thái cuối cùng theo cấu hình
+        $status = AttendanceStatus::HALF_DAY;
         $workDayStr = '0.5 công';
-        if ($noCheckoutWorkDay == 1.0) {
-            $status = $attendance->status; // Giữ nguyên PRESENT / LATE
+
+        if ($durationInSeconds >= 21600) {
+            // Đủ 6 tiếng hoặc hơn → 1 công (giữ nguyên PRESENT/LATE từ check-in)
+            $status = $attendance->status === AttendanceStatus::WORKING
+                ? AttendanceStatus::PRESENT
+                : $attendance->status;
+            $workDayStr = '1.0 công';
+        } elseif ($noCheckoutWorkDay == 1.0) {
+            // Dưới 6h nhưng config cho phép tính 1 công
+            $status = $attendance->status === AttendanceStatus::WORKING
+                ? AttendanceStatus::PRESENT
+                : $attendance->status;
             $workDayStr = '1.0 công';
         } elseif ($noCheckoutWorkDay == 0.0) {
             $status = AttendanceStatus::ABSENT;
@@ -59,12 +78,10 @@ Schedule::call(function () {
         }
 
         // Tự động check-out lúc 23:59:59 của ngày làm việc đó
-        $dummyCheckoutAt = \Carbon\Carbon::parse($attendance->work_date)->endOfDay();
-
         $attendance->update([
-            'check_out_at' => $dummyCheckoutAt,
+            'check_out_at' => $endOfDay,
             'status' => $status,
-            'note' => ($attendance->note ? $attendance->note . ' | ' : '') . 'Thiếu check-out. Hệ thống tự động tính công mặc định: ' . $workDayStr . '.',
+            'note' => ($attendance->note ? $attendance->note . ' | ' : '') . 'Thiếu check-out. Thời gian thực tế: ' . $durationText . '. Hệ thống tự động tính công mặc định: ' . $workDayStr . '.',
         ]);
     }
 })->dailyAt('00:05');

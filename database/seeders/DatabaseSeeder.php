@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             RecentActivitySeeder::class,
             RewardPointHistoryDemoSeeder::class,
             RevenueReportSeeder::class,
+            AttendanceSeeder::class,
         ]);
     }
 

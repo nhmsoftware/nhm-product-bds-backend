@@ -52,15 +52,15 @@ class KpiSettingSeeder extends Seeder
             ],
             [
                 'key' => 'attendance_office_address',
-                'value' => json_encode(['address' => 'Trụ sở văn phòng NHM BDS'], JSON_UNESCAPED_UNICODE),
+                'value' => json_encode(['address' => '5 Ngõ 58 Trần Vỹ, Mai Dịch, Cầu Giấy, Hà Nội'], JSON_UNESCAPED_UNICODE),
             ],
             [
                 'key' => 'attendance_office_latitude',
-                'value' => json_encode(['latitude' => '21.029085171034406'], JSON_UNESCAPED_UNICODE),
+                'value' => json_encode(['latitude' => '21.0403323'], JSON_UNESCAPED_UNICODE),
             ],
             [
                 'key' => 'attendance_office_longitude',
-                'value' => json_encode(['longitude' => '105.79754520314668'], JSON_UNESCAPED_UNICODE),
+                'value' => json_encode(['longitude' => '105.7734423'], JSON_UNESCAPED_UNICODE),
             ],
             [
                 'key' => 'attendance_office_radius_meters',

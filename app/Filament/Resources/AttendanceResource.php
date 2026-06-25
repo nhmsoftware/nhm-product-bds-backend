@@ -114,6 +114,31 @@ class AttendanceResource extends Resource
             Tables\Columns\TextColumn::make('work_date')->label('Ngày')->date('d/m/Y'),
             Tables\Columns\TextColumn::make('check_in_at')->label('Vào')->dateTime('H:i', 'Asia/Ho_Chi_Minh'),
             Tables\Columns\TextColumn::make('check_out_at')->label('Ra')->dateTime('H:i', 'Asia/Ho_Chi_Minh'),
+            Tables\Columns\TextColumn::make('computed_work_day')
+                ->label('Công')
+                ->getStateUsing(function ($record) {
+                    $checkOutAt = $record->check_out_at;
+                    if (!$checkOutAt) {
+                        return '-';
+                    }
+                    $checkInAt = $record->check_in_at;
+                    if (!$checkInAt) {
+                        return '-';
+                    }
+                    $durationSeconds = max(0, (int) abs(\Carbon\Carbon::parse($checkOutAt)->diffInSeconds(\Carbon\Carbon::parse($checkInAt))));
+                    if ($durationSeconds >= 21600) {
+                        return '1.0';
+                    }
+                    $status = $record->status;
+                    if ($status === AttendanceStatus::PRESENT || $status === AttendanceStatus::LATE) {
+                        return '1.0';
+                    }
+                    if ($status === AttendanceStatus::HALF_DAY) {
+                        return '0.5';
+                    }
+                    return '0.0';
+                })
+                ->sortable(),
             Tables\Columns\TextColumn::make('status')
                 ->label('Trạng thái')
                 ->formatStateUsing(fn ($state) => $state instanceof AttendanceStatus ? $state->label() : AttendanceStatus::tryFrom((int)$state)?->label())
@@ -125,6 +150,7 @@ class AttendanceResource extends Resource
                     AttendanceStatus::LATE      => 'warning',   // cam     — Đi muộn
                     AttendanceStatus::ABSENT    => 'danger',    // đỏ      — Vắng mặt
                     AttendanceStatus::HALF_DAY  => 'info',      // xanh dương — Nửa ngày
+                    AttendanceStatus::WORKING   => 'primary',   // tím     — Đang làm việc
                     default                     => 'gray',
                 })
         ])->defaultSort('created_at', 'desc')->actions([

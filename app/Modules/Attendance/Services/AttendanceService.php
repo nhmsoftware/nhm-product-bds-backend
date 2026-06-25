@@ -108,16 +108,16 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
                 );
             }
 
-            // 5. Xác định trạng thái chấm công (Đúng giờ hoặc Đi trễ)
+            // 5. Xác định trạng thái check-in (Đúng giờ hoặc Đi trễ) - lưu thông tin cho note
             $now = Carbon::now();
             $shiftStartTime = Carbon::createFromTimeString($shiftStartTimeStr);
 
-            $attendanceStatus = $now->greaterThan($shiftStartTime) ? AttendanceStatus::LATE : AttendanceStatus::PRESENT;
-            $note = $attendanceStatus === AttendanceStatus::LATE
+            $isLate = $now->greaterThan($shiftStartTime);
+            $checkInNote = $isLate
                 ? 'Đi làm trễ (Giờ quy định: ' . $shiftStartTime->format('H:i') . ')'
                 : 'Đi làm đúng giờ';
 
-            // 6. Ghi nhận dữ liệu check-in
+            // 6. Ghi nhận dữ liệu check-in với trạng thái WORKING (đang làm việc, chưa biết đủ 6h chưa)
             $attendanceData = [
                 'user_id' => $dto->userId,
                 'work_date' => $today,
@@ -127,8 +127,8 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
                 'check_in_method' => $dto->method,
                 'check_in_wifi_ssid' => $dto->method === 'wifi' ? $dto->wifiSsid : null,
                 'check_in_device_name' => $dto->deviceName,
-                'status' => $attendanceStatus,
-                'note' => $note,
+                'status' => AttendanceStatus::WORKING,
+                'note' => $checkInNote,
             ];
 
             $attendance = $this->attendanceRepository->create($attendanceData);
@@ -237,7 +237,7 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             $checkInAt = Carbon::parse($existingAttendance->check_in_at);
             // Tính chênh lệch giây tuyệt đối, đảm bảo không bao giờ âm
             $durationInSeconds = max(0, (int) abs($now->diffInSeconds($checkInAt)));
-            
+
             $hours = intdiv($durationInSeconds, 3600);
             $minutes = intdiv($durationInSeconds % 3600, 60);
             $durationText = "{$hours} giờ {$minutes} phút";
@@ -246,20 +246,26 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             $under6Setting = \App\Modules\Area\Models\InventorySetting::where('key', 'attendance_under_6_hours_work_day')->first();
             $under6WorkDay = floatval(data_get($under6Setting?->value, 'work_day', 0.5));
 
-            $status = $existingAttendance->status;
+            // Xác định trạng thái cuối cùng dựa trên thời gian làm việc và giờ check-in
+            $isLate = str_contains((string) $existingAttendance->note, 'Đi làm trễ');
             $noteSuffix = '';
-            if ($durationInSeconds < 21600) { // Dưới 6 tiếng (6 * 3600 = 21600 giây)
-                if ($under6WorkDay == 0.5) {
+
+            if ($durationInSeconds >= 21600) {
+                // Từ 6 tiếng trở lên: tính 1 công
+                $status = $isLate ? AttendanceStatus::LATE : AttendanceStatus::PRESENT;
+                $noteSuffix = ' (Thời gian làm việc từ 6 tiếng trở lên, tính 1.0 công)';
+            } else {
+                // Dưới 6 tiếng: theo cấu hình công ty
+                if ($under6WorkDay == 1.0) {
+                    $status = $isLate ? AttendanceStatus::LATE : AttendanceStatus::PRESENT;
+                    $noteSuffix = ' (Thời gian làm việc dưới 6 tiếng, nhưng cấu hình tính 1.0 công)';
+                } elseif ($under6WorkDay == 0.5) {
                     $status = AttendanceStatus::HALF_DAY;
                     $noteSuffix = ' (Thời gian làm việc dưới 6 tiếng, tính 0.5 công)';
-                } elseif ($under6WorkDay == 0.0) {
+                } else {
                     $status = AttendanceStatus::ABSENT;
                     $noteSuffix = ' (Thời gian làm việc dưới 6 tiếng, tính 0.0 công)';
-                } else {
-                    $noteSuffix = ' (Thời gian làm việc dưới 6 tiếng, tính 1.0 công)';
                 }
-            } else {
-                $noteSuffix = ' (Thời gian làm việc từ 6 tiếng trở lên, tính 1.0 công)';
             }
 
             $updateData = [
