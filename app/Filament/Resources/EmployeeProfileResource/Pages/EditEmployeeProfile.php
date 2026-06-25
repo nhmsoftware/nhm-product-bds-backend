@@ -46,6 +46,8 @@ class EditEmployeeProfile extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $data = EmployeeProfileResource::resolveAttachmentUploads($data);
+
         $user = $this->getRecord()->user;
 
         if ($user) {

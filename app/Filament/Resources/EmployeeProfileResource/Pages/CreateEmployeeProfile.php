@@ -22,6 +22,8 @@ class CreateEmployeeProfile extends CreateRecord
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $data = EmployeeProfileResource::resolveAttachmentUploads($data);
+
         if (!empty($data['user_id'])) {
             $user = User::find($data['user_id']);
 

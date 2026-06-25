@@ -212,7 +212,9 @@ class EmployeeProfileResource extends Resource
                                 ->label('Tên tài liệu')
                                 ->maxLength(255),
 
-                            Forms\Components\FileUpload::make('url')
+                            Forms\Components\Hidden::make('url'),
+
+                            Forms\Components\FileUpload::make('_file_upload')
                                 ->label('File tài liệu')
                                 ->disk('public')
                                 ->directory('employee_documents')
@@ -224,41 +226,82 @@ class EmployeeProfileResource extends Resource
                                     'image/png',
                                 ])
                                 ->maxSize(10240) // 10 MB
-                                ->afterStateHydrated(function (Forms\Components\FileUpload $component, $state) {
-                                    if (blank($state)) {
+                                ->downloadable()
+                                ->openable()
+                                ->afterStateHydrated(function (Forms\Components\FileUpload $component): void {
+                                    $livewire = $component->getContainer()->getLivewire();
+                                    $currentState = data_get($livewire, $component->getStatePath());
+                                    if (is_array($currentState) && !empty(array_filter($currentState))) {
+                                        $component->state($currentState);
                                         return;
                                     }
-                                    if (is_array($state)) {
-                                        $state = array_map(fn ($item) => is_string($item) ? preg_replace('#^/?storage/#', '', $item) : $item, $state);
-                                    } elseif (is_string($state)) {
-                                        $state = preg_replace('#^/?storage/#', '', $state);
-                                    }
-                                    $component->state($state);
+                                    $component->state([]);
                                 })
-                                ->dehydrateStateUsing(function ($state) {
-                                    if (blank($state)) {
-                                        return null;
+                                ->helperText(function (Forms\Components\FileUpload $component): \Illuminate\Support\HtmlString {
+                                    $livewire = $component->getContainer()->getLivewire();
+                                    $itemPath = \Illuminate\Support\Str::beforeLast($component->getStatePath(), '._file_upload');
+                                    $storedUrl = data_get($livewire, $itemPath . '.url');
+                                    if (!is_string($storedUrl) || blank($storedUrl)) {
+                                        return new \Illuminate\Support\HtmlString('');
                                     }
-                                    $normalize = function ($value) {
-                                        if (blank($value)) {
-                                            return null;
-                                        }
-                                        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '/storage/')) {
-                                            return $value;
-                                        }
-                                        return '/storage/' . ltrim($value, '/');
-                                    };
-                                    if (is_array($state)) {
-                                        return array_map($normalize, $state);
-                                    }
-                                    return $normalize($state);
+                                    
+                                    $absUrl = str_starts_with($storedUrl, 'http')
+                                        ? $storedUrl
+                                        : request()->getSchemeAndHttpHost() . '/' . ltrim($storedUrl, '/');
+                                        
+                                    $filename = e(basename($storedUrl));
+                                    $ext = strtolower(pathinfo(parse_url($storedUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
+                                    $icons = [
+                                        'pdf'   => ['label' => 'PDF', 'color' => '#ef4444', 'bg' => '#fef2f2'],
+                                        'doc'   => ['label' => 'DOC', 'color' => '#3b82f6', 'bg' => '#eff6ff'],
+                                        'docx'  => ['label' => 'DOCX', 'color' => '#3b82f6', 'bg' => '#eff6ff'],
+                                        'jpg'   => ['label' => 'IMG', 'color' => '#10b981', 'bg' => '#f0fdf4'],
+                                        'jpeg'  => ['label' => 'IMG', 'color' => '#10b981', 'bg' => '#f0fdf4'],
+                                        'png'   => ['label' => 'IMG', 'color' => '#10b981', 'bg' => '#f0fdf4'],
+                                    ];
+                                    $icon = $icons[$ext] ?? ['label' => 'FILE', 'color' => '#6b7280', 'bg' => '#f3f4f6'];
+                                    
+                                    $btnBase = "display:inline-flex;align-items:center;gap:4px;padding:6px 10px;"
+                                        . "border-radius:6px;border:1px solid #e5e7eb;background:#fff;"
+                                        . "font-size:12px;font-weight:500;color:#374151;text-decoration:none;";
+                                    $btnHover = "onmouseover=\"this.style.background='#f3f4f6';this.style.borderColor='#d1d5db'\" "
+                                        . "onmouseout=\"this.style.background='#fff';this.style.borderColor='#e5e7eb'\"";
+                                    $dlIcon = "<svg width='14' height='14' fill='none' stroke='currentColor' viewBox='0 0 24 24'>"
+                                        . "<path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' "
+                                        . "d='M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4'/></svg>";
+
+                                    return new \Illuminate\Support\HtmlString(
+                                        "<div style='display:flex;align-items:center;gap:12px;padding:12px 16px;"
+                                        . "border:1px solid #e5e7eb;border-radius:8px;background:#fff;margin-top:8px'>"
+                                        . "<div style='width:40px;height:40px;border-radius:8px;"
+                                        . "background:{$icon['bg']};display:flex;align-items:center;"
+                                        . "justify-content:center;font-weight:700;font-size:11px;color:{$icon['color']};flex-shrink:0'>"
+                                        . $icon['label']
+                                        . "</div>"
+                                        . "<div style='flex:1;min-width:0'>"
+                                        . "<p style='margin:0;font-size:0.875em;font-weight:500;color:#111827;"
+                                        . "white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>{$filename}</p>"
+                                        . "<p style='margin:2px 0 0;font-size:0.75em;color:#6b7280'>Tải tệp mới để thay thế</p>"
+                                        . "</div>"
+                                        . "<div style='display:flex;gap:6px;flex-shrink:0'>"
+                                        . "<a href='" . e($absUrl) . "' download title='Tải xuống' style='{$btnBase}' {$btnHover}>"
+                                        . $dlIcon . "Tải</a>"
+                                        . "</div>"
+                                        . "</div>"
+                                    );
                                 })
-                                ->required()
+                                ->rules([
+                                    fn (Forms\Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                        if (blank($value) && blank($get('url'))) {
+                                            $fail('Vui lòng chọn file cần tải lên.');
+                                        }
+                                    },
+                                ])
                                 ->validationMessages([
-                                    'required'    => 'Vui lòng chọn file cần tải lên.',
                                     'mimes'       => 'Định dạng file không hợp lệ.',
                                     'max'         => 'Dung lượng file vượt quá giới hạn cho phép.',
                                 ])
+                                ->dehydrated(false)
                                 ->columnSpanFull(),
                         ])
                         ->columns(2)
@@ -266,6 +309,33 @@ class EmployeeProfileResource extends Resource
                         ->columnSpanFull(),
                 ]),
         ]);
+    }
+
+    public static function resolveAttachmentUploads(array $data): array
+    {
+        $data['attachments'] = collect($data['attachments'] ?? [])
+            ->map(function (array $item): array {
+                $fileState = $item['_file_upload'] ?? null;
+
+                if ($fileState !== null) {
+                    $path = is_array($fileState)
+                        ? (array_values(array_filter($fileState))[0] ?? null)
+                        : (is_string($fileState) && $fileState !== '' ? $fileState : null);
+
+                    if ($path) {
+                        $item['url'] = str_starts_with($path, '/storage/') || str_starts_with($path, 'http')
+                            ? $path
+                            : '/storage/' . ltrim($path, '/');
+                    }
+                }
+
+                unset($item['_file_upload']);
+                return $item;
+            })
+            ->values()
+            ->toArray();
+
+        return $data;
     }
 
     public static function table(Table $table): Table
