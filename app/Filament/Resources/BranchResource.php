@@ -53,7 +53,12 @@ class BranchResource extends Resource
             Tables\Columns\TextColumn::make('area')->label('Khu vực'),
             Tables\Columns\IconColumn::make('is_active')->label('Đang dùng')->boolean(),
             Tables\Columns\TextColumn::make('sort')->label('Thứ tự')->sortable(),
-        ])->defaultSort('sort')->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()]);
+        ])->defaultSort('sort')->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array

@@ -188,6 +188,11 @@ class NotificationResource extends Resource
                 Tables\Actions\EditAction::make()->label('Xem chi tiết'),
                 Tables\Actions\DeleteAction::make()->label('Xóa'),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->headerActions([
                 //
             ]);

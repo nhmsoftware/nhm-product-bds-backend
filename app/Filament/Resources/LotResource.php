@@ -113,7 +113,12 @@ class LotResource extends Resource
         ->actions([
             Tables\Actions\EditAction::make(),
             Tables\Actions\DeleteAction::make()
-        ]);
+        ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
     public static function getPages(): array { return ['index'=>Pages\ListLots::route('/'),'create'=>Pages\CreateLot::route('/create'),'edit'=>Pages\EditLot::route('/{record}/edit')]; }
     private static function enumOptions(string $enum): array { return collect($enum::cases())->mapWithKeys(fn($case)=>[$case->value=>$case->label()])->all(); }

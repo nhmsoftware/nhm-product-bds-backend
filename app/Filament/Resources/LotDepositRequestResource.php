@@ -185,6 +185,11 @@ class LotDepositRequestResource extends Resource
                     }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
             ]);
     }
     public static function getPages(): array { return ['index'=>Pages\ListLotDepositRequests::route('/'),'create'=>Pages\CreateLotDepositRequest::route('/create'),'edit'=>Pages\EditLotDepositRequest::route('/{record}/edit')]; }

@@ -255,7 +255,12 @@ class CourseLessonResource extends Resource
             Tables\Columns\TextColumn::make('duration_seconds')->label('Giây')->sortable(),
             Tables\Columns\IconColumn::make('is_active')->label('Mở')->boolean(),
             Tables\Columns\TextColumn::make('quizzes_count')->label('Câu hỏi')->counts('quizzes'),
-        ])->defaultSort('order')->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()]);
+        ])->defaultSort('order')->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getRelations(): array

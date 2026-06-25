@@ -57,7 +57,12 @@ class CourseQuizResource extends Resource
             Tables\Actions\EditAction::make()
                 ->label('Quản lý câu hỏi')
                 ->icon('heroicon-o-pencil-square'),
-        ]);
+        ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getRelations(): array

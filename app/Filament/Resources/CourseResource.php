@@ -77,7 +77,12 @@ class CourseResource extends Resource
         ])->filters([
             Tables\Filters\TernaryFilter::make('is_required')->label('Bắt buộc'),
             Tables\Filters\TernaryFilter::make('is_active')->label('Đang mở'),
-        ])->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()]);
+        ])->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getRelations(): array
