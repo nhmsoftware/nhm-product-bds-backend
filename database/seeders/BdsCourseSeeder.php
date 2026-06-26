@@ -58,7 +58,7 @@ class BdsCourseSeeder extends Seeder
             $enrollment = CourseEnrollment::create([
                 'user_id'          => $user->id,
                 'course_id'        => $course->id,
-                'status'           => CourseEnrollmentStatus::IN_PROGRESS,
+                'status'           => CourseEnrollmentStatus::PENDING_ONBOARDING,
                 'progress_percent' => 100.00,
             ]);
 

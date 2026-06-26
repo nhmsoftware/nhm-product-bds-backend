@@ -2208,7 +2208,14 @@ final class LearningService extends BaseService implements LearningServiceInterf
             }
 
             // A7 - Lỗi cập nhật trạng thái onboarding
-            return ServiceReturn::error(message: 'Không thể cập nhật trạng thái onboarding.', code: 500);
+            \Illuminate\Support\Facades\Log::error('adminConfirmOnboarding failed', [
+                'course_id' => $courseId,
+                'user_id' => $userId,
+                'admin_id' => $adminId,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return ServiceReturn::error(message: 'Không thể cập nhật trạng thái onboarding. Chi tiết: ' . $e->getMessage(), code: 500);
         });
     }
 
