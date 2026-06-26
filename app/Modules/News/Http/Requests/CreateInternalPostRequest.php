@@ -19,7 +19,7 @@ class CreateInternalPostRequest extends FormRequest
         return [
             'content' => 'required|string|min:1',
             'title' => 'nullable|string|max:255',
-            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp,heic,heif|max:8192',
             'thumbnail_url' => 'nullable|string',
             'attachments' => 'nullable|array|max:5',
             'attachments.*' => 'file|mimes:pdf,doc,docx,jpeg,jpg,png|max:10240',
