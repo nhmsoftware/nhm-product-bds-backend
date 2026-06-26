@@ -283,7 +283,8 @@ final class LeaveService extends BaseService implements LeaveServiceInterface
 
             // 6. Cập nhật trạng thái yêu cầu nghỉ phép thành "approved" (Đã duyệt)
             $updated = $this->leaveRequestRepository->updateById($leaveRequestId, [
-                'status' => RequestStatus::APPROVED
+                'status' => RequestStatus::APPROVED,
+                'approver_id' => $userId,
             ]);
 
             $this->validate($updated !== false, 'Không thể cập nhật trạng thái yêu cầu nghỉ phép.', 500);

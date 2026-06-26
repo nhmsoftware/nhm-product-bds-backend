@@ -9,6 +9,7 @@ use App\Filament\Resources\QuizAttemptResource\Pages\ListQuizAttempts;
 use App\Modules\Learning\Models\QuizAttempt;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Enums\ActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -141,6 +142,8 @@ class QuizAttemptResource extends Resource
                     ->sortable(),
             ])
             ->defaultSort('created_at', 'asc')
+            ->actionsPosition(ActionsPosition::BeforeColumns)
+            ->actionsAlignment('left')
             ->actions([
                 Tables\Actions\Action::make('grade')
                     ->label(function (QuizAttempt $record): string {

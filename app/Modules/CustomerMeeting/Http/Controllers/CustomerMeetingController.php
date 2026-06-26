@@ -152,7 +152,7 @@ final class CustomerMeetingController extends BaseController
     )]
     public function recent(Request $request): JsonResponse
     {
-        $limit = $request->query('limit', 5);
+        $limit = $request->query('limit', 20);
         if ($limit === 'all') {
             $limit = 100;
         } else {

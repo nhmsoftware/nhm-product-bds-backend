@@ -1151,6 +1151,19 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 }
             }
 
+            // 6b. Kiểm tra còn câu tự luận chưa chấm → chưa cho phép hoàn thành
+            $allLessonIds = $lessons->pluck('id')->toArray();
+            $allQuizIds = $this->quizRepository->getByLessonIds($allLessonIds)->pluck('id')->toArray();
+            if ($allQuizIds !== []) {
+                $ungradedCount = $this->quizAttemptRepository->countUngradedEssaysByUserAndQuizIds($userId, $allQuizIds);
+                if ($ungradedCount > 0) {
+                    return ServiceReturn::error(
+                        message: 'Vui lòng chờ quản lý chấm xong câu tự luận trước khi hoàn thành khóa học.',
+                        code: 422
+                    );
+                }
+            }
+
             // 7. Cập nhật trạng thái và tiến độ khóa học
             $enrollment->progress_percent = 100.00;
 

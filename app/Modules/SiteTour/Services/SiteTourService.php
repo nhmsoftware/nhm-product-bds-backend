@@ -112,7 +112,7 @@ final class SiteTourService extends BaseService implements SiteTourServiceInterf
      * @param int $limit Số lượng bản ghi tối đa
      * @return ServiceReturn Trả về danh sách các hoạt động dẫn khách
      */
-    public function getRecentTours(string $userId, int $limit = 5): ServiceReturn
+    public function getRecentTours(string $userId, int $limit = 20): ServiceReturn
     {
         return $this->execute(function () use ($userId, $limit) {
             $user = $this->authRepository->findById($userId);

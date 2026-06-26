@@ -70,7 +70,7 @@ class UserResource extends Resource
                     ->preload()
                     ->live()
                     ->afterStateUpdated(fn (Forms\Set $set) => $set('department_id', null))
-                    ->required(fn (Forms\Get $get): bool => (int) $get('role') === UserRole::DIRECTOR->value),
+                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
                 Forms\Components\Select::make('department_id')
                     ->label('Phòng ban')
                     ->relationship(
@@ -82,12 +82,14 @@ class UserResource extends Resource
                     )
                     ->searchable()
                     ->preload()
-                    ->disabled(fn (Forms\Get $get): bool => !$get('branch_id')),
+                    ->disabled(fn (Forms\Get $get): bool => !$get('branch_id'))
+                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
                 Forms\Components\Select::make('job_position_id')
                     ->label('Chức danh')
                     ->relationship('jobPosition', 'name')
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
                 Forms\Components\Select::make('assigned_area_ids')
                     ->label('Khu đất được cấp quyền')
                     ->multiple()

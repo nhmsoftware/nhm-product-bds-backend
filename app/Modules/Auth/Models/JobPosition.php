@@ -22,12 +22,9 @@ class JobPosition extends Model
 
     // Các hằng số ID định nghĩa cho Chức danh (job_position_id)
     const COLLABORATOR = 1;         // Cộng tác viên
-    const BUSINESS_LEADER = 2;      // Trưởng nhóm kinh doanh
-    const BUSINESS_MANAGER = 3;     // Trưởng phòng kinh doanh
-    const BUSINESS_DIRECTOR = 4;    // Giám đốc kinh doanh
-    const AREA_DIRECTOR = 5;        // Giám đốc khu vực
+    const BUSINESS_SPECIALIST = 2;  // Chuyên viên kinh doanh
+    const BUSINESS_LEADER = 3;      // Trưởng nhóm kinh doanh
+    const BUSINESS_MANAGER = 4;     // Trưởng phòng kinh doanh
+    const BUSINESS_DIRECTOR = 5;    // Giám đốc kinh doanh
     const CEO = 6;                  // Tổng giám đốc
-    const SUPER_ADMIN = 7;          // Quản trị hệ thống
-    const CUSTOMER = 8;             // Khách hàng
-    const BUSINESS_SPECIALIST = 9;  // Chuyên viên kinh doanh
 }

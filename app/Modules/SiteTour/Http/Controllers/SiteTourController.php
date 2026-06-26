@@ -143,7 +143,14 @@ final class SiteTourController extends BaseController
     )]
     public function recent(Request $request): JsonResponse
     {
-        $result = $this->siteTourService->getRecentTours($request->user()->id);
+        $limit = $request->query('limit', 20);
+        if ($limit === 'all') {
+            $limit = 100;
+        } else {
+            $limit = (int) $limit;
+        }
+
+        $result = $this->siteTourService->getRecentTours($request->user()->id, $limit);
 
         if ($result->isError()) {
             return $this->sendError($result->getMessage(), $result->getCode());

@@ -38,7 +38,6 @@ final class CourseEnrollmentRepository extends BaseRepository implements CourseE
     public function findByUserAndCourse(string $userId, string $courseId): ?CourseEnrollment
     {
         return $this->query()
-            ->withTrashed()  // Bao gồm cả bản ghi đã soft-delete để tránh duplicate constraint
             ->where('user_id', $userId)
             ->where('course_id', $courseId)
             ->first();

@@ -40,6 +40,34 @@ class LeaveRequestResource extends Resource
                 ->searchable()
                 ->preload()
                 ->required(),
+            Forms\Components\Select::make('approver_id')
+                ->label('Người phê duyệt')
+                ->relationship('approver', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
+                    $currentUser = auth()->user();
+                    if (!$currentUser) return $query;
+
+                    $query->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::BUYER->value)
+                        ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::EMPLOYEE->value)
+                        ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value)
+                        ->whereNotNull('job_position_id');
+
+                    if ($currentUser->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
+                        $query->where('role', '<=', $currentUser->role->value);
+                    }
+
+                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $currentUser->branch_id) {
+                        $query->where('branch_id', $currentUser->branch_id);
+                    }
+
+                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER && $currentUser->department_id) {
+                        $query->where('department_id', $currentUser->department_id);
+                    }
+
+                    return $query;
+                })
+                ->searchable()
+                ->preload()
+                ->required(),
             Forms\Components\Select::make('leave_type')
                 ->label('Loại nghỉ')
                 ->options(self::enumOptions(LeaveType::class))
@@ -111,6 +139,8 @@ class LeaveRequestResource extends Resource
             Tables\Columns\TextColumn::make('end_date')
                 ->label('Đến')
                 ->date('d/m/Y'),
+            Tables\Columns\TextColumn::make('approver.name')
+                ->label('Người phê duyệt'),
             Tables\Columns\TextColumn::make('status')
                 ->label('Trạng thái')
                 ->formatStateUsing(fn($state) => $state instanceof RequestStatus ? $state->label() : RequestStatus::tryFrom((int)$state)?->label())
@@ -149,7 +179,6 @@ class LeaveRequestResource extends Resource
                     $result = app(LeaveServiceInterface::class)->rejectLeaveRequest((string) auth()->id(), (string) $record->id, (string) $data['reason']);
                     $result->isError() ? Notification::make()->title($result->getMessage())->danger()->send() : Notification::make()->title($result->getMessage())->success()->send();
                 }),
-            Tables\Actions\EditAction::make(),
             Tables\Actions\DeleteAction::make()
         ])
             ->bulkActions([

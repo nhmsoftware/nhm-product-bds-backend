@@ -17,6 +17,7 @@ use App\Modules\Leave\Models\Enums\RequestStatus;/**
  *
  * @property string $id
  * @property string $user_id
+ * @property string|null $approver_id
  * @property LeaveType $leave_type
  * @property \Illuminate\Support\Carbon|null $start_date
  * @property \Illuminate\Support\Carbon|null $end_date
@@ -60,6 +61,7 @@ class LeaveRequest extends Model
 
     protected $fillable = [
         'user_id',
+        'approver_id',
         'leave_type',
         'start_date',
         'end_date',
@@ -87,6 +89,11 @@ class LeaveRequest extends Model
     public function user()
     : BelongsTo {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approver_id');
     }
 
     public function setLeaveTypeAttribute($value)
