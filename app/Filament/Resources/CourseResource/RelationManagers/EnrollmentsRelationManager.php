@@ -118,9 +118,11 @@ class EnrollmentsRelationManager extends RelationManager
                     ->label('Gán vai trò học')
                     ->icon('heroicon-o-user-group')
                     ->color('warning')
-                    ->fillForm(fn (): array => [
-                        'allowed_roles' => $this->getOwnerRecord()->allowed_roles ?? [],
-                    ])
+                    ->fillForm(function (): array {
+                        $roles = $this->getOwnerRecord()->allowed_roles;
+                        $roles = is_string($roles) ? json_decode($roles, true) : $roles;
+                        return ['allowed_roles' => is_array($roles) ? $roles : []];
+                    })
                     ->form([
                         Forms\Components\CheckboxList::make('allowed_roles')
                             ->label('Vai trò được phép làm khóa học')
@@ -145,7 +147,7 @@ class EnrollmentsRelationManager extends RelationManager
                             ->values()
                             ->all();
 
-                        $course->forceFill(['allowed_roles' => $roles])->save();
+                        $course->update(['allowed_roles' => $roles]);
 
                         $users = User::query()
                             ->whereIn('role', $roles)

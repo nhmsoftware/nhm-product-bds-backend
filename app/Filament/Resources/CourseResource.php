@@ -68,7 +68,15 @@ class CourseResource extends Resource
             Tables\Columns\IconColumn::make('is_required')->label('Bắt buộc')->boolean()->alignCenter(),
             Tables\Columns\TextColumn::make('allowed_roles')
                 ->label('Vai trò được học')
-                ->formatStateUsing(fn ($state): string => collect($state ?: [])->map(fn ($role) => UserRole::tryFrom((int) $role)?->label())->filter()->implode(', ') ?: 'Tất cả')
+                ->formatStateUsing(function ($state): string {
+                    $roles = is_string($state) ? json_decode($state, true) : $state;
+                    $roles = is_array($roles) ? $roles : [];
+                    $labels = collect($roles)
+                        ->map(fn ($role) => UserRole::tryFrom((int) $role)?->label())
+                        ->filter()
+                        ->implode(', ');
+                    return $labels !== '' ? $labels : 'Tất cả';
+                })
                 ->toggleable(),
             Tables\Columns\IconColumn::make('is_active')->label('Mở')->boolean()->alignCenter(),
             Tables\Columns\IconColumn::make('has_certificate')->label('Chứng chỉ')->boolean()->alignCenter(),
