@@ -13,6 +13,9 @@ use App\Modules\Area\Models\Enums\LotStatus;
 use App\Modules\Attendance\Models\Attendance;
 use App\Modules\Attendance\Models\Enums\AttendanceStatus;
 use App\Modules\Area\Models\InventorySetting;
+use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\RewardPointHistory;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::call(function () {
@@ -85,3 +88,73 @@ Schedule::call(function () {
         ]);
     }
 })->dailyAt('00:05');
+
+/*
+ * Scheduler tính điểm chuyên cần hàng tuần.
+ * Chạy cuối ngày T6 (23:55) — kiểm tuần T2→T6.
+ *
+ * Quy tắc:
+ * - Ngày công = PRESENT hoặc LATE (>= 6h)
+ * - Đủ N ngày công trong tuần → cộng X điểm
+ * - Ngày cuối tuần (T7, CN) không tính
+ * - Không cộng dồn sang tuần sau
+ */
+Schedule::call(function () {
+    $setting = InventorySetting::where('key', 'kpi_points_work_day_rate')->first();
+    if (!$setting) {
+        return;
+    }
+
+    $requiredDays = (int) data_get($setting->value, 'days', 5);
+    $pointsToAward = (int) data_get($setting->value, 'points', 1);
+
+    if ($requiredDays <= 0 || $pointsToAward <= 0) {
+        return;
+    }
+
+    // Lấy tuần hiện tại: T2 → CN (Carbon default: Monday start)
+    $now = now();
+    $weekStart = $now->copy()->startOfWeek();  // T2
+    $weekEnd = $now->copy()->endOfWeek();       // CN
+
+    // Lấy tất cả employees active
+    $employees = User::where('role', UserRole::EMPLOYEE->value)
+        ->where('is_active', true)
+        ->get();
+
+    foreach ($employees as $employee) {
+        // Đếm số ngày công (PRESENT hoặc LATE) trong tuần
+        $workDays = Attendance::where('user_id', $employee->id)
+            ->whereBetween('work_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->whereIn('status', [
+                AttendanceStatus::PRESENT->value,
+                AttendanceStatus::LATE->value,
+            ])
+            ->count();
+
+        if ($workDays < $requiredDays) {
+            continue;
+        }
+
+        // Kiểm tra đã cộng điểm tuần này chưa (tránh chạy lại)
+        $alreadyAwarded = RewardPointHistory::where('user_id', $employee->id)
+            ->where('reason', 'like', '%Chuyên cần tuan ' . $weekStart->toDateString() . '%')
+            ->exists();
+
+        if ($alreadyAwarded) {
+            continue;
+        }
+
+        // Cộng điểm
+        if ($employee->employeeProfile) {
+            $employee->employeeProfile->reward_points += $pointsToAward;
+            $employee->employeeProfile->save();
+        }
+
+        RewardPointHistory::create([
+            'user_id' => $employee->id,
+            'points_changed' => $pointsToAward,
+            'reason' => "Chuyên cần tuan {$weekStart->toDateString()}~{$weekEnd->toDateString()}: {$workDays}/{$requiredDays} ngay cong → +{$pointsToAward} diem",
+        ]);
+    }
+})->fridays()->at('23:55');
