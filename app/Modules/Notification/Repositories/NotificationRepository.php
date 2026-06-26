@@ -113,15 +113,16 @@ final class NotificationRepository implements NotificationRepositoryInterface
     /**
      * Tạo thông báo database cho một người dùng.
      *
+     * @param string $type   Loại thông báo
      * @param string $userId UUID của người nhận thông báo
      * @param array<string, mixed> $data Payload thông báo
      * @return DatabaseNotification Thông báo vừa tạo
      */
-    public function createForUser(string $userId, array $data): DatabaseNotification
+    public function createForUser(string $type, string $userId, array $data): DatabaseNotification
     {
         $notification = $this->model->create([
             'id' => (string) Str::uuid(),
-            'type' => 'internal_post_created',
+            'type' => $type,
             'notifiable_type' => User::class,
             'notifiable_id' => $userId,
             'data' => $data,

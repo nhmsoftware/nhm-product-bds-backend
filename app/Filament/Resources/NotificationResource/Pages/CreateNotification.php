@@ -55,7 +55,7 @@ class CreateNotification extends CreateRecord
         $repo = app(\App\Modules\Notification\Interfaces\NotificationRepositoryInterface::class);
 
         foreach ($recipientIds as $index => $userId) {
-            $notification = $repo->createForUser((string) $userId, [
+            $notification = $repo->createForUser('admin_notification', (string) $userId, [
                 'title' => $data['title'],
                 'body' => $data['body'],
                 'group_id' => $groupId,

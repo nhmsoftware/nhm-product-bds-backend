@@ -157,4 +157,13 @@ interface AuthRepositoryInterface extends BaseRepositoryInterface
      * @return void
      */
     public function addRewardPoints(string $userId, int $points): void;
+
+    /**
+     * Tìm các quản lý (Manager, Director, SuperAdmin) đang hoạt động trong cùng chi nhánh.
+     *
+     * @param string      $branchId     UUID chi nhánh cần tìm
+     * @param string      $excludeUserId UUID người dùng cần loại trừ (người tạo đơn)
+     * @return Collection Danh sách quản lý phù hợp
+     */
+    public function findManagersByBranch(string $branchId, string $excludeUserId): Collection;
 }

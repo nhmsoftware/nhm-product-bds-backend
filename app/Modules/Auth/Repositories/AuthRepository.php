@@ -542,4 +542,21 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
             $user->employeeProfile->save();
         }
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function findManagersByBranch(string $branchId, string $excludeUserId): Collection
+    {
+        return $this->model->query()
+            ->where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->where('id', '!=', $excludeUserId)
+            ->whereIn('role', [
+                UserRole::MANAGER->value,
+                UserRole::DIRECTOR->value,
+                UserRole::SUPER_ADMIN->value,
+            ])
+            ->get();
+    }
 }

@@ -398,9 +398,16 @@ final class LearningService extends BaseService implements LearningServiceInterf
             $course = $this->courseRepository->getCourseDetails($lesson->course_id, $userId);
             $this->validate($course !== null, 'Không tìm thấy khóa học bắt buộc.', 404);
 
-            // 5. Kiểm tra Preconditions: Nhân viên đã tham gia khóa học
+            // 5. Tự động đăng ký nếu chưa có enrollment (giống getCourseDetails)
             $enrollment = $course->enrollments->first();
-            $this->validate($enrollment !== null, 'Bạn chưa tham gia khóa học này.', 403);
+            if (!$enrollment) {
+                $enrollment = $this->courseEnrollmentRepository->create([
+                    'user_id' => $userId,
+                    'course_id' => $course->id,
+                    'status' => CourseEnrollmentStatus::IN_PROGRESS,
+                    'progress_percent' => 0.00,
+                ]);
+            }
 
             // 6. Tải danh sách bài học đã hoàn thành và tiến độ xem video bài học hiện tại
             $progressRecord      = $this->courseEnrollmentRepository->getLessonProgressRecord($enrollment->id, $lesson->id);

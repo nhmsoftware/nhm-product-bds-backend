@@ -43,7 +43,7 @@ final class CreateNotificationsForInternalPost implements ShouldQueue
         );
 
         foreach ($recipients as $recipient) {
-            $this->notificationRepository->createForUser((string) $recipient->id, [
+            $this->notificationRepository->createForUser('internal_post_created', (string) $recipient->id, [
                 'title' => 'Có bài viết nội bộ mới',
                 'body' => $news->title,
                 'user_id' => (string) $recipient->id,
