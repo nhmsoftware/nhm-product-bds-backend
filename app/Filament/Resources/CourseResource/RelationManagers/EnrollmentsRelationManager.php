@@ -178,14 +178,12 @@ class EnrollmentsRelationManager extends RelationManager
                     ->label('Duyệt onboarding')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $isRequiredCourse && $record->status === CourseEnrollmentStatus::PENDING_ONBOARDING)
-                    ->tooltip(function ($record): ?string {
-                        $count = $this->countUngradedEssays($record);
-                        if ($count > 0) {
-                            return "Còn {$count} câu tự luận chưa chấm — vào mục Chấm bài quiz để chấm trước.";
-                        }
-                        return null;
-                    })
+                    ->visible(fn ($record) => $isRequiredCourse
+                        && $record->status === CourseEnrollmentStatus::PENDING_ONBOARDING
+                        && $this->countUngradedEssays($record) === 0)
+                    ->tooltip(fn ($record): ?string => $record->status === CourseEnrollmentStatus::PENDING_ONBOARDING
+                        ? "Còn câu tự luận chưa chấm — vào mục Chấm bài quiz để chấm trước."
+                        : null)
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $learningService = app(\App\Modules\Learning\Interfaces\LearningServiceInterface::class);

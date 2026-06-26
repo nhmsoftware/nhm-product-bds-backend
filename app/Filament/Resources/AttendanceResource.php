@@ -12,6 +12,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -161,6 +162,44 @@ class AttendanceResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->filters([
+                Filters\SelectFilter::make('user_id')
+                    ->label('Nhân viên')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('Tất cả nhân viên'),
+                Filters\Filter::make('work_date')
+                    ->label('Ngày làm')
+                    ->form([
+                        Forms\Components\DatePicker::make('work_date_from')
+                            ->label('Từ ngày')
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
+                        Forms\Components\DatePicker::make('work_date_until')
+                            ->label('Đến ngày')
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['work_date_from'], fn (Builder $q, string $date): Builder => $q->where('work_date', '>=', $date))
+                            ->when($data['work_date_until'], fn (Builder $q, string $date): Builder => $q->where('work_date', '<=', $date));
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['work_date_from'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('Từ ' . \Carbon\Carbon::parse($data['work_date_from'])->format('d/m/Y'))->removeField('work_date_from');
+                        }
+                        if ($data['work_date_until'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('Đến ' . \Carbon\Carbon::parse($data['work_date_until'])->format('d/m/Y'))->removeField('work_date_until');
+                        }
+                        return $indicators;
+                    }),
+                Filters\SelectFilter::make('status')
+                    ->label('Trạng thái')
+                    ->options(self::enumOptions(AttendanceStatus::class)),
             ]);
     }
 

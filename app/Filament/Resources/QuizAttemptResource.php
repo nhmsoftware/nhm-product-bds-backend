@@ -193,12 +193,25 @@ class QuizAttemptResource extends Resource
                             return false;
                         }
 
-                        // Check if status is pending onboarding
                         $enrollment = \App\Modules\Learning\Models\CourseEnrollment::where('user_id', $record->user_id)
                             ->where('course_id', $course->id)
                             ->first();
 
-                        return $enrollment && $enrollment->status === \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::PENDING_ONBOARDING;
+                        if (!$enrollment || $enrollment->status !== \App\Modules\Learning\Models\Enums\CourseEnrollmentStatus::PENDING_ONBOARDING) {
+                            return false;
+                        }
+
+                        $hasUngraded = DB::table('quiz_attempts as qa')
+                            ->join('course_quizzes as cq', 'cq.id', '=', 'qa.quiz_id')
+                            ->join('course_lessons as cl', 'cl.id', '=', 'cq.lesson_id')
+                            ->where('cl.course_id', $course->id)
+                            ->where('qa.user_id', $record->user_id)
+                            ->where('qa.is_draft', false)
+                            ->where('cq.type', 'essay')
+                            ->whereNull('qa.is_correct')
+                            ->exists();
+
+                        return !$hasUngraded;
                     })
                     ->requiresConfirmation()
                     ->action(function (QuizAttempt $record) {

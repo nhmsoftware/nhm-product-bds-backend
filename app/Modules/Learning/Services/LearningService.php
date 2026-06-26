@@ -2199,7 +2199,7 @@ final class LearningService extends BaseService implements LearningServiceInterf
                 ],
                 message: 'Xác nhận hoàn thành onboarding cho nhân viên thành công.'
             );
-        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) {
+        }, useTransaction: true, returnCatchCallback: function (\Throwable $e) use ($courseId, $userId, $adminId) {
             $code = $e->getCode();
             $message = $e->getMessage();
 
