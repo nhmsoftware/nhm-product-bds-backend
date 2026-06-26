@@ -94,6 +94,11 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'branch_id',
         'fcm_token',
         'is_active',
+        'locked_at',
+        'lock_reason',
+        'lock_days',
+        'lock_expires_at',
+        'locked_by',
     ];
 
     protected $hidden = [
@@ -108,6 +113,9 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'role' => UserRole::class,
         'department_id' => 'string',
         'job_position_id' => 'integer',
+        'locked_at' => 'datetime',
+        'lock_days' => 'integer',
+        'lock_expires_at' => 'datetime',
     ];
 
     /**
@@ -313,6 +321,48 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
             return;
         }
         $this->attributes['role'] = $value instanceof UserRole ? $value->value : UserRole::deserialize($value)->value;
+    }
+
+    // ─── Lock / Unlock ──────────────────────────────────────────
+
+    public function isLocked(): bool
+    {
+        if (is_null($this->locked_at)) {
+            return false;
+        }
+
+        if (! is_null($this->lock_expires_at) && $this->lock_expires_at->isPast()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function lock(string $reason, ?int $days, User $lockedBy): void
+    {
+        $days = max(1, $days ?? 2);
+        $now = now();
+
+        $this->update([
+            'locked_at' => $now,
+            'lock_reason' => $reason,
+            'lock_days' => $days,
+            'lock_expires_at' => $now->copy()->addDays($days),
+            'locked_by' => $lockedBy->id,
+            'is_active' => false,
+        ]);
+    }
+
+    public function unlock(): void
+    {
+        $this->update([
+            'locked_at' => null,
+            'lock_reason' => null,
+            'lock_days' => null,
+            'lock_expires_at' => null,
+            'locked_by' => null,
+            'is_active' => true,
+        ]);
     }
 
     public function getAreaAttribute(): ?string

@@ -17,7 +17,7 @@ class UploadEvidenceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,gif', 'max:10240'], // Giới hạn 10MB
+            'image' => ['required', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:10240'], // Giới hạn 10MB
         ];
     }
 

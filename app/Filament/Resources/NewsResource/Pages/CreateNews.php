@@ -16,15 +16,17 @@ class CreateNews extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Khi chi nhánh là "Tất cả" (null) thì xóa phòng ban
         if (empty($data['branch_id'])) {
             $data['department'] = null;
         }
 
-        // Tin công khai không có chi nhánh/phòng ban
         if (($data['category'] ?? '') !== 'internal') {
             $data['branch_id']  = null;
             $data['department'] = null;
+        }
+
+        if (!empty($data['is_published'])) {
+            $data['published_at'] = now();
         }
 
         return $data;

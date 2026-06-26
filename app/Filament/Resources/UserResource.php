@@ -28,9 +28,19 @@ class UserResource extends Resource
     {
         return $form->schema([
             Forms\Components\Section::make('Thông tin tài khoản')->schema([
-                Forms\Components\TextInput::make('staff_code')->label('Mã nhân viên')->maxLength(255),
+                Forms\Components\TextInput::make('staff_code')
+                    ->label('Mã nhân viên')
+                    ->maxLength(255)
+                    ->unique(ignoreRecord: true)
+                    ->validationMessages(['unique' => 'Mã nhân viên đã tồn tại.']),
                 Forms\Components\TextInput::make('name')->label('Họ tên')->required()->maxLength(255),
-                Forms\Components\TextInput::make('email')->label('Email')->email()->required()->maxLength(255),
+                Forms\Components\TextInput::make('email')
+                    ->label('Email')
+                    ->email()
+                    ->required()
+                    ->maxLength(255)
+                    ->unique(ignoreRecord: true)
+                    ->validationMessages(['unique' => 'Email đã tồn tại.']),
                 Forms\Components\TextInput::make('phone')->label('Số điện thoại')->tel()->required()->maxLength(20),
                 Forms\Components\TextInput::make('password')
                     ->label('Mật khẩu')
@@ -70,7 +80,7 @@ class UserResource extends Resource
                     ->preload()
                     ->live()
                     ->afterStateUpdated(fn (Forms\Set $set) => $set('department_id', null))
-                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
+                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
                 Forms\Components\Select::make('department_id')
                     ->label('Phòng ban')
                     ->relationship(
@@ -83,13 +93,13 @@ class UserResource extends Resource
                     ->searchable()
                     ->preload()
                     ->disabled(fn (Forms\Get $get): bool => !$get('branch_id'))
-                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
+                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
                 Forms\Components\Select::make('job_position_id')
                     ->label('Chức danh')
                     ->relationship('jobPosition', 'name')
                     ->searchable()
                     ->preload()
-                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
+                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
                 Forms\Components\Select::make('assigned_area_ids')
                     ->label('Khu đất được cấp quyền')
                     ->multiple()
@@ -124,29 +134,91 @@ class UserResource extends Resource
             Tables\Columns\TextColumn::make('branch.name')->label('Chi nhánh')->toggleable()->placeholder('-'),
             Tables\Columns\TextColumn::make('jobPosition.name')->label('Chức danh')->toggleable()->placeholder('-'),
             Tables\Columns\TextColumn::make('created_at')->label('Ngày tạo')->dateTime('d/m/Y H:i')->sortable(),
+            Tables\Columns\TextColumn::make('lock_status')
+                ->label('Trạng thái')
+                ->getStateUsing(fn (User $record): string => $record->isLocked() ? 'Đang khóa' : 'Bình thường')
+                ->badge()
+                ->alignCenter()
+                ->color(fn (User $record): string => $record->isLocked() ? 'danger' : 'success')
+                ->description(fn (User $record): ?string => $record->isLocked() && $record->lock_expires_at
+                    ? $record->lock_expires_at->format('d/m/Y H:i')
+                    : null),
         ])->filters([
             Tables\Filters\SelectFilter::make('role')->label('Vai trò')->options(self::enumOptions(UserRole::class)),
             Tables\Filters\TernaryFilter::make('is_active')->label('Hoạt động'),
-        ])->actions([
-            Tables\Actions\Action::make('activate')
-                ->label('Mở khóa')
-                ->icon('heroicon-o-lock-open')
-                ->color('success')
-                ->visible(fn (User $record): bool => ! $record->is_active)
-                ->requiresConfirmation()
-                ->action(function (User $record): void {
-                    $record->update(['is_active' => true]);
-                    Notification::make()->title('Đã mở khóa tài khoản.')->success()->send();
+            Tables\Filters\SelectFilter::make('locked_at')
+                ->label('Trạng thái khóa')
+                ->options([
+                    'locked' => 'Đang khóa',
+                    'unlocked' => 'Chưa khóa',
+                ])
+                ->query(function (Builder $query, array $state): Builder {
+                    if (($state['value'] ?? '') === 'locked') {
+                        return $query->whereNotNull('locked_at');
+                    }
+                    if (($state['value'] ?? '') === 'unlocked') {
+                        return $query->whereNull('locked_at');
+                    }
+                    return $query;
                 }),
-            Tables\Actions\Action::make('deactivate')
+        ])->actions([
+            Tables\Actions\Action::make('lock')
                 ->label('Khóa')
                 ->icon('heroicon-o-lock-closed')
                 ->color('danger')
-                ->visible(fn (User $record): bool => (bool) $record->is_active)
+                ->visible(fn (User $record): bool => $record->id !== auth()->id() && ! $record->isLocked())
+                ->form([
+                    Forms\Components\Textarea::make('lock_reason')
+                        ->label('Lý do khóa')
+                        ->required()
+                        ->maxLength(500)
+                        ->placeholder('Nhập lý do khóa tài khoản...'),
+                    Forms\Components\TextInput::make('lock_days')
+                        ->label('Số ngày khóa')
+                        ->numeric()
+                        ->default(2)
+                        ->minValue(1)
+                        ->required()
+                        ->suffix('ngày'),
+                ])
+                ->action(function (User $record, array $data): void {
+                    if ($record->id === auth()->id()) {
+                        Notification::make()->title('Không thể khóa tài khoản đang đăng nhập.')->danger()->send();
+                        return;
+                    }
+
+                    if ($record->isLocked()) {
+                        Notification::make()->title('Tài khoản đang bị khóa. Vui lòng mở khóa trước.')->warning()->send();
+                        return;
+                    }
+
+                    $days = $data['lock_days'] > 0 ? (int) $data['lock_days'] : 2;
+
+                    $record->lock(
+                        reason: $data['lock_reason'],
+                        days: $days,
+                        lockedBy: auth()->user()
+                    );
+
+                    Notification::make()->title('Khóa tài khoản thành công.')->success()->send();
+                }),
+            Tables\Actions\Action::make('unlock')
+                ->label('Mở khóa')
+                ->icon('heroicon-o-lock-open')
+                ->color('success')
+                ->visible(fn (User $record): bool => $record->isLocked())
                 ->requiresConfirmation()
+                ->modalHeading('Mở khóa tài khoản')
+                ->modalSubheading(fn (User $record): string => "Bạn có chắc chắn muốn mở khóa tài khoản \"{$record->name}\"?")
                 ->action(function (User $record): void {
-                    $record->update(['is_active' => false]);
-                    Notification::make()->title('Đã khóa tài khoản.')->success()->send();
+                    if (! $record->isLocked()) {
+                        Notification::make()->title('Tài khoản đã được mở khóa trước đó.')->warning()->send();
+                        return;
+                    }
+
+                    $record->unlock();
+
+                    Notification::make()->title('Mở khóa tài khoản thành công.')->success()->send();
                 }),
             Tables\Actions\EditAction::make(),
             Tables\Actions\DeleteAction::make(),

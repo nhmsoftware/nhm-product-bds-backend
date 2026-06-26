@@ -273,6 +273,15 @@ class Area extends Model
 
 
     /**
+     * Tất cả bản ghi phân quyền role-level (vai trò) thuộc khu đất này.
+     */
+    public function roleAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AreaAssignment::class, 'area_id')
+            ->where('assignable_type', 'role');
+    }
+
+    /**
      * Danh sách người dùng được cấp quyền truy cập khu đất này.
      */
     public function assignedUsers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

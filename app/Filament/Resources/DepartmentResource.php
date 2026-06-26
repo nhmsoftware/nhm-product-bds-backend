@@ -10,8 +10,10 @@ use App\Modules\Branch\Models\Branch;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Validation\Rule;
 
 class DepartmentResource extends Resource
 {
@@ -34,7 +36,21 @@ class DepartmentResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->label('Tên phòng ban')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->rules(function (Forms\Get $get): array {
+                        $branchId = $get('branch_id');
+                        return [
+                            Rule::unique('departments', 'name')
+                                ->where(fn ($query) => $query->where('branch_id', $branchId))
+                                ->ignore($get('id')),
+                        ];
+                    })
+                    ->validationMessages(['unique' => 'Tên phòng ban đã tồn tại trong chi nhánh này.'])
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Forms\Set $set, ?string $state) {
+                        $code = \Illuminate\Support\Str::slug($state ?? '');
+                        $set('code', $code);
+                    }),
                 Forms\Components\TextInput::make('code')
                     ->label('Mã phòng ban')
                     ->required()
@@ -59,14 +75,17 @@ class DepartmentResource extends Resource
                 Forms\Components\TextInput::make('kpi_quota')
                     ->label('Định mức KPI phòng')
                     ->numeric()
-                    ->default(0)
-                    ->required(),
+                    ->default(1)
+                    ->minValue(1)
+                    ->required()
+                    ->validationMessages(['min_value' => 'Định mức KPI không hợp lệ.']),
                 Forms\Components\Select::make('branch_id')
                     ->label('Chi nhánh')
                     ->options(fn () => Branch::where('is_active', true)->pluck('name', 'id'))
                     ->searchable()
                     ->preload()
-                    ->nullable()
+                    ->required()
+                    ->live()
                     ->placeholder('Chọn chi nhánh'),
                 Forms\Components\Toggle::make('is_active')
                     ->label('Đang hoạt động')
@@ -103,11 +122,75 @@ class DepartmentResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('delete')
+                    ->label('Xóa')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Xóa phòng ban')
+                    ->modalSubmitActionLabel('Xác nhận xóa')
+                    ->action(function (Department $record): void {
+                        if ($record->manager_id) {
+                            Notification::make()
+                                ->title('Không thể xóa phòng ban')
+                                ->body('Phòng ban đang có Trưởng phòng được phân công. Vui lòng gỡ/chuyển Trưởng phòng trước khi xóa.')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        if (User::where('department_id', $record->id)->exists()) {
+                            Notification::make()
+                                ->title('Không thể xóa phòng ban')
+                                ->body('Phòng ban đang có nhân sự trực thuộc. Vui lòng chuyển nhân sự trước khi xóa.')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        $record->delete();
+
+                        Notification::make()
+                            ->title('Xóa phòng ban thành công')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkAction::make('delete')
+                        ->label('Xóa đã chọn')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(function ($records): void {
+                            $skipped = [];
+
+                            foreach ($records as $record) {
+                                if ($record->manager_id) {
+                                    $skipped[] = "「{$record->name}」đang có Trưởng phòng";
+                                    continue;
+                                }
+                                if (User::where('department_id', $record->id)->exists()) {
+                                    $skipped[] = "「{$record->name}」đang có nhân sự trực thuộc";
+                                    continue;
+                                }
+                                $record->delete();
+                            }
+
+                            if (!empty($skipped)) {
+                                Notification::make()
+                                    ->title('Một số phòng ban không thể xóa')
+                                    ->body(implode("\n", $skipped))
+                                    ->danger()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Xóa phòng ban thành công')
+                                    ->success()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ]);
     }

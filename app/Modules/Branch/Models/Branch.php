@@ -13,6 +13,7 @@ class Branch extends Model
         'name',
         'code',
         'area',
+        'director_id',
         'is_active',
         'sort',
     ];
@@ -20,6 +21,7 @@ class Branch extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'sort' => 'integer',
+        'director_id' => 'string',
     ];
     protected static function booted(): void
     {
@@ -44,5 +46,10 @@ class Branch extends Model
                 return false;
             }
         });
+    }
+
+    public function director(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Auth\Models\User::class, 'director_id');
     }
 }

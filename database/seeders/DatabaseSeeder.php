@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             LearningPathDemoSeeder::class,
             BdsCourseSeeder::class,
             NewsDemoSeeder::class,
+            NewsCommentSeeder::class,
             AreaCommentSeeder::class,
             RecentActivitySeeder::class,
             RewardPointHistoryDemoSeeder::class,

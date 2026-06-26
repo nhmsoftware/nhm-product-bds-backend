@@ -124,8 +124,6 @@ class NewsResource extends Resource
                     'integer' => 'Thứ tự phải là số nguyên.',
                     'min' => 'Thứ tự phải lớn hơn hoặc bằng 1.',
                 ]),
-            Forms\Components\DateTimePicker::make('published_at')
-                ->label('Ngày xuất bản'),
 
             AdminUploads::image('thumbnail', 'Ảnh thumbnail', 'admin/news')
                 ->columnSpanFull(),
@@ -166,6 +164,19 @@ class NewsResource extends Resource
                 ->label('Ngày đăng')
                 ->dateTime('d/m/Y H:i')
                 ->sortable(),
+        ])->filters([
+            Tables\Filters\SelectFilter::make('is_published')
+                ->label('Trạng thái xuất bản')
+                ->options([
+                    true  => 'Đã xuất bản',
+                    false => 'Chưa xuất bản',
+                ]),
+            Tables\Filters\SelectFilter::make('is_featured')
+                ->label('Nổi bật')
+                ->options([
+                    true  => 'Nổi bật',
+                    false => 'Không nổi bật',
+                ]),
         ])->actions([
             Tables\Actions\EditAction::make(),
             Tables\Actions\DeleteAction::make(),

@@ -19,6 +19,8 @@ class AreaCommentResource extends Resource
     protected static ?string $modelLabel = 'Bình luận khu đất';
     protected static ?string $pluralModelLabel = 'Bình luận khu đất';
 
+    protected static ?int $navigationSort = 1;
+
     public static function form(Form $form): Form
     {
         return $form->schema([

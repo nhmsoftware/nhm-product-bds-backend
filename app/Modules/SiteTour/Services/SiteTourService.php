@@ -62,9 +62,8 @@ final class SiteTourService extends BaseService implements SiteTourServiceInterf
             );
 
             // 3. Kiểm tra tọa độ GPS hợp lệ (A5)
-            // Lấy tọa độ từ .env, mặc định là Khu 25 Thửa phú cát nếu không có
-            $projectLat = (float) env('DEFAULT_PROJECT_LAT', 21.04039963677646);
-            $projectLng = (float) env('DEFAULT_PROJECT_LNG', 105.77333406318525);
+            $projectLat = (float) config('site_tour.default_lat');
+            $projectLng = (float) config('site_tour.default_lng');
 
             $distance = $this->calculateDistance($dto->latitude, $dto->longitude, $projectLat, $projectLng);
             $this->validate(

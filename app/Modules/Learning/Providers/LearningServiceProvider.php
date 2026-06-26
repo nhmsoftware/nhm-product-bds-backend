@@ -15,6 +15,10 @@ use App\Modules\Learning\Repositories\CourseLessonRepository;
 use App\Modules\Learning\Repositories\CourseQuizRepository;
 use App\Modules\Learning\Repositories\QuizAttemptRepository;
 use App\Modules\Learning\Services\LearningService;
+use App\Modules\Learning\Services\EmployeeLearningService;
+use App\Modules\Learning\Services\CourseQuizService;
+use App\Modules\Learning\Services\CertificateService;
+use App\Modules\Learning\Services\AdminCourseService;
 
 /**
  * Class LearningServiceProvider
@@ -49,6 +53,10 @@ class LearningServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(CourseLessonRepositoryInterface::class, CourseLessonRepository::class);
         $this->app->singleton(CourseQuizRepositoryInterface::class, CourseQuizRepository::class);
         $this->app->singleton(QuizAttemptRepositoryInterface::class, QuizAttemptRepository::class);
+        $this->app->singleton(EmployeeLearningService::class);
+        $this->app->singleton(CourseQuizService::class);
+        $this->app->singleton(CertificateService::class);
+        $this->app->singleton(AdminCourseService::class);
         $this->app->singleton(LearningServiceInterface::class, LearningService::class);
     }
 

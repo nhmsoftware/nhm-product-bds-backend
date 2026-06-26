@@ -4,7 +4,11 @@ namespace App\Filament\Resources\CourseResource\RelationManagers;
 
 use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Auth\Models\User;
+use App\Modules\Learning\Models\Course;
 use App\Modules\Learning\Models\CourseEnrollment;
+use App\Modules\Learning\Models\CourseLesson;
+use App\Modules\Learning\Models\CourseQuiz;
+use App\Modules\Learning\Models\QuizAttempt;
 use App\Modules\Learning\Models\Enums\CourseEnrollmentStatus;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -119,38 +123,94 @@ class EnrollmentsRelationManager extends RelationManager
                     ->icon('heroicon-o-user-group')
                     ->color('warning')
                     ->fillForm(function (): array {
-                        $roles = $this->getOwnerRecord()->allowed_roles;
+                        $fresh = \App\Modules\Learning\Models\Course::query()->findOrFail($this->getOwnerRecord()->id);
+                        $roles = $fresh->allowed_roles;
                         $roles = is_string($roles) ? json_decode($roles, true) : $roles;
                         return ['allowed_roles' => is_array($roles) ? $roles : []];
                     })
-                    ->form([
-                        Forms\Components\CheckboxList::make('allowed_roles')
-                            ->label('Vai trò được phép làm khóa học')
-                            ->options([
-                                UserRole::EMPLOYEE->value => 'Nhân viên',
-                                UserRole::MANAGER->value => 'Trưởng phòng',
-                                UserRole::DIRECTOR->value => 'Giám đốc',
-                                UserRole::CEO->value => 'Tổng giám đốc',
+                    ->form(function () {
+                        $courseId = $this->getOwnerRecord()->id;
+                        $enrollmentsByRole = $this->getEnrollmentsByRole($courseId);
+
+                        $roleOptions = [
+                            UserRole::EMPLOYEE->value => 'Nhân viên',
+                            UserRole::MANAGER->value => 'Trưởng phòng',
+                            UserRole::DIRECTOR->value => 'Giám đốc',
+                            UserRole::CEO->value => 'Tổng giám đốc',
+                        ];
+
+                        $helperLines = collect($roleOptions)
+                            ->map(fn (string $label, int $value) => [
+                                'label' => $label,
+                                'count' => $enrollmentsByRole[$value] ?? 0,
                             ])
-                            ->columns(2)
-                            ->required()
-                            ->validationMessages([
-                                'required' => 'Vui lòng chọn ít nhất một vai trò.',
-                            ]),
-                    ])
+                            ->filter(fn (array $item) => $item['count'] > 0)
+                            ->map(fn (array $item) => "  • {$item['label']}: {$item['count']} nhân viên đang học")
+                            ->values()
+                            ->implode("\n");
+
+                        return [
+                            Forms\Components\CheckboxList::make('allowed_roles')
+                                ->label('Vai trò được phép làm khóa học')
+                                ->options($roleOptions)
+                                ->columns(2)
+                                ->required()
+                                ->validationMessages([
+                                    'required' => 'Vui lòng chọn ít nhất một vai trò.',
+                                ]),
+                            Forms\Components\Placeholder::make('enrollment_info')
+                                ->label('Tình trạng nhân viên theo vai trò')
+                                ->content($helperLines !== '' ? $helperLines : 'Chưa có nhân viên nào được gán.'),
+                        ];
+                    })
                     ->action(function (array $data): void {
-                        $course = $this->getOwnerRecord();
-                        $roles = collect($data['allowed_roles'] ?? [])
+                        $courseId = $this->getOwnerRecord()->id;
+
+                        $newRoles = collect($data['allowed_roles'] ?? [])
                             ->map(fn ($role) => (int) $role)
-                            ->filter(fn ($role) => UserRole::tryFrom($role) !== null && !in_array($role, [UserRole::SUPER_ADMIN->value, UserRole::BUYER->value], true))
+                            ->filter(fn ($role) => UserRole::tryFrom($role) !== null
+                                && !in_array($role, [UserRole::SUPER_ADMIN->value, UserRole::BUYER->value], true))
                             ->unique()
                             ->values()
                             ->all();
 
-                        $course->update(['allowed_roles' => $roles]);
+                        $course = Course::query()->findOrFail($courseId);
+                        $oldRoles = $course->allowed_roles;
+                        $oldRoles = is_string($oldRoles) ? json_decode($oldRoles, true) : $oldRoles;
+                        $oldRoles = is_array($oldRoles) ? $oldRoles : [];
+
+                        $course->update([
+                            'allowed_roles' => $newRoles,
+                        ]);
+
+                        $removedRoles = array_values(array_diff($oldRoles, $newRoles));
+                        if (!empty($removedRoles)) {
+                            $affectedEnrollments = CourseEnrollment::query()
+                                ->where('course_id', $courseId)
+                                ->whereHas('user', fn ($q) => $q->whereIn('role', $removedRoles))
+                                ->whereNot('status', CourseEnrollmentStatus::COMPLETED)
+                                ->get();
+
+                            if ($affectedEnrollments->isNotEmpty()) {
+                                $removedLabels = collect($removedRoles)
+                                    ->map(fn ($r) => UserRole::tryFrom((int) $r)?->label())
+                                    ->filter()
+                                    ->implode(', ');
+
+                                Notification::make()
+                                    ->title('Cảnh báo: Có nhân viên đang học bị ảnh hưởng')
+                                    ->body("Các vai trò [{$removedLabels}] đã bị bỏ chọn. "
+                                        . $affectedEnrollments->count()
+                                        . ' lượt học của nhân viên trong các vai trò này sẽ bị xóa.')
+                                    ->warning()
+                                    ->send();
+
+                                $affectedEnrollments->each->delete();
+                            }
+                        }
 
                         $users = User::query()
-                            ->whereIn('role', $roles)
+                            ->whereIn('role', $newRoles)
                             ->where('is_active', true)
                             ->whereNotNull('job_position_id')
                             ->get(['id']);
@@ -158,7 +218,7 @@ class EnrollmentsRelationManager extends RelationManager
                         foreach ($users as $user) {
                             CourseEnrollment::firstOrCreate(
                                 [
-                                    'course_id' => $course->id,
+                                    'course_id' => $courseId,
                                     'user_id' => $user->id,
                                 ],
                                 [
@@ -170,7 +230,8 @@ class EnrollmentsRelationManager extends RelationManager
 
                         Notification::make()
                             ->title('Đã gán vai trò học')
-                            ->body('Đã cập nhật vai trò được phép học và tạo lượt học cho ' . $users->count() . ' nhân sự phù hợp.')
+                            ->body('Đã cập nhật vai trò được phép học và tạo lượt học cho '
+                                . $users->count() . ' nhân sự phù hợp.')
                             ->success()
                             ->send();
                     }),
@@ -213,7 +274,7 @@ class EnrollmentsRelationManager extends RelationManager
 
     private function countUngradedEssays(CourseEnrollment $record): int
     {
-        $lessonIds = DB::table('course_lessons')
+        $lessonIds = CourseLesson::query()
             ->where('course_id', $record->course_id)
             ->pluck('id');
 
@@ -221,17 +282,16 @@ class EnrollmentsRelationManager extends RelationManager
             return 0;
         }
 
-        $essayQuizIds = DB::table('course_quizzes')
+        $essayQuizIds = CourseQuiz::query()
             ->whereIn('lesson_id', $lessonIds)
             ->where('type', 'essay')
-            ->whereNull('deleted_at')
             ->pluck('id');
 
         if ($essayQuizIds->isEmpty()) {
             return 0;
         }
 
-        return DB::table('quiz_attempts')
+        return QuizAttempt::query()
             ->where('user_id', $record->user_id)
             ->whereIn('quiz_id', $essayQuizIds)
             ->where('is_draft', false)
@@ -241,7 +301,7 @@ class EnrollmentsRelationManager extends RelationManager
 
     private function calculateQuizScore(CourseEnrollment $record): ?float
     {
-        $lessonIds = DB::table('course_lessons')
+        $lessonIds = CourseLesson::query()
             ->where('course_id', $record->course_id)
             ->pluck('id');
 
@@ -249,16 +309,15 @@ class EnrollmentsRelationManager extends RelationManager
             return null;
         }
 
-        $quizIds = DB::table('course_quizzes')
+        $quizIds = CourseQuiz::query()
             ->whereIn('lesson_id', $lessonIds)
-            ->whereNull('deleted_at')
             ->pluck('id');
 
         if ($quizIds->isEmpty()) {
             return null;
         }
 
-        $gradedAttempts = DB::table('quiz_attempts')
+        $gradedAttempts = QuizAttempt::query()
             ->where('user_id', $record->user_id)
             ->whereIn('quiz_id', $quizIds)
             ->where('is_draft', false)
@@ -278,5 +337,18 @@ class EnrollmentsRelationManager extends RelationManager
     private function enumOptions(string $enum): array
     {
         return collect($enum::cases())->mapWithKeys(fn ($case) => [$case->value => $case->label()])->all();
+    }
+
+    private function getEnrollmentsByRole(string $courseId): array
+    {
+        $results = CourseEnrollment::query()
+            ->join('users', 'users.id', '=', 'course_enrollments.user_id')
+            ->where('course_enrollments.course_id', $courseId)
+            ->whereNotNull('users.role')
+            ->groupBy('users.role')
+            ->pluck(\Illuminate\Support\Facades\DB::raw('COUNT(*)'), 'users.role')
+            ->all();
+
+        return array_map('intval', $results);
     }
 }

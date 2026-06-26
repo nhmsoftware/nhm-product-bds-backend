@@ -10,7 +10,7 @@ use App\Filament\Support\AdminUploads;
 use App\Filament\Support\AdminOptions;
 use App\Filament\Support\GoongLocationInput;
 use Filament\Facades\Filament;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -116,10 +116,7 @@ class AreaResource extends Resource
                                     $component->state([]);
                                     return;
                                 }
-                                $roles = \DB::table('area_assignments')
-                                    ->where('area_id', $record->id)
-                                    ->where('assignable_type', 'role')
-                                    ->whereNull('deleted_at')
+                                $roles = $record->roleAssignments()
                                     ->pluck('assignable_id')
                                     ->map(fn ($v) => (int) $v)
                                     ->values()
@@ -127,21 +124,14 @@ class AreaResource extends Resource
                                 $component->state($roles);
                             })
                             ->saveRelationshipsUsing(function (Area $record, ?array $state): void {
-                                \DB::table('area_assignments')
-                                    ->where('area_id', $record->id)
-                                    ->where('assignable_type', 'role')
-                                    ->delete();
+                                $record->roleAssignments()->delete();
 
                                 foreach ($state ?? [] as $roleValue) {
-                                    \DB::table('area_assignments')->insert([
-                                        'id' => (string) Str::uuid(),
-                                        'area_id' => $record->id,
+                                    $record->roleAssignments()->create([
                                         'user_id' => null,
                                         'assignable_id' => (string) $roleValue,
                                         'assignable_type' => 'role',
-                                        'permissions' => json_encode(['view_area'], JSON_UNESCAPED_UNICODE),
-                                        'created_at' => now(),
-                                        'updated_at' => now(),
+                                        'permissions' => ['view_area'],
                                     ]);
                                 }
                             })
@@ -182,10 +172,7 @@ class AreaResource extends Resource
             Tables\Columns\TextColumn::make('role_permissions')
                 ->label('Phân quyền')
                 ->getStateUsing(function (Area $record): string {
-                    $roles = \DB::table('area_assignments')
-                        ->where('area_id', $record->id)
-                        ->where('assignable_type', 'role')
-                        ->whereNull('deleted_at')
+                    $roles = $record->roleAssignments()
                         ->pluck('assignable_id')
                         ->map(fn ($v) => UserRole::tryFrom((int) $v)?->label())
                         ->filter()
@@ -251,10 +238,7 @@ class AreaResource extends Resource
                 ->color('success')
                 ->modalHeading(fn (Area $record) => "Phân quyền khu đất: {$record->name}")
                 ->fillForm(fn (Area $record): array => [
-                    'role_access' => \DB::table('area_assignments')
-                        ->where('area_id', $record->id)
-                        ->where('assignable_type', 'role')
-                        ->whereNull('deleted_at')
+                    'role_access' => $record->roleAssignments()
                         ->pluck('assignable_id')
                         ->map(fn ($v) => (int) $v)
                         ->values()
@@ -279,22 +263,15 @@ class AreaResource extends Resource
                         ->columns(2),
                 ])
                 ->action(function (Area $record, array $data): void {
-                    \DB::transaction(function () use ($record, $data) {
-                        \DB::table('area_assignments')
-                            ->where('area_id', $record->id)
-                            ->where('assignable_type', 'role')
-                            ->delete();
+                    DB::transaction(function () use ($record, $data) {
+                        $record->roleAssignments()->delete();
 
                         foreach ($data['role_access'] ?? [] as $roleValue) {
-                            \DB::table('area_assignments')->insert([
-                                'id' => (string) Str::uuid(),
-                                'area_id' => $record->id,
+                            $record->roleAssignments()->create([
                                 'user_id' => null,
                                 'assignable_id' => (string) $roleValue,
                                 'assignable_type' => 'role',
-                                'permissions' => json_encode(['view_area'], JSON_UNESCAPED_UNICODE),
-                                'created_at' => now(),
-                                'updated_at' => now(),
+                                'permissions' => ['view_area'],
                             ]);
                         }
                     });

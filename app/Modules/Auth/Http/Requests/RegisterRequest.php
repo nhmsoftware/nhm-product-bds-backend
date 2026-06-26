@@ -40,6 +40,8 @@ class RegisterRequest extends FormRequest
             'email.email' => 'Email không hợp lệ.',
             'email.unique' => 'Email đã được sử dụng.',
             'phone.regex' => 'Số điện thoại không hợp lệ.',
+            'password.required' => 'Vui lòng nhập mật khẩu.',
+            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự, bao gồm ký tự đặc biệt và số.',
             'password.regex' => 'Mật khẩu phải có ít nhất 8 ký tự, bao gồm ký tự đặc biệt và số.',
             'agree_terms.accepted' => 'Vui lòng đồng ý Điều khoản dịch vụ và Chính sách bảo mật.',
             'account_type.required' => 'Vui lòng chọn loại tài khoản.',

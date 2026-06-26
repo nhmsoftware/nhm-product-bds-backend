@@ -77,6 +77,7 @@ class CourseResource extends Resource
                         ->implode(', ');
                     return $labels !== '' ? $labels : 'Tất cả';
                 })
+                ->placeholder('Tất cả')
                 ->toggleable(),
             Tables\Columns\IconColumn::make('is_active')->label('Mở')->boolean()->alignCenter(),
             Tables\Columns\IconColumn::make('has_certificate')->label('Chứng chỉ')->boolean()->alignCenter(),
