@@ -28,38 +28,40 @@ class AttendanceSeeder extends Seeder
             return;
         }
 
+        // Dùng ngày trong quá khứ để tránh trùng unique constraint (user_id, work_date)
+        // với dữ liệu check-in thật của hôm nay
         $scenarios = [
-            // check-in đúng giờ + check-out đủ 6h → PRESENT 1.0 công
+            // 5 ngày trước, check-in đúng giờ + check-out đủ 6h → PRESENT 1.0 công
             [
                 'check_in_time' => '08:20:00',
                 'check_out_time' => '17:30:00',
                 'status' => AttendanceStatus::PRESENT,
                 'note' => 'Đi làm đúng giờ',
-                'days_ago' => 0,
+                'days_ago' => 5,
             ],
-            // check-in trễ + check-out đủ 6h → LATE 1.0 công
+            // 4 ngày trước, check-in trễ + check-out đủ 6h → LATE 1.0 công
             [
                 'check_in_time' => '09:05:00',
                 'check_out_time' => '17:45:00',
                 'status' => AttendanceStatus::LATE,
                 'note' => 'Đi làm trễ (Giờ quy định: 08:30)',
-                'days_ago' => 0,
+                'days_ago' => 4,
             ],
-            // check-in + check-out dưới 6h → HALF_DAY 0.5 công
+            // 3 ngày trước, check-in + check-out dưới 6h → HALF_DAY 0.5 công
             [
                 'check_in_time' => '08:15:00',
                 'check_out_time' => '13:00:00',
                 'status' => AttendanceStatus::HALF_DAY,
                 'note' => 'Đi làm đúng giờ',
-                'days_ago' => 0,
+                'days_ago' => 3,
             ],
-            // check-in đúng giờ + chưa check-out → WORKING (đang làm việc)
+            // 2 ngày trước, check-in đúng giờ + chưa check-out → WORKING (đang làm việc)
             [
                 'check_in_time' => '08:25:00',
                 'check_out_time' => null,
                 'status' => AttendanceStatus::WORKING,
                 'note' => 'Đi làm đúng giờ',
-                'days_ago' => 0,
+                'days_ago' => 2,
             ],
             // hôm qua, check-in đúng giờ + check-out đủ 6h → PRESENT
             [
@@ -77,26 +79,25 @@ class AttendanceSeeder extends Seeder
                 'note' => 'Đi làm trễ (Giờ quy định: 08:30)',
                 'days_ago' => 1,
             ],
-            // hôm qua, check-in + check-out dưới 6h → HALF_DAY
+            // 6 ngày trước, check-in + check-out dưới 6h → HALF_DAY
             [
                 'check_in_time' => '08:30:00',
                 'check_out_time' => '12:30:00',
                 'status' => AttendanceStatus::HALF_DAY,
                 'note' => 'Đi làm đúng giờ',
-                'days_ago' => 1,
+                'days_ago' => 6,
             ],
-            // hôm qua, thiếu check-out → HALF_DAY (auto cuối ngày)
+            // 7 ngày trước, thiếu check-out → HALF_DAY (auto cuối ngày)
             [
                 'check_in_time' => '08:20:00',
                 'check_out_time' => null,
                 'status' => AttendanceStatus::HALF_DAY,
                 'note' => 'Đi làm đúng giờ | Thiếu check-out. Hệ thống tự động tính công mặc định: 0.5 công.',
-                'days_ago' => 1,
+                'days_ago' => 7,
             ],
         ];
 
         $rows = [];
-        $employeeCount = $employees->count();
         $index = 0;
 
         foreach ($employees as $employee) {
@@ -131,6 +132,13 @@ class AttendanceSeeder extends Seeder
 
             $index++;
         }
+
+        // Xóa data demo cũ trước khi insert để tránh trùng unique constraint
+        $employeeIds = $employees->pluck('id')->toArray();
+        DB::table('attendances')
+            ->whereIn('user_id', $employeeIds)
+            ->where('note', 'like', '%Đi làm%')
+            ->delete();
 
         DB::table('attendances')->insert($rows);
     }
