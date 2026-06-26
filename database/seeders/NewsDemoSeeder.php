@@ -47,12 +47,12 @@ class NewsDemoSeeder extends Seeder
                 ['manager.hcm@test.com'],
                 [
                     'email' => 'manager.hcm@test.com',
-                    'name' => 'Nguyễn Thị Trưởng Nhóm HCM',
+                    'name' => 'Nguyễn Thị Trưởng Phòng HCM',
                     'staff_code' => '0900000017',
                     'phone' => '0900000017',
                     'role' => UserRole::MANAGER->value,
                     'department' => 'Kinh doanh',
-                    'job_position' => 'Trưởng nhóm kinh doanh',
+                    'job_position' => 'Trưởng phòng kinh doanh',
                     'area' => 'Hồ Chí Minh',
                 ],
                 $now
@@ -272,7 +272,7 @@ class NewsDemoSeeder extends Seeder
             [
                 'title' => 'Cập nhật quy trình ghi nhận khách tham quan dự án',
                 'summary' => 'Từ tuần này, nhân viên cần bổ sung ảnh hiện trường và ghi chú nhu cầu khách hàng ngay sau khi hoàn tất dẫn khách tham quan.',
-                'content' => "Để dữ liệu chăm sóc khách hàng được đồng bộ, đội kinh doanh cần cập nhật ảnh hiện trường, vị trí check-in và ghi chú nhu cầu khách ngay sau buổi tham quan.\n\nTrưởng nhóm sẽ rà soát dữ liệu cuối ngày để hỗ trợ các ca cần tư vấn tiếp theo.",
+                'content' => "Để dữ liệu chăm sóc khách hàng được đồng bộ, đội kinh doanh cần cập nhật ảnh hiện trường, vị trí check-in và ghi chú nhu cầu khách ngay sau buổi tham quan.\n\nTrưởng phòng sẽ rà soát dữ liệu cuối ngày để hỗ trợ các ca cần tư vấn tiếp theo.",
                 'thumbnail' => 'https://picsum.photos/seed/internal-site-tour-process/1200/800',
                 'category' => 'internal',
                 'author' => 'director',
@@ -282,7 +282,7 @@ class NewsDemoSeeder extends Seeder
             ],
             [
                 'title' => 'Nhắc lịch rà soát khách hàng tiềm năng khu vực Hồ Chí Minh',
-                'summary' => 'Đội Hồ Chí Minh cần cập nhật trạng thái khách hàng tiềm năng trước 17:00 để trưởng nhóm tổng hợp báo cáo cuối ngày.',
+                'summary' => 'Đội Hồ Chí Minh cần cập nhật trạng thái khách hàng tiềm năng trước 17:00 để trưởng phòng tổng hợp báo cáo cuối ngày.',
                 'content' => "Các bạn trong đội Hồ Chí Minh vui lòng rà soát lại nhóm khách hàng đang quan tâm sản phẩm căn hộ dịch vụ và nhà phố thương mại.\n\nMỗi khách hàng cần có trạng thái mới nhất, nhu cầu ngân sách và bước chăm sóc tiếp theo để tránh bỏ sót cơ hội giao dịch.",
                 'thumbnail' => 'https://picsum.photos/seed/internal-hcm-leads/1200/800',
                 'category' => 'internal',

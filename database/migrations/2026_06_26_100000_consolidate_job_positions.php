@@ -14,28 +14,27 @@ return new class extends Migration
         $targetPositions = [
             ['id' => 1, 'name' => 'Cộng tác viên', 'code' => 'COLLABORATOR'],
             ['id' => 2, 'name' => 'Chuyên viên kinh doanh', 'code' => 'BUSINESS_SPECIALIST'],
-            ['id' => 3, 'name' => 'Trưởng nhóm kinh doanh', 'code' => 'BUSINESS_LEADER'],
-            ['id' => 4, 'name' => 'Trưởng phòng kinh doanh', 'code' => 'BUSINESS_MANAGER'],
-            ['id' => 5, 'name' => 'Giám đốc kinh doanh', 'code' => 'BUSINESS_DIRECTOR'],
-            ['id' => 6, 'name' => 'Tổng giám đốc', 'code' => 'CEO'],
+            ['id' => 3, 'name' => 'Trưởng phòng kinh doanh', 'code' => 'BUSINESS_MANAGER'],
+            ['id' => 4, 'name' => 'Giám đốc kinh doanh', 'code' => 'BUSINESS_DIRECTOR'],
+            ['id' => 5, 'name' => 'Tổng giám đốc', 'code' => 'CEO'],
         ];
 
         // Map old names/codes → new ID for data migration
         $remap = [
             // Old "Nhân viên kinh doanh" / BUSINESS_STAFF (id 1) → Chuyên viên kinh doanh (2)
             1 => 2,
-            // Trưởng nhóm (2) stays at 3
+            // Trưởng nhóm (2) → Trưởng phòng kinh doanh (3)
             2 => 3,
-            // Trưởng phòng (3) stays at 4
-            3 => 4,
-            // GĐ kinh doanh (4) stays at 5
-            4 => 5,
-            // GĐ khu vực (5) → GĐ kinh doanh (5)
-            5 => 5,
-            // Tổng GĐ (6) stays at 6
-            6 => 6,
-            // Quản trị hệ thống (7) → Tổng GĐ (6)
-            7 => 6,
+            // Trưởng phòng (3) stays at 3
+            3 => 3,
+            // GĐ kinh doanh (4) stays at 4
+            4 => 4,
+            // GĐ khu vực (5) → GĐ kinh doanh (4)
+            5 => 4,
+            // Tổng GĐ (6) → Tổng giám đốc (5)
+            6 => 5,
+            // Quản trị hệ thống (7) → Tổng giám đốc (5)
+            7 => 5,
             // Khách hàng (8) → null
             8 => null,
             // Chuyên viên kinh doanh (9) stays at 2
