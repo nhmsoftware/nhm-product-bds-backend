@@ -11,6 +11,7 @@ use App\Modules\Learning\Models\Enums\CourseEnrollmentStatus;
 use App\Modules\Learning\Models\LessonProgress;
 use App\Modules\Learning\Models\QuizAttempt;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 class LearningPathDemoSeeder extends Seeder
@@ -177,12 +178,14 @@ class LearningPathDemoSeeder extends Seeder
             $lessonIds = CourseLesson::withTrashed()
                 ->where('course_id', $course->id)
                 ->pluck('id');
-            $enrollmentIds = CourseEnrollment::query()
+            $enrollmentIds = CourseEnrollment::withTrashed()
                 ->where('course_id', $course->id)
                 ->pluck('id');
 
-            LessonProgress::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
-            CourseEnrollment::query()->where('course_id', $course->id)->delete();
+            // Hard delete để tránh|unique constraint vi phạm nếu có soft-deleted enrollment
+            DB::table('lesson_progress')->whereIn('enrollment_id', $enrollmentIds)->delete();
+            DB::table('course_enrollments')->where('course_id', $course->id)->delete();
+
             CourseQuiz::withTrashed()->whereIn('lesson_id', $lessonIds)->forceDelete();
             CourseLesson::withTrashed()->where('course_id', $course->id)->forceDelete();
             $course->forceDelete();
@@ -302,9 +305,7 @@ class LearningPathDemoSeeder extends Seeder
             ->orderBy('order')
             ->get();
 
-        $enrollment = CourseEnrollment::create([
-            'user_id' => $user->id,
-            'course_id' => $course->id,
+        $enrollment = $this->upsertEnrollment($user, $course, [
             'status' => $completed ? CourseEnrollmentStatus::COMPLETED : CourseEnrollmentStatus::NOT_STARTED,
             'progress_percent' => $completed ? 100.00 : 0.00,
             'completed_at' => $completed ? now() : null,
@@ -337,5 +338,32 @@ class LearningPathDemoSeeder extends Seeder
                 'is_draft' => false,
             ]);
         }
+    }
+
+    private function upsertEnrollment(User $user, Course $course, array $attributes): CourseEnrollment
+    {
+        // Tìm enrollment hiện tại (bao gồm soft-deleted)
+        $existing = CourseEnrollment::withTrashed()
+            ->where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->first();
+
+        if ($existing) {
+            // Khôi phục bản ghi đã bị soft delete nếu cần
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
+
+            $existing->fill($attributes);
+            $existing->save();
+
+            return $existing;
+        }
+
+        // Tạo mới nếu chưa có
+        return CourseEnrollment::create(array_merge([
+            'user_id' => $user->id,
+            'course_id' => $course->id,
+        ], $attributes));
     }
 }

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use App\Modules\Auth\Models\User;
 use App\Modules\Learning\Models\Course;
 use App\Modules\Learning\Models\CourseLesson;
@@ -11,7 +12,6 @@ use App\Modules\Learning\Models\CourseEnrollment;
 use App\Modules\Learning\Models\LessonProgress;
 use App\Modules\Learning\Models\QuizAttempt;
 use App\Modules\Learning\Models\Enums\CourseEnrollmentStatus;
-use Illuminate\Support\Collection;
 
 class BdsCourseSeeder extends Seeder
 {
@@ -55,11 +55,10 @@ class BdsCourseSeeder extends Seeder
         echo "Đang seed dữ liệu cho " . $users->count() . " nhân viên demo.\n";
 
         foreach ($users as $user) {
-            $enrollment = CourseEnrollment::create([
-                'user_id'          => $user->id,
-                'course_id'        => $course->id,
+            $enrollment = $this->upsertEnrollment($user, $course, [
                 'status'           => CourseEnrollmentStatus::PENDING_ONBOARDING,
                 'progress_percent' => 100.00,
+                'completed_at'     => null,
             ]);
 
             foreach ($lessons as $lesson) {
@@ -104,13 +103,41 @@ class BdsCourseSeeder extends Seeder
         $lessonIds = CourseLesson::query()->where('course_id', $course->id)->pluck('id');
         $quizIds   = CourseQuiz::query()->whereIn('lesson_id', $lessonIds)->pluck('id');
 
-        $enrollmentIds = CourseEnrollment::query()
+        // Hard delete để bypass SoftDeletes unique constraint — tránh duplicate khi tạo lại enrollment
+        $enrollmentIds = CourseEnrollment::withTrashed()
             ->where('course_id', $course->id)
             ->whereIn('user_id', $userIds)
             ->pluck('id');
 
         QuizAttempt::query()->whereIn('quiz_id', $quizIds)->whereIn('user_id', $userIds)->delete();
-        LessonProgress::query()->whereIn('enrollment_id', $enrollmentIds)->delete();
-        CourseEnrollment::query()->where('course_id', $course->id)->whereIn('user_id', $userIds)->delete();
+        DB::table('lesson_progress')->whereIn('enrollment_id', $enrollmentIds)->delete();
+        DB::table('course_enrollments')->where('course_id', $course->id)->whereIn('user_id', $userIds)->delete();
+    }
+
+    private function upsertEnrollment(User $user, Course $course, array $attributes): CourseEnrollment
+    {
+        // Tìm enrollment hiện tại (bao gồm soft-deleted)
+        $existing = CourseEnrollment::withTrashed()
+            ->where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->first();
+
+        if ($existing) {
+            // Khôi phục bản ghi đã bị soft delete nếu cần
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
+
+            $existing->fill($attributes);
+            $existing->save();
+
+            return $existing;
+        }
+
+        // Tạo mới nếu chưa có
+        return CourseEnrollment::create(array_merge([
+            'user_id' => $user->id,
+            'course_id' => $course->id,
+        ], $attributes));
     }
 }
