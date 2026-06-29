@@ -64,6 +64,12 @@ class Attendance extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
+    public const WORK_DAY_OPTIONS = [
+        '0' => '0.0 công',
+        '0.5' => '0.5 công',
+        '1' => '1.0 công',
+    ];
+
     protected $table = 'attendances';
 
     protected $fillable = [

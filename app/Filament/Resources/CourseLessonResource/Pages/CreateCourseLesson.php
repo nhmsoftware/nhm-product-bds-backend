@@ -54,7 +54,7 @@ class CreateCourseLesson extends CreateRecord
         $lesson = $this->record;
 
         if (!blank($lesson->video_url)) {
-            ExtractVideoDurationJob::dispatch($lesson->id);
+            ExtractVideoDurationJob::dispatchSync($lesson->id);
         }
     }
 }

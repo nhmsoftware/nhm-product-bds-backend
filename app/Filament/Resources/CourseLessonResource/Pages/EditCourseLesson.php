@@ -55,7 +55,7 @@ class EditCourseLesson extends EditRecord
         $lesson = $this->record;
 
         if (!blank($lesson->video_url) && $lesson->wasChanged('video_url')) {
-            ExtractVideoDurationJob::dispatch($lesson->id);
+            ExtractVideoDurationJob::dispatchSync($lesson->id);
         }
     }
 }

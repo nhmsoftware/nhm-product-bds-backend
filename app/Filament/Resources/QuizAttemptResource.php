@@ -27,9 +27,12 @@ class QuizAttemptResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         // 1 row per user-course — lấy attempt đại diện (MIN id) của mỗi user đã nộp (không nháp) cho từng khóa học
+        // Loại bỏ các câu hỏi hoặc bài học đã bị xóa mềm (soft deleted)
         $representativeIds = QuizAttempt::query()
             ->join('course_quizzes as cq', 'cq.id', '=', 'quiz_attempts.quiz_id')
             ->join('course_lessons as cl', 'cl.id', '=', 'cq.lesson_id')
+            ->whereNull('cq.deleted_at')
+            ->whereNull('cl.deleted_at')
             ->where('quiz_attempts.is_draft', false)
             ->groupBy('quiz_attempts.user_id', 'cl.course_id')
             ->selectRaw('MIN(quiz_attempts.id::text) as id')
@@ -45,7 +48,12 @@ class QuizAttemptResource extends Resource
      */
     private static function hasPendingEssayGrading(QuizAttempt $record): bool
     {
-        $courseId = $record->quiz->lesson->course_id;
+        $quiz = $record->quiz;
+        if (!$quiz || !$quiz->lesson) {
+            return false;
+        }
+
+        $courseId = $quiz->lesson->course_id;
         return QuizAttempt::query()
             ->join('course_quizzes as cq', 'cq.id', '=', 'quiz_attempts.quiz_id')
             ->join('course_lessons as cl', 'cl.id', '=', 'cq.lesson_id')
@@ -62,7 +70,12 @@ class QuizAttemptResource extends Resource
      */
     private static function computeScore(QuizAttempt $record): array
     {
-        $courseId = $record->quiz->lesson->course_id;
+        $quiz = $record->quiz;
+        if (!$quiz || !$quiz->lesson) {
+            return ['total' => 0, 'correct' => 0];
+        }
+
+        $courseId = $quiz->lesson->course_id;
         $allAttempts = QuizAttempt::query()
             ->join('course_quizzes as cq', 'cq.id', '=', 'quiz_attempts.quiz_id')
             ->join('course_lessons as cl', 'cl.id', '=', 'cq.lesson_id')
@@ -100,7 +113,9 @@ class QuizAttemptResource extends Resource
                     ->label('Câu chờ chấm')
                     ->alignCenter()
                     ->getStateUsing(function (QuizAttempt $record): int {
-                        $courseId = $record->quiz->lesson->course_id;
+                        $quiz = $record->quiz;
+                        if (!$quiz || !$quiz->lesson) return 0;
+                        $courseId = $quiz->lesson->course_id;
                         $lessonIds = CourseLesson::query()->where('course_id', $courseId)->pluck('id');
                         if ($lessonIds->isEmpty()) return 0;
 
@@ -180,7 +195,9 @@ class QuizAttemptResource extends Resource
                     })
                     ->requiresConfirmation()
                     ->action(function (QuizAttempt $record) {
-                        $courseId = $record->quiz->lesson->course_id;
+                        $quiz = $record->quiz;
+                        if (!$quiz || !$quiz->lesson) return;
+                        $courseId = $quiz->lesson->course_id;
                         $learningService = app(\App\Modules\Learning\Interfaces\LearningServiceInterface::class);
                         $result = $learningService->adminConfirmOnboarding(
                             (string) $courseId,

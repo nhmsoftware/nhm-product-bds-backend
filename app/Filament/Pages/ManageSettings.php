@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Filament\Support\GoongLocationInput;
 use App\Modules\Area\Models\InventorySetting;
+use App\Modules\Attendance\Models\Attendance;
 use App\Modules\Auth\Models\Enums\UserRole;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Grid;
@@ -205,20 +206,12 @@ class ManageSettings extends Page implements HasForms
                     ->schema([
                         Select::make('attendance_no_checkout_work_day.work_day')
                             ->label('Nhân viên không thực hiện check-out trong ngày')
-                            ->options([
-                                '0' => '0.0 công',
-                                '0.5' => '0.5 công',
-                                '1' => '1.0 công',
-                            ])
+                            ->options(Attendance::WORK_DAY_OPTIONS)
                             ->required()
                             ->validationMessages(['required' => 'Vui lòng chọn số công mặc định.']),
                         Select::make('attendance_under_6_hours_work_day.work_day')
                             ->label('Nhân viên làm việc dưới 6 tiếng')
-                            ->options([
-                                '0' => '0.0 công',
-                                '0.5' => '0.5 công',
-                                '1' => '1.0 công',
-                            ])
+                            ->options(Attendance::WORK_DAY_OPTIONS)
                             ->required()
                             ->validationMessages(['required' => 'Vui lòng chọn số công mặc định.']),
 
