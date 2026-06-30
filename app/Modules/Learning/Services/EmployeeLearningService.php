@@ -14,6 +14,7 @@ use App\Modules\Learning\Interfaces\CourseLessonRepositoryInterface;
 use App\Modules\Learning\Interfaces\CourseQuizRepositoryInterface;
 use App\Modules\Learning\Interfaces\QuizAttemptRepositoryInterface;
 use App\Modules\Learning\Models\Enums\CourseEnrollmentStatus;
+use App\Modules\Learning\Models\Enums\CourseQuizType;
 use App\Modules\Learning\Models\Enums\LessonStatus;
 
 final class EmployeeLearningService extends BaseService
@@ -123,8 +124,12 @@ final class EmployeeLearningService extends BaseService
                 $canStart = false;
                 $quizStatus = 'not_started';
                 $quizActionText = 'Làm bài kiểm tra';
+                $hasEssay = false;
 
                 if ($hasQuiz) {
+                    $hasEssay = $quizQuestions->contains(
+                        fn ($q) => ($q->type ?? '') === CourseQuizType::ESSAY->value
+                    );
                     $questionIds = $quizQuestions->pluck('id')->toArray();
                     $totalQuestionsCount = $quizQuestions->count();
                     $canStart = ($completedCount === $totalLessons);
@@ -186,6 +191,7 @@ final class EmployeeLearningService extends BaseService
                         'lastScore'    => $lastScore,
                         'passingScore' => $passingScore,
                         'canStart'     => $canStart,
+                        'hasEssay'     => $hasEssay,
                     ],
                     'canAccessPremiumLearning' => $enrollment?->status === CourseEnrollmentStatus::COMPLETED,
                     'notice' => [

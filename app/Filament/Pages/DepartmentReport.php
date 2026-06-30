@@ -140,7 +140,7 @@ class DepartmentReport extends Page implements HasForms
         $empQuery = User::query()
             ->where('role', UserRole::EMPLOYEE->value)
             ->where('is_active', true)
-            ->where('department_id', function ($q) use ($departmentName) {
+            ->whereIn('department_id', function ($q) use ($departmentName) {
                 $q->select('id')->from('departments')->where('name', $departmentName);
             })
             ->whereNotNull('job_position_id');
@@ -243,7 +243,7 @@ class DepartmentReport extends Page implements HasForms
         }
 
         if ($department) {
-            $query->where('department_id', function ($q) use ($department) {
+            $query->whereIn('department_id', function ($q) use ($department) {
                 $q->select('id')->from('departments')->where('name', $department);
             });
         }

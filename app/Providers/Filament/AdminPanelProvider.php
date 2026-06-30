@@ -42,6 +42,8 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('NHM BĐS Admin')
+            ->brandLogo(asset('assets/images/icons/header.png'))
+            ->brandLogoHeight('4rem')
             ->colors([
                 'primary' => Color::Amber,
             ])
