@@ -82,6 +82,17 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'create_news', 'label' => 'Tạo tin tức', 'module' => 'news'],
             ['name' => 'edit_news', 'label' => 'Sửa tin tức', 'module' => 'news'],
             ['name' => 'delete_news', 'label' => 'Xóa tin tức', 'module' => 'news'],
+
+            // Mobile app permissions (Module = mobile)
+            ['name' => 'manage_all_mobile', 'label' => 'Quản lý toàn bộ mobile', 'module' => 'mobile'],
+            ['name' => 'access_mobile', 'label' => 'Đăng nhập Mobile', 'module' => 'mobile'],
+            ['name' => 'mobile_learning', 'label' => 'Học tập (Learning)', 'module' => 'mobile'],
+            ['name' => 'mobile_checkin', 'label' => 'Chấm công (Check-in)', 'module' => 'mobile'],
+            ['name' => 'mobile_warehouse', 'label' => 'Khu đất (Kho hàng)', 'module' => 'mobile'],
+            ['name' => 'mobile_approve_leave', 'label' => 'Duyệt đơn xin nghỉ phép (Mobile)', 'module' => 'mobile'],
+            ['name' => 'mobile_approve_transfer', 'label' => 'Duyệt đơn xin chuyển phòng ban (Mobile)', 'module' => 'mobile'],
+            ['name' => 'mobile_approve_recruitment', 'label' => 'Duyệt đơn ứng tuyển (Mobile)', 'module' => 'mobile'],
+            ['name' => 'mobile_employee_list', 'label' => 'Danh sách nhân viên (Mobile)', 'module' => 'mobile'],
         ];
 
         foreach ($permissions as $perm) {
@@ -125,33 +136,45 @@ class RolePermissionSeeder extends Seeder
 
         // ─── 3. Seed Role-Permission mapping ────────────────────
         $rolePermissions = [
-            'super_admin' => ['manage_all'],
-            'admin' => ['manage_all'],
-            'ceo' => ['manage_all'],
+            'super_admin' => ['manage_all', 'manage_all_mobile'],
+            'admin' => ['manage_all', 'manage_all_mobile'],
+            'ceo' => ['manage_all', 'manage_all_mobile'],
             'gdcn' => [
                 'view_branch', 'create_branch', 'edit_branch',
-                'view_recruitment', 'approve_onboard'
+                'view_recruitment', 'approve_onboard',
+                'access_mobile', 'mobile_learning', 'mobile_checkin', 'mobile_warehouse',
+                'mobile_approve_leave', 'mobile_approve_transfer', 'mobile_approve_recruitment', 'mobile_employee_list'
             ],
             'gdkd' => [
                 'view_employee', 'create_employee', 'edit_employee', 'delete_employee',
                 'view_recruitment', 'approve_onboard',
                 'view_leave', 'approve_leave',
-                'approve_transfer'
+                'approve_transfer',
+                'access_mobile', 'mobile_learning', 'mobile_checkin', 'mobile_warehouse',
+                'mobile_approve_leave', 'mobile_approve_transfer', 'mobile_approve_recruitment', 'mobile_employee_list'
             ],
             'tp_kd' => [
                 'view_activity',
-                'approve_onboard'
+                'approve_onboard',
+                'access_mobile', 'mobile_learning', 'mobile_checkin', 'mobile_warehouse',
+                'mobile_approve_leave', 'mobile_employee_list'
             ],
             'hr_manager' => [
-                'view_contract', 'create_contract', 'edit_contract', 'delete_contract'
+                'view_contract', 'create_contract', 'edit_contract', 'delete_contract',
+                'access_mobile', 'mobile_learning', 'mobile_checkin', 'mobile_warehouse',
+                'mobile_approve_leave', 'mobile_approve_transfer', 'mobile_approve_recruitment', 'mobile_employee_list'
             ],
             'employee' => [
-                'view_warehouse', 'checkin_checkout', 'view_ranking'
+                'view_warehouse', 'checkin_checkout', 'view_ranking',
+                'access_mobile', 'mobile_learning', 'mobile_checkin', 'mobile_warehouse'
             ],
             'ctv' => [
-                'view_warehouse'
+                'view_warehouse',
+                'access_mobile', 'mobile_learning', 'mobile_warehouse'
             ],
-            // buyer: no permissions
+            'buyer' => [
+                'access_mobile'
+            ],
         ];
 
         foreach ($rolePermissions as $roleName => $permNames) {

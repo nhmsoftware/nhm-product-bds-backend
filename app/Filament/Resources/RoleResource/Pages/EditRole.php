@@ -29,13 +29,25 @@ class EditRole extends EditRecord
         $data = $this->form->getRawState();
         
         $permIds = [];
+        
+        // System Permissions
         if ($data['manage_all'] ?? false) {
             $manageAllPerm = \App\Modules\Auth\Models\Permission::where('name', 'manage_all')->first();
             if ($manageAllPerm) {
                 $permIds[] = $manageAllPerm->id;
             }
         } else {
-            $permIds = $data['permissions'] ?? [];
+            $permIds = array_merge($permIds, $data['permissions'] ?? []);
+        }
+        
+        // Mobile Permissions
+        if ($data['manage_all_mobile'] ?? false) {
+            $manageAllMobilePerm = \App\Modules\Auth\Models\Permission::where('name', 'manage_all_mobile')->first();
+            if ($manageAllMobilePerm) {
+                $permIds[] = $manageAllMobilePerm->id;
+            }
+        } else {
+            $permIds = array_merge($permIds, $data['mobile_permissions'] ?? []);
         }
         
         $role->permissions()->sync($permIds);

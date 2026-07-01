@@ -2,6 +2,7 @@
     $allPermissions = \App\Modules\Auth\Models\Permission::query()
         ->active()
         ->where('name', '!=', 'manage_all')
+        ->where('module', '!=', 'mobile')
         ->ordered()
         ->get();
 

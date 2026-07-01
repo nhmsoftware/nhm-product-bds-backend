@@ -96,35 +96,84 @@ class RoleResource extends Resource
                     ->default(true),
             ])->columns(2),
 
-            Forms\Components\Section::make('Phân quyền')->schema([
-                Forms\Components\Toggle::make('manage_all')
-                    ->label('Quản lý toàn hệ thống')
-                    ->helperText('Bật tùy chọn này để gán toàn bộ quyền hạn trong hệ thống cho vai trò này.')
-                    ->live()
-                    ->afterStateHydrated(function ($component, $state, $record) {
-                        if ($record) {
-                            $component->state($record->permissions()->where('name', 'manage_all')->exists());
-                        } else {
-                            $component->state(false);
-                        }
-                    })
-                    ->dehydrated(false)
-                    ->columnSpanFull(),
+            Forms\Components\Tabs::make('permissions_tabs')
+                ->tabs([
+                    Forms\Components\Tabs\Tab::make('Hệ thống')
+                        ->schema([
+                            Forms\Components\Section::make('Phân quyền hệ thống')
+                                ->schema([
+                                    Forms\Components\Toggle::make('manage_all')
+                                        ->label('Quản lý toàn hệ thống')
+                                        ->helperText('Bật tùy chọn này để gán toàn bộ quyền hạn trong hệ thống cho vai trò này.')
+                                        ->live()
+                                        ->afterStateHydrated(function ($component, $state, $record) {
+                                            if ($record) {
+                                                $component->state($record->permissions()->where('name', 'manage_all')->exists());
+                                            } else {
+                                                $component->state(false);
+                                            }
+                                        })
+                                        ->dehydrated(false)
+                                        ->columnSpanFull(),
 
-                Forms\Components\ViewField::make('permissions')
-                    ->label('Quyền hạn chi tiết')
-                    ->view('filament.forms.components.permission-matrix')
-                    ->afterStateHydrated(function ($component, $state, $record) {
-                        if ($record) {
-                            $component->state($record->permissions()->where('name', '!=', 'manage_all')->pluck('permissions.id')->toArray());
-                        } else {
-                            $component->state([]);
-                        }
-                    })
-                    ->dehydrated(false)
-                    ->columnSpanFull()
-                    ->disabled(fn (Get $get) => $get('manage_all') === true),
-            ]),
+                                    Forms\Components\ViewField::make('permissions')
+                                        ->label('Quyền hạn chi tiết')
+                                        ->view('filament.forms.components.permission-matrix')
+                                        ->afterStateHydrated(function ($component, $state, $record) {
+                                            if ($record) {
+                                                $component->state($record->permissions()
+                                                    ->where('name', '!=', 'manage_all')
+                                                    ->where('module', '!=', 'mobile')
+                                                    ->pluck('permissions.id')
+                                                    ->toArray());
+                                            } else {
+                                                $component->state([]);
+                                            }
+                                        })
+                                        ->dehydrated(false)
+                                        ->columnSpanFull()
+                                        ->disabled(fn (Get $get) => $get('manage_all') === true),
+                                ])
+                        ]),
+                    Forms\Components\Tabs\Tab::make('Mobile')
+                        ->schema([
+                            Forms\Components\Section::make('Phân quyền mobile')
+                                ->schema([
+                                    Forms\Components\Toggle::make('manage_all_mobile')
+                                        ->label('Quản lý toàn bộ mobile')
+                                        ->helperText('Bật tùy chọn này để gán toàn bộ quyền hạn trên mobile cho vai trò này.')
+                                        ->live()
+                                        ->afterStateHydrated(function ($component, $state, $record) {
+                                            if ($record) {
+                                                $component->state($record->permissions()->where('name', 'manage_all_mobile')->exists());
+                                            } else {
+                                                $component->state(false);
+                                            }
+                                        })
+                                        ->dehydrated(false)
+                                        ->columnSpanFull(),
+
+                                    Forms\Components\ViewField::make('mobile_permissions')
+                                        ->label('Quyền hạn Mobile')
+                                        ->view('filament.forms.components.mobile-permission-matrix')
+                                        ->afterStateHydrated(function ($component, $state, $record) {
+                                            if ($record) {
+                                                $component->state($record->permissions()
+                                                    ->where('name', '!=', 'manage_all_mobile')
+                                                    ->where('module', 'mobile')
+                                                    ->pluck('permissions.id')
+                                                    ->toArray());
+                                            } else {
+                                                $component->state([]);
+                                            }
+                                        })
+                                        ->dehydrated(false)
+                                        ->columnSpanFull()
+                                        ->disabled(fn (Get $get) => $get('manage_all_mobile') === true),
+                                ])
+                        ])
+                ])
+                ->columnSpanFull(),
         ]);
     }
 

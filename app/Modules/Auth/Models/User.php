@@ -147,8 +147,15 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
             return false;
         }
 
-        if ($this->role->hasManageAll()) {
-            return true;
+        $permRecord = \App\Modules\Auth\Models\Permission::where('name', $permission)->first();
+        if ($permRecord && $permRecord->module === 'mobile') {
+            if ($this->role->hasPermission('manage_all_mobile')) {
+                return true;
+            }
+        } else {
+            if ($this->role->hasManageAll()) {
+                return true;
+            }
         }
 
         return $this->role->hasPermission($permission);
@@ -160,11 +167,13 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
             return false;
         }
 
-        if ($this->role->hasManageAll()) {
-            return true;
+        foreach ($permissions as $perm) {
+            if ($this->hasPermission($perm)) {
+                return true;
+            }
         }
 
-        return $this->role->hasAnyPermission($permissions);
+        return false;
     }
 
     public function getRoleNameAttribute(): ?string
@@ -376,6 +385,32 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         $array['branch_id'] = $this->branch_id;
         $array['department'] = $this->department;
         $array['job_position'] = $this->job_position;
+
+        // Append user permissions
+        if ($this->role) {
+            $perms = collect();
+            
+            // Check System Super Admin (manage_all)
+            if ($this->role->hasPermission('manage_all')) {
+                $systemPerms = \App\Modules\Auth\Models\Permission::where('module', '!=', 'mobile')->pluck('name');
+                $perms = $perms->merge($systemPerms);
+            }
+            
+            // Check Mobile Super Admin (manage_all_mobile)
+            if ($this->role->hasPermission('manage_all_mobile')) {
+                $mobilePerms = \App\Modules\Auth\Models\Permission::where('module', 'mobile')->pluck('name');
+                $perms = $perms->merge($mobilePerms);
+            }
+            
+            // Merge explicitly assigned permissions
+            $assignedPerms = $this->role->permissions->pluck('name');
+            $perms = $perms->merge($assignedPerms)->unique()->values();
+            
+            $array['permissions'] = $perms->toArray();
+        } else {
+            $array['permissions'] = [];
+        }
+
         return $array;
     }
 }
