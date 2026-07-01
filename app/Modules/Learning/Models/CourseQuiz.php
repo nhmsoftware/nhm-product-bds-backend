@@ -118,6 +118,21 @@ class CourseQuiz extends Model
         }
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (CourseQuiz $quiz) {
+            $hasAttempts = \App\Modules\Learning\Models\QuizAttempt::where('quiz_id', $quiz->id)->exists();
+            if ($hasAttempts) {
+                \Filament\Notifications\Notification::make()
+                    ->title('Không thể xóa câu hỏi')
+                    ->body('Câu hỏi này đã có nhân viên làm bài. Vui lòng xóa bài làm của nhân viên trước khi xóa câu hỏi.')
+                    ->danger()
+                    ->send();
+                return false;
+            }
+        });
+    }
+
     // ─── Relationships ───────────────────────────────────────────
 
     /**

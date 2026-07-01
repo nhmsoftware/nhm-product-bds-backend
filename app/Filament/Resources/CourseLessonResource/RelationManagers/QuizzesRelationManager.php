@@ -64,7 +64,19 @@ class QuizzesRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\EditAction::make()->label('Sửa câu hỏi'),
-                Tables\Actions\DeleteAction::make()->label('Xóa câu hỏi'),
+                Tables\Actions\DeleteAction::make()
+                    ->label('Xóa câu hỏi')
+                    ->before(function (Tables\Actions\DeleteAction $action, \App\Modules\Learning\Models\CourseQuiz $record): void {
+                        $hasAttempts = \App\Modules\Learning\Models\QuizAttempt::where('quiz_id', $record->id)->exists();
+                        if ($hasAttempts) {
+                            Notification::make()
+                                ->title('Không thể xóa câu hỏi')
+                                ->body('Câu hỏi này đã có nhân viên làm bài. Vui lòng xóa bài làm của nhân viên trước khi xóa câu hỏi.')
+                                ->danger()
+                                ->send();
+                            $action->halt();
+                        }
+                    }),
             ]);
     }
 }
