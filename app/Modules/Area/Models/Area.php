@@ -282,6 +282,15 @@ class Area extends Model
     }
 
     /**
+     * Tất cả bản ghi phân quyền team-level (đội nhóm) thuộc khu đất này.
+     */
+    public function teamAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AreaAssignment::class, 'area_id')
+            ->where('assignable_type', 'team');
+    }
+
+    /**
      * Danh sách người dùng được cấp quyền truy cập khu đất này.
      */
     public function assignedUsers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

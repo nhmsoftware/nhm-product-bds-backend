@@ -23,6 +23,8 @@ class DepartmentTransferRequestResource extends Resource
 
     protected static ?string $navigationGroup = 'Nhân sự';
 
+    protected static ?int $navigationSort = 5;
+
     protected static ?string $modelLabel = 'Yêu cầu chuyển phòng';
 
     protected static ?string $pluralModelLabel = 'Yêu cầu chuyển phòng';

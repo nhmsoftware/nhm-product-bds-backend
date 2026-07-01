@@ -21,6 +21,7 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
     protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationGroup = 'Nhân sự';
+    protected static ?int $navigationSort = 10;
     protected static ?string $modelLabel = 'Tài khoản';
     protected static ?string $pluralModelLabel = 'Tài khoản';
     protected static ?string $navigationLabel = 'Danh sách tài khoản';
@@ -77,7 +78,10 @@ class UserResource extends Resource
                     ->searchable()
                     ->preload()
                     ->live()
-                    ->afterStateUpdated(fn (Forms\Set $set) => $set('department_id', null)),
+                    ->afterStateUpdated(function (Forms\Set $set) {
+                        $set('department_id', null);
+                        $set('team_id', null);
+                    }),
                 Forms\Components\Select::make('department_id')
                     ->label('Phòng ban')
                     ->relationship(
@@ -89,7 +93,22 @@ class UserResource extends Resource
                     )
                     ->searchable()
                     ->preload()
-                    ->disabled(fn (Forms\Get $get): bool => !$get('branch_id')),
+                    ->live()
+                    ->disabled(fn (Forms\Get $get): bool => !$get('branch_id'))
+                    ->afterStateUpdated(fn (Forms\Set $set) => $set('team_id', null)),
+                Forms\Components\Select::make('team_id')
+                    ->label('Đội nhóm')
+                    ->relationship(
+                        name: 'teamRel',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (\Illuminate\Database\Eloquent\Builder $query, Forms\Get $get) => $query
+                            ->when($get('department_id'), fn ($q, $departmentId) => $q->where('department_id', $departmentId))
+                            ->when(!$get('department_id'), fn ($q) => $q->whereNull('id'))
+                    )
+                    ->searchable()
+                    ->preload()
+                    ->disabled(fn (Forms\Get $get): bool => !$get('department_id'))
+                    ->placeholder('Chọn đội nhóm'),
                 Forms\Components\Select::make('job_position_id')
                     ->label('Chức danh')
                     ->relationship('jobPosition', 'name')
@@ -129,6 +148,7 @@ class UserResource extends Resource
                     ->orderBy('roles.level', $direction)),
             Tables\Columns\IconColumn::make('is_active')->label('Hoạt động')->boolean(),
             Tables\Columns\TextColumn::make('departmentRel.name')->label('Phòng ban')->toggleable()->placeholder('-'),
+            Tables\Columns\TextColumn::make('teamRel.name')->label('Đội nhóm')->toggleable()->placeholder('-'),
             Tables\Columns\TextColumn::make('branch.name')->label('Chi nhánh')->toggleable()->placeholder('-'),
             Tables\Columns\TextColumn::make('jobPosition.name')->label('Chức danh')->toggleable()->placeholder('-'),
             Tables\Columns\TextColumn::make('created_at')->label('Ngày tạo')->dateTime('d/m/Y H:i')->sortable(),

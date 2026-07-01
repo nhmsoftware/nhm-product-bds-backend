@@ -27,22 +27,19 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
     private function assignmentScope(string $userId): \Closure
     {
         $user = User::query()->find($userId);
-        $role = $user?->role;
+        $teamId = $user?->team_id;
 
-        return function ($query) use ($userId, $role): void {
+        return function ($query) use ($userId, $teamId): void {
             $query->where('area_assignments.user_id', $userId)
                 ->orWhere(function ($q) use ($userId): void {
                     $q->where('area_assignments.assignable_type', 'user')
                         ->where('area_assignments.assignable_id', $userId);
                 });
 
-            if ($role !== null) {
-                $roleValue = $role instanceof \App\Modules\Auth\Models\Enums\UserRole
-                    ? (string) $role->value
-                    : (string) $role;
-                $query->orWhere(function ($q) use ($roleValue): void {
-                    $q->where('area_assignments.assignable_type', 'role')
-                        ->where('area_assignments.assignable_id', $roleValue);
+            if ($teamId !== null) {
+                $query->orWhere(function ($q) use ($teamId): void {
+                    $q->where('area_assignments.assignable_type', 'team')
+                        ->where('area_assignments.assignable_id', $teamId);
                 });
             }
         };
@@ -67,7 +64,7 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
      */
     public function getAssignedAreas(string $userId, FilterDTO $filter): LengthAwarePaginator
     {
-        $query = $this->model->newQuery()
+        $areasQuery = $this->model->newQuery()
             ->with(['lots'])
             ->where(function ($q) use ($userId): void {
                 // User/role has an explicit assignment
@@ -90,14 +87,76 @@ final class AreaRepository extends BaseRepository implements AreaRepositoryInter
         $filters = $filter->getFilters();
         if (isset($filters['is_featured'])) {
             $isFeatured = filter_var($filters['is_featured'], FILTER_VALIDATE_BOOLEAN);
-            $query->where('areas.is_featured', $isFeatured);
+            $areasQuery->where('areas.is_featured', $isFeatured);
+        }
+
+        $areas = $areasQuery->get();
+
+        // Fetch standalone lots
+        $standaloneLots = collect();
+        if (!(isset($filters['is_featured']) && filter_var($filters['is_featured'], FILTER_VALIDATE_BOOLEAN))) {
+            $standaloneLots = \App\Modules\Area\Models\Lot::query()
+                ->whereNull('area_id')
+                ->get();
+        }
+
+        $items = collect();
+        foreach ($areas as $area) {
+            $items->push([
+                'id' => $area->id,
+                'name' => $area->name,
+                'cover_url' => $area->image,
+                'image' => $area->image,
+                'total_lots' => (int) $area->total_lots,
+                'remaining_lots' => (int) $area->remaining_lots,
+                'status' => $area->remaining_lots > 0 ? 1 : 2,
+                'is_featured' => (bool) $area->is_featured,
+                'is_locked' => (bool) $area->is_locked,
+                'google_maps_url' => $area->google_maps_url,
+                'location' => $area->location,
+                'record_type' => 'area',
+                'created_at' => $area->created_at ? $area->created_at->toIso8601String() : null,
+            ]);
+        }
+
+        foreach ($standaloneLots as $lot) {
+            $items->push([
+                'id' => $lot->id,
+                'name' => 'Lô lẻ ' . $lot->code,
+                'cover_url' => $lot->image_url,
+                'image' => $lot->image_url,
+                'total_lots' => 1,
+                'remaining_lots' => ($lot->status === \App\Modules\Area\Models\Enums\LotStatus::AVAILABLE->value || $lot->status === 1) ? 1 : 0,
+                'status' => $lot->status instanceof \App\Modules\Area\Models\Enums\LotStatus ? $lot->status->value : (int) $lot->status,
+                'is_featured' => false,
+                'is_locked' => (bool) $lot->is_locked,
+                'google_maps_url' => null,
+                'location' => $lot->direction,
+                'record_type' => 'lot',
+                'created_at' => $lot->created_at ? $lot->created_at->toIso8601String() : null,
+            ]);
         }
 
         $sortBy = $filter->getSortBy() ?? 'created_at';
-        $direction = $filter->getDirection();
-        $query->orderBy("areas.{$sortBy}", $direction);
+        $direction = $filter->getDirection() === 'asc' ? 'asc' : 'desc';
 
-        return $query->paginate($filter->getPerPage(), ['areas.*'], 'page', $filter->getPage());
+        if ($direction === 'asc') {
+            $items = $items->sortBy($sortBy);
+        } else {
+            $items = $items->sortByDesc($sortBy);
+        }
+
+        $currentPage = (int) $filter->getPage();
+        $perPage = (int) $filter->getPerPage();
+        $slicedItems = $items->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+        return new LengthAwarePaginator(
+            $slicedItems->toArray(),
+            $items->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
     }
 
     /**

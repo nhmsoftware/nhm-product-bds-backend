@@ -5,6 +5,7 @@ use App\Filament\Resources\AreaResource\Pages;
 use App\Modules\Area\Models\Area;
 use App\Modules\Area\Models\Enums\AreaStatus;
 use App\Modules\Auth\Models\Role;
+use App\Modules\Auth\Models\Team;
 use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminUploads;
 use App\Filament\Support\AdminOptions;
@@ -44,7 +45,6 @@ class AreaResource extends Resource
                                 'unique' => 'Tên khu đất này đã tồn tại trong hệ thống.',
                             ])
                             ->maxLength(255),
-                        Forms\Components\Select::make('branch_id')->relationship('branch', 'name')->label('Chi nhánh')->searchable()->preload(),
                         GoongLocationInput::make('location')->label('Vị trí')->maxLength(255),
                         Forms\Components\Select::make('area_type_id')->relationship('areaType', 'name')->label('Loại hình')->searchable()->preload(),
                         Forms\Components\Select::make('status')->label('Trạng thái')->options(self::enumOptions(AreaStatus::class)),
@@ -94,43 +94,38 @@ class AreaResource extends Resource
                                 AdminUploads::image('sales_board_image', 'Ảnh bảng hàng (sơ đồ lô)', 'admin/area-sales-boards')->columnSpanFull(),
                                 Forms\Components\TextInput::make('sales_board_iframe')->label('Iframe bảng hàng')->columnSpanFull(),
                             ]),
-                        Forms\Components\CheckboxList::make('role_access')
-                            ->label('Vai trò được phép xem khu đất')
-                            ->helperText('Nếu không chọn vai trò nào → tất cả mọi người đều xem được')
+                        Forms\Components\Select::make('team_access')
+                            ->label('Đội nhóm được phép xem khu đất')
+                            ->helperText('Nếu không chọn đội nhóm nào → tất cả mọi người đều xem được')
+                            ->multiple()
                             ->options(function (): array {
-                                $currentUser = Filament::auth()->user();
-                                $currentRoleLevel = $currentUser?->role?->level ?? 999;
-
-                                return Role::where('is_active', true)
-                                    ->where('name', '!=', 'buyer')
-                                    ->where('name', '!=', 'super_admin')
-                                    ->where('level', '>', $currentRoleLevel)
-                                    ->orderBy('level')
-                                    ->pluck('label', 'id')
+                                return Team::where('is_active', true)
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id')
                                     ->all();
                             })
-                            ->columns(2)
+                            ->searchable()
+                            ->preload()
                             ->dehydrated(false)
-                            ->afterStateHydrated(function (Forms\Components\CheckboxList $component, ?Area $record) {
+                            ->afterStateHydrated(function (Forms\Components\Select $component, ?Area $record) {
                                 if (!$record) {
                                     $component->state([]);
                                     return;
                                 }
-                                $roles = $record->roleAssignments()
+                                $teams = $record->teamAssignments()
                                     ->pluck('assignable_id')
-                                    ->map(fn ($v) => (int) $v)
                                     ->values()
                                     ->toArray();
-                                $component->state($roles);
+                                $component->state($teams);
                             })
                             ->saveRelationshipsUsing(function (Area $record, ?array $state): void {
-                                $record->roleAssignments()->delete();
+                                $record->teamAssignments()->delete();
 
-                                foreach ($state ?? [] as $roleValue) {
-                                    $record->roleAssignments()->create([
+                                foreach ($state ?? [] as $teamValue) {
+                                    $record->teamAssignments()->create([
                                         'user_id' => null,
-                                        'assignable_id' => (string) $roleValue,
-                                        'assignable_type' => 'role',
+                                        'assignable_id' => (string) $teamValue,
+                                        'assignable_type' => 'team',
                                         'permissions' => ['view_area'],
                                     ]);
                                 }
@@ -149,10 +144,6 @@ class AreaResource extends Resource
                 ->label('Tên dự án')
                 ->searchable()
                 ->sortable(),
-            Tables\Columns\TextColumn::make('branch.name')
-                ->label('Tên chi nhánh')
-                ->searchable()
-                ->sortable(),
             Tables\Columns\TextColumn::make('total_lots')
                 ->label('Tổng số lô')
                 ->sortable(),
@@ -169,25 +160,21 @@ class AreaResource extends Resource
             Tables\Columns\IconColumn::make('is_locked')
                 ->label('Khóa')
                 ->boolean(),
-            Tables\Columns\TextColumn::make('role_permissions')
-                ->label('Phân quyền')
+            Tables\Columns\TextColumn::make('team_permissions')
+                ->label('Đội nhóm được xem')
                 ->getStateUsing(function (Area $record): string {
-                    $roleIds = $record->roleAssignments()
+                    $teamIds = $record->teamAssignments()
                         ->pluck('assignable_id')
                         ->all();
-                    $roles = Role::whereIn('id', $roleIds)
-                        ->pluck('label')
+                    $teams = Team::whereIn('id', $teamIds)
+                        ->pluck('name')
                         ->implode(', ');
-                    return $roles ?: 'Tất cả';
+                    return $teams ?: 'Tất cả';
                 })
                 ->badge(),
         ])
         ->defaultSort('created_at', 'desc')
         ->filters([
-            Tables\Filters\SelectFilter::make('branch_id')
-                ->relationship('branch', 'name')
-                ->label('Chi nhánh')
-                ->preload(),
             Tables\Filters\SelectFilter::make('status')
                 ->options(self::enumOptions(AreaStatus::class))
                 ->label('Trạng thái'),
@@ -203,9 +190,7 @@ class AreaResource extends Resource
                     $currentUser = auth()->user();
                     if (!$currentUser) return false;
                     if ($currentUser->hasPermission('manage_all')) return true;
-                    if ($currentUser->role?->name === 'gdkd') {
-                        return $currentUser->branch_id && $record->branch_id === $currentUser->branch_id;
-                    }
+                    if ($currentUser->role?->name === 'gdkd') return true;
                     return false;
                 })
                 ->requiresConfirmation()
@@ -239,39 +224,34 @@ class AreaResource extends Resource
                 ->color('success')
                 ->modalHeading(fn (Area $record) => "Phân quyền khu đất: {$record->name}")
                 ->fillForm(fn (Area $record): array => [
-                    'role_access' => $record->roleAssignments()
+                    'team_access' => $record->teamAssignments()
                         ->pluck('assignable_id')
-                        ->map(fn ($v) => (int) $v)
                         ->values()
                         ->toArray()
                 ])
                 ->form([
-                    Forms\Components\CheckboxList::make('role_access')
-                        ->label('Vai trò được phép xem khu đất')
-                        ->helperText('Nếu không chọn vai trò nào → tất cả mọi người đều xem được')
+                    Forms\Components\Select::make('team_access')
+                        ->label('Đội nhóm được phép xem khu đất')
+                        ->helperText('Nếu không chọn đội nhóm nào → tất cả mọi người đều xem được')
+                        ->multiple()
                         ->options(function (): array {
-                            $currentUser = Filament::auth()->user();
-                            $currentRoleLevel = $currentUser?->role?->level ?? 999;
-
-                            return Role::where('is_active', true)
-                                ->where('name', '!=', 'buyer')
-                                ->where('name', '!=', 'super_admin')
-                                ->where('level', '>', $currentRoleLevel)
-                                ->orderBy('level')
-                                ->pluck('label', 'id')
+                            return Team::where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
                                 ->all();
                         })
-                        ->columns(2),
+                        ->searchable()
+                        ->preload(),
                 ])
                 ->action(function (Area $record, array $data): void {
                     DB::transaction(function () use ($record, $data) {
-                        $record->roleAssignments()->delete();
+                        $record->teamAssignments()->delete();
 
-                        foreach ($data['role_access'] ?? [] as $roleValue) {
-                            $record->roleAssignments()->create([
+                        foreach ($data['team_access'] ?? [] as $teamValue) {
+                            $record->teamAssignments()->create([
                                 'user_id' => null,
-                                'assignable_id' => (string) $roleValue,
-                                'assignable_type' => 'role',
+                                'assignable_id' => (string) $teamValue,
+                                'assignable_type' => 'team',
                                 'permissions' => ['view_area'],
                             ]);
                         }
@@ -294,15 +274,7 @@ class AreaResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-        $user = auth()->user();
-
-        // General Director của chi nhánh nào thì chỉ hiển thị dự án của chi nhánh đó
-        if ($user && $user->role?->name === 'gdkd' && $user->branch_id) {
-            $query->where('branch_id', $user->branch_id);
-        }
-
-        return $query;
+        return parent::getEloquentQuery();
     }
 
     public static function getPages(): array { return ['index'=>Pages\ListAreas::route('/'), 'create'=>Pages\CreateArea::route('/create'), 'edit'=>Pages\EditArea::route('/{record}/edit')]; }

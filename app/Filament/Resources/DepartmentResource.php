@@ -23,6 +23,8 @@ class DepartmentResource extends Resource
 
     protected static ?string $navigationGroup = 'Nhân sự';
 
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $modelLabel = 'Phòng ban';
 
     protected static ?string $pluralModelLabel = 'Quản lý phòng ban';

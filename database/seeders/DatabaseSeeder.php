@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             RewardPointHistoryDemoSeeder::class,
             RevenueReportSeeder::class,
             AttendanceSeeder::class,
+            TeamSeeder::class,
         ]);
     }
 
@@ -107,6 +108,7 @@ class DatabaseSeeder extends Seeder
             'leave_requests',
             'department_transfer_requests',
             'employee_profiles',
+            'teams',
             'departments',
         ];
     }

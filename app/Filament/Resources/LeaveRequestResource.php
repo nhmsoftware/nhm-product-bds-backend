@@ -6,6 +6,7 @@ class LeaveRequestResource extends Resource
     protected static ?string $model = LeaveRequest::class;
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
     protected static ?string $navigationGroup = 'Nhân sự';
+    protected static ?int $navigationSort = 7;
     protected static ?string $modelLabel = 'Đơn nghỉ phép';
     protected static ?string $pluralModelLabel = 'Đơn nghỉ phép';
 

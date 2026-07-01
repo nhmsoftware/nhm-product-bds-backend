@@ -20,7 +20,6 @@ class LotResource extends Resource
             ->relationship('area', 'name')
             ->searchable()
             ->preload()
-            ->required()
             ->default(function () {
                 if (request()->has('area_id')) {
                     return request()->query('area_id');
@@ -96,7 +95,7 @@ class LotResource extends Resource
     {
         return $table->columns([
             Tables\Columns\TextColumn::make('code')->label('Mã lô')->searchable()->sortable(),
-            Tables\Columns\TextColumn::make('area.name')->label('Khu đất')->searchable(),
+            Tables\Columns\TextColumn::make('area.name')->label('Khu đất')->searchable()->placeholder('Lô bán lẻ'),
             Tables\Columns\TextColumn::make('status')->label('Trạng thái')->formatStateUsing(fn($state)=>$state instanceof LotStatus?$state->label():LotStatus::tryFrom((int)$state)?->label())->badge(),
             Tables\Columns\TextColumn::make('price')->label('Giá')->money('VND')->sortable(),
             Tables\Columns\IconColumn::make('is_locked')->label('Lock')->boolean(),

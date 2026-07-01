@@ -26,6 +26,8 @@ class EmployeeProfileResource extends Resource
 
     protected static ?string $navigationGroup = 'Nhân sự';
 
+    protected static ?int $navigationSort = 6;
+
     protected static ?string $modelLabel = 'Hồ sơ nhân sự';
 
     protected static ?string $pluralModelLabel = 'Hồ sơ nhân sự';

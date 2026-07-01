@@ -143,8 +143,8 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             $lot = $model->lot;
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
 
-            if ($user->role?->name !== 'super_admin') {
-                $this->validate($lot->area && $lot->area->branch_id === $user->branch_id, 'Bạn không có quyền thực hiện chức năng này.', 403);
+            if ($user->role?->name === 'gdkd') {
+                $this->validate($model->user && $model->user->branch_id === $user->branch_id, 'Bạn không có quyền thực hiện chức năng này.', 403);
             }
 
             $this->validate(
@@ -177,8 +177,8 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
 
             // Kiểm tra phân quyền chi nhánh (A4)
-            if ($user->role?->name !== 'super_admin') {
-                $this->validate($lot->area && $lot->area->branch_id === $user->branch_id, 'Bạn không có quyền thực hiện chức năng này.', 403);
+            if ($user->role?->name === 'gdkd') {
+                $this->validate($model->user && $model->user->branch_id === $user->branch_id, 'Bạn không có quyền thực hiện chức năng này.', 403);
             }
 
             $this->repository->updateById($id, [
@@ -229,8 +229,8 @@ final class LotDepositRequestService extends BaseService implements LotDepositRe
             $this->validate($lot !== null, 'Lô đất không tồn tại.', 404);
 
             // A4 - Người dùng không có quyền xác nhận giao dịch
-            if ($user->role?->name !== 'super_admin') {
-                $this->validate($lot->area && $lot->area->branch_id === $user->branch_id, 'Bạn không có quyền thực hiện chức năng này.', 403);
+            if ($user->role?->name === 'gdkd') {
+                $this->validate($model->user && $model->user->branch_id === $user->branch_id, 'Bạn không có quyền thực hiện chức năng này.', 403);
             }
 
             // Update status

@@ -260,6 +260,13 @@ final class DashboardService extends BaseService implements DashboardServiceInte
                                 ->where('area_assignments.assignable_id', $user->branch_id);
                         });
                     }
+
+                    if (!empty($user->team_id)) {
+                        $assignmentQuery->orWhere(function ($q) use ($user): void {
+                            $q->where('area_assignments.assignable_type', 'team')
+                                ->where('area_assignments.assignable_id', $user->team_id);
+                        });
+                    }
                 })
                 ->whereNull('area_assignments.deleted_at')
                 ->select('lots.*')

@@ -92,6 +92,7 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'department_id',
         'job_position_id',
         'branch_id',
+        'team_id',
         'fcm_token',
         'is_active',
         'locked_at',
@@ -112,6 +113,7 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'is_active' => 'boolean',
         'role_id' => 'string',
         'department_id' => 'string',
+        'team_id' => 'string',
         'job_position_id' => 'integer',
         'locked_at' => 'datetime',
         'lock_days' => 'integer',
@@ -122,6 +124,7 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'department',
         'branch',
         'job_position',
+        'team',
         'role_name',
     ];
 
@@ -264,6 +267,11 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         return $this->belongsTo(Department::class, 'department_id');
     }
 
+    public function teamRel(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Team::class, 'team_id');
+    }
+
     public function jobPosition(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(JobPosition::class, 'job_position_id');
@@ -288,6 +296,18 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
             $relation = $this->jobPosition()->first();
             if ($relation) {
                 $this->setRelation('jobPosition', $relation);
+            }
+        }
+        return $relation?->name;
+    }
+
+    public function getTeamAttribute(): ?string
+    {
+        $relation = $this->getRelationValue('teamRel');
+        if (!$relation && $this->team_id) {
+            $relation = $this->teamRel()->first();
+            if ($relation) {
+                $this->setRelation('teamRel', $relation);
             }
         }
         return $relation?->name;

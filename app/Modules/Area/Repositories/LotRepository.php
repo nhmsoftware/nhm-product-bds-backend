@@ -18,8 +18,9 @@ final class LotRepository extends BaseRepository implements LotRepositoryInterfa
         $user = User::query()->find($userId);
         $department = $user?->department;
         $branch = $user?->branch_id;
+        $teamId = $user?->team_id;
 
-        return function ($query) use ($userId, $department, $branch): void {
+        return function ($query) use ($userId, $department, $branch, $teamId): void {
             $query->where('area_assignments.user_id', $userId)
                 ->orWhere(function ($q) use ($userId): void {
                     $q->where('area_assignments.assignable_type', 'user')
@@ -37,6 +38,13 @@ final class LotRepository extends BaseRepository implements LotRepositoryInterfa
                 $query->orWhere(function ($q) use ($branch): void {
                     $q->where('area_assignments.assignable_type', 'branch')
                         ->where('area_assignments.assignable_id', $branch);
+                });
+            }
+
+            if (!empty($teamId)) {
+                $query->orWhere(function ($q) use ($teamId): void {
+                    $q->where('area_assignments.assignable_type', 'team')
+                        ->where('area_assignments.assignable_id', $teamId);
                 });
             }
         };
@@ -106,14 +114,20 @@ final class LotRepository extends BaseRepository implements LotRepositoryInterfa
         $query = $this->model->with('area');
 
         if (!$isAdmin) {
-            $query = $query->join('areas', 'lots.area_id', '=', 'areas.id')
-                ->whereNull('areas.deleted_at')
-                ->whereExists(function ($subQuery) use ($userId): void {
-                    $subQuery->selectRaw('1')
-                        ->from('area_assignments')
-                        ->whereColumn('area_assignments.area_id', 'areas.id')
-                        ->where($this->assignmentScope($userId))
-                        ->whereNull('area_assignments.deleted_at');
+            $query = $query->leftJoin('areas', 'lots.area_id', '=', 'areas.id')
+                ->where(function ($q) use ($userId): void {
+                    $q->whereNull('lots.area_id')
+                        ->orWhere(function ($sub) use ($userId): void {
+                            $sub->whereNotNull('lots.area_id')
+                                ->whereNull('areas.deleted_at')
+                                ->whereExists(function ($subQuery) use ($userId): void {
+                                    $subQuery->selectRaw('1')
+                                        ->from('area_assignments')
+                                        ->whereColumn('area_assignments.area_id', 'areas.id')
+                                        ->where($this->assignmentScope($userId))
+                                        ->whereNull('area_assignments.deleted_at');
+                                });
+                        });
                 })
                 ->select('lots.*');
         }

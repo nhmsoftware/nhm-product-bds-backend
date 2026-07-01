@@ -17,6 +17,7 @@ class RewardPointHistoryResource extends Resource
     protected static ?string $model = RewardPointHistory::class;
     protected static ?string $navigationIcon = 'heroicon-o-star';
     protected static ?string $navigationGroup = 'Nhân sự';
+    protected static ?int $navigationSort = 9;
     protected static ?string $modelLabel = 'Lịch sử điểm thưởng';
     protected static ?string $pluralModelLabel = 'Lịch sử điểm thưởng';
 

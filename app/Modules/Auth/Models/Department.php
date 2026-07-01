@@ -38,4 +38,9 @@ class Department extends Model
     {
         return $this->belongsTo(\App\Modules\Branch\Models\Branch::class, 'branch_id');
     }
+
+    public function teams(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Team::class, 'department_id');
+    }
 }

@@ -231,7 +231,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 5. Kiểm tra A1: Quyền truy cập khu đất của lô đất này
             $this->validate(
-                in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true) || $this->areaRepository->hasAssignment($userId, $lot->area_id),
+                $lot->area_id === null || in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true) || $this->areaRepository->hasAssignment($userId, $lot->area_id),
                 'Bạn không có quyền truy cập khu đất này.',
                 403
             );
@@ -445,7 +445,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 5. Kiểm tra Quyền truy cập khu đất của lô đất này
             $this->validate(
-                in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true) || $this->areaRepository->hasAssignment($dto->userId, $lot->area_id),
+                $lot->area_id === null || in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true) || $this->areaRepository->hasAssignment($dto->userId, $lot->area_id),
                 'Bạn không có quyền thực hiện chức năng này.',
                 403
             );
@@ -585,7 +585,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
                     'lot_id' => $lot->id,
                     'area_id' => $lot->area_id,
                     'code' => $lot->code,
-                    'name' => $lot->area ? $lot->area->name : '',
+                    'name' => $lot->area ? $lot->area->name : 'Lô lẻ ' . $lot->code,
                     'sales_board_image' => $lot->area ? $lot->area->sales_board_image : null,
                     'sales_board_iframe' => $lot->area ? $lot->area->sales_board_iframe : null,
                     'planning_check_url' => $lot->area ? $lot->area->planning_check_url : null,
@@ -659,7 +659,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             $lot->load('area');
 
             // General Director chỉ được Lock/Unlock Lot chi nhánh của bản thân
-            if ($user->role?->name === 'gdkd' && $lot->area) {
+            if ($user->role?->name === 'gdkd' && $lot->area && $lot->area->branch_id) {
                 $this->validate($lot->area->branch_id === $user->branch_id, 'Bạn không có quyền thực hiện chức năng này trên lô đất của chi nhánh khác.', 403);
             }
 

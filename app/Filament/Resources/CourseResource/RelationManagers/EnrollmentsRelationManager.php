@@ -314,7 +314,8 @@ class EnrollmentsRelationManager extends RelationManager
             ->join('roles', 'roles.id', '=', 'users.role_id')
             ->where('course_enrollments.course_id', $courseId)
             ->groupBy('roles.name')
-            ->pluck(\Illuminate\Support\Facades\DB::raw('COUNT(*)'), 'roles.name')
+            ->selectRaw('roles.name, COUNT(*) as count')
+            ->pluck('count', 'roles.name')
             ->all();
 
         return array_map('intval', $results);

@@ -22,6 +22,7 @@ class RecruitmentApplicationResource extends Resource
     protected static ?string $model = RecruitmentApplication::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-check';
     protected static ?string $navigationGroup = 'Nhân sự';
+    protected static ?int $navigationSort = 8;
     protected static ?string $modelLabel = 'Duyệt đơn ứng tuyển';
     protected static ?string $pluralModelLabel = 'Duyệt đơn ứng tuyển';
 
