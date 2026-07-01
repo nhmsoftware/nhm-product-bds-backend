@@ -18,11 +18,11 @@ class EmployeeReport extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationIcon = 'heroicon-o-trophy';
     protected static ?string $navigationGroup = 'Báo cáo';
-    protected static ?string $navigationLabel = 'Báo cáo nhân viên';
-    protected static ?string $modelLabel = 'Báo cáo nhân viên';
-    protected static ?string $title = 'Báo cáo hiệu suất nhân viên';
+    protected static ?string $navigationLabel = 'Bảng xếp hạng thành tích';
+    protected static ?string $modelLabel = 'Bảng xếp hạng thành tích';
+    protected static ?string $title = 'Bảng xếp hạng thành tích';
     protected static string $view = 'filament.pages.employee-report';
 
     public ?array $data = [];
@@ -30,15 +30,13 @@ class EmployeeReport extends Page implements HasForms
 
     public static function shouldRegisterNavigation(): bool
     {
-        $user = Filament::auth()->user();
-        if (!$user) return false;
-        return $user->hasAnyPermission(['manage_all', 'manage_employees']);
+        return Filament::auth()->check();
     }
 
     public function mount(): void
     {
         $user = Filament::auth()->user();
-        if (!$user || !$user->hasAnyPermission(['manage_all', 'manage_employees'])) {
+        if (!$user) {
             abort(403);
         }
 
@@ -128,6 +126,22 @@ class EmployeeReport extends Page implements HasForms
             return;
         }
 
+        // Check authorization
+        $isAuthorized = false;
+        if ($user->hasAnyPermission(['manage_all', 'manage_employees'])) {
+            $isAuthorized = true;
+        } elseif ($user->id === $employeeId) {
+            $isAuthorized = true;
+        } elseif ($user->role?->name === 'tp_kd' && $user->department_id && $emp->department_id === $user->department_id) {
+            $isAuthorized = true;
+        } elseif ($user->role?->name === 'gdkd' && $user->branch_id && $emp->branch_id === $user->branch_id) {
+            $isAuthorized = true;
+        }
+
+        if (!$isAuthorized) {
+            return;
+        }
+
         try {
             $filter = $this->form->getState();
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -162,10 +176,23 @@ class EmployeeReport extends Page implements HasForms
         if ($endDate) $attendancesQuery->whereDate('work_date', '<=', $endDate);
         $attendances = $attendancesQuery->get();
 
-        $successfulDepositsCount = $deposits->filter(fn($d) => in_array((int)$d->status, [2, 4]))->count();
-        $successfulReferralsCount = $referrals->filter(fn($r) => (int)$r->referral_type === 1 && (int)$r->status === 2)->count();
-        $workingDaysCount = $attendances->filter(fn($a) => in_array((int)$a->status, [1, 2]))->count();
-        $absencesCount = $attendances->filter(fn($a) => (int)$a->status === 3)->count();
+        $successfulDepositsCount = $deposits->filter(function ($d) {
+            $statusVal = $d->status instanceof \BackedEnum ? $d->status->value : (int)$d->status;
+            return in_array($statusVal, [2, 4]);
+        })->count();
+        $successfulReferralsCount = $referrals->filter(function ($r) {
+            $typeVal = $r->referral_type instanceof \BackedEnum ? $r->referral_type->value : (int)$r->referral_type;
+            $statusVal = $r->status instanceof \BackedEnum ? $r->status->value : (int)$r->status;
+            return $typeVal === 1 && $statusVal === 2;
+        })->count();
+        $workingDaysCount = $attendances->filter(function ($a) {
+            $statusVal = $a->status instanceof \BackedEnum ? $a->status->value : (int)$a->status;
+            return in_array($statusVal, [1, 2]);
+        })->count();
+        $absencesCount = $attendances->filter(function ($a) {
+            $statusVal = $a->status instanceof \BackedEnum ? $a->status->value : (int)$a->status;
+            return $statusVal === 3;
+        })->count();
 
         $totalKpiPoints = ($successfulDepositsCount * 10)
             + ($tours->count() * 1)
@@ -312,6 +339,8 @@ class EmployeeReport extends Page implements HasForms
                 'name' => $emp->name,
                 'staff_code' => $emp->staff_code ?: '-',
                 'department' => $emp->department ?: '-',
+                'department_id' => $emp->department_id,
+                'branch_id' => $emp->branch_id,
                 'job_position' => $emp->job_position ?: '-',
                 'area' => $emp->area ?: '-',
                 'total_kpi_points' => $totalKpiPoints,

@@ -25,11 +25,12 @@
         @endphp
 
         <div class="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm dark:bg-gray-800 dark:border-gray-700 mt-6">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Danh sách hiệu suất nhân viên</h3>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Bảng xếp hạng thành tích nhân sự</h3>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
+                            <th class="px-4 py-3 text-center">Hạng</th>
                             <th class="px-4 py-3">Mã NV</th>
                             <th class="px-4 py-3">Họ tên</th>
                             <th class="px-4 py-3">Phòng ban</th>
@@ -45,8 +46,34 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($reportData as $row)
-                            <tr wire:click="selectEmployee('{{ $row['id'] }}')" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition">
+                        @forelse($reportData as $index => $row)
+                            @php
+                                $currentUser = \Filament\Facades\Filament::auth()->user();
+                                $isClickable = false;
+                                if ($currentUser) {
+                                    if ($currentUser->hasAnyPermission(['manage_all', 'manage_employees'])) {
+                                        $isClickable = true;
+                                    } elseif ($currentUser->id === $row['id']) {
+                                        $isClickable = true;
+                                    } elseif ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id && $row['department_id'] === $currentUser->department_id) {
+                                        $isClickable = true;
+                                    } elseif ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id && $row['branch_id'] === $currentUser->branch_id) {
+                                        $isClickable = true;
+                                    }
+                                }
+                            @endphp
+                            <tr @if($isClickable) wire:click="selectEmployee('{{ $row['id'] }}')" @endif class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 @if($isClickable) cursor-pointer @else cursor-default @endif transition">
+                                <td class="px-4 py-3 text-center font-extrabold text-base">
+                                    @if($index === 0)
+                                        1
+                                    @elseif($index === 1)
+                                        2
+                                    @elseif($index === 2)
+                                        3
+                                    @else
+                                        {{ $index + 1 }}
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3 font-mono font-medium text-gray-900 dark:text-white">{{ $row['staff_code'] }}</td>
                                 <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ $row['name'] }}</td>
                                 <td class="px-4 py-3">{{ $row['department'] }}</td>
@@ -62,7 +89,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="px-4 py-3 text-center text-gray-400">Không tìm thấy dữ liệu nhân viên phù hợp</td>
+                                <td colspan="13" class="px-4 py-3 text-center text-gray-400">Không tìm thấy dữ liệu nhân viên phù hợp</td>
                             </tr>
                         @endforelse
                     </tbody>

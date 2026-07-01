@@ -276,7 +276,9 @@ final class AreaService extends BaseService implements AreaServiceInterface
             $data['active_lock_request'] = $activeLockRequest ? [
                 'id' => (string) $activeLockRequest->id,
                 'user_id' => (string) $activeLockRequest->user_id,
+                'user_name' => $activeLockRequest->user?->name,
                 'is_mine' => $isLockedByMe,
+                'expires_at' => $activeLockRequest->expires_at?->toIso8601String(),
                 'created_at' => $activeLockRequest->created_at?->toIso8601String(),
             ] : null;
             $data['active_deposit_request'] = $activeDepositRequest ? [
