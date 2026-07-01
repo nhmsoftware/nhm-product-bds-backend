@@ -99,24 +99,22 @@ class RolePermissionSeeder extends Seeder
         // ─── 2. Seed Roles ───────────────────────────────────────
         $roles = [
             ['name' => 'super_admin', 'label' => 'Super Admin', 'level' => 0, 'sort' => 0, 'is_system' => true],
-            ['name' => 'admin', 'label' => 'Admin', 'level' => 1, 'sort' => 1, 'is_system' => false],
-            ['name' => 'ceo', 'label' => 'Tổng giám đốc', 'level' => 2, 'sort' => 2, 'is_system' => false],
-            ['name' => 'gdcn', 'label' => 'Giám đốc chi nhánh', 'level' => 3, 'sort' => 3, 'is_system' => false],
-            ['name' => 'gdkd', 'label' => 'Giám đốc kinh doanh', 'level' => 4, 'sort' => 4, 'is_system' => false],
-            ['name' => 'tp_kd', 'label' => 'Trưởng phòng kinh doanh', 'level' => 5, 'sort' => 5, 'is_system' => false],
-            ['name' => 'hr_manager', 'label' => 'HR Manager', 'level' => 6, 'sort' => 6, 'is_system' => false],
-            ['name' => 'employee', 'label' => 'Chuyên viên kinh doanh', 'level' => 7, 'sort' => 7, 'is_system' => false],
-            ['name' => 'ctv', 'label' => 'Cộng tác viên', 'level' => 8, 'sort' => 8, 'is_system' => false],
-            ['name' => 'buyer', 'label' => 'Khách hàng', 'level' => 99, 'sort' => 99, 'is_system' => false],
+            ['name' => 'admin', 'label' => 'Admin', 'level' => 1, 'sort' => 1, 'is_system' => true],
+            ['name' => 'ceo', 'label' => 'Tổng giám đốc', 'level' => 2, 'sort' => 2, 'is_system' => true],
+            ['name' => 'gdcn', 'label' => 'Giám đốc chi nhánh', 'level' => 3, 'sort' => 3, 'is_system' => true],
+            ['name' => 'gdkd', 'label' => 'Giám đốc kinh doanh', 'level' => 4, 'sort' => 4, 'is_system' => true],
+            ['name' => 'tp_kd', 'label' => 'Trưởng phòng kinh doanh', 'level' => 5, 'sort' => 5, 'is_system' => true],
+            ['name' => 'hr_manager', 'label' => 'HR Manager', 'level' => 6, 'sort' => 6, 'is_system' => true],
+            ['name' => 'employee', 'label' => 'Chuyên viên kinh doanh', 'level' => 7, 'sort' => 7, 'is_system' => true],
+            ['name' => 'ctv', 'label' => 'Cộng tác viên', 'level' => 8, 'sort' => 8, 'is_system' => true],
+            ['name' => 'buyer', 'label' => 'Khách hàng', 'level' => 99, 'sort' => 99, 'is_system' => true],
         ];
 
         foreach ($roles as $role) {
-            Role::firstOrCreate(
+            Role::updateOrCreate(
                 ['name' => $role['name']],
                 [
-                    'id' => (string) Str::uuid(),
                     'label' => $role['label'],
-                    'description' => null,
                     'level' => $role['level'],
                     'is_system' => $role['is_system'],
                     'sort' => $role['sort'],
