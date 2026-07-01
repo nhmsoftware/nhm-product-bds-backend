@@ -5,7 +5,7 @@ use App\Filament\Resources\CourseResource\Pages;
 use App\Filament\Resources\CourseResource\RelationManagers\EnrollmentsRelationManager;
 use App\Filament\Resources\CourseResource\RelationManagers\LessonsRelationManager;
 use App\Modules\Learning\Models\Course;
-use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\Role;
 use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminUploads;
 use Filament\Forms;
@@ -33,12 +33,7 @@ class CourseResource extends Resource
                 Forms\Components\Toggle::make('is_required')->label('Khóa học bắt buộc')->helperText('Có thể có nhiều khóa học bắt buộc trong hệ thống.')->default(false),
                 Forms\Components\CheckboxList::make('allowed_roles')
                     ->label('Vai trò được phép làm khóa học')
-                    ->options([
-                        UserRole::EMPLOYEE->value => 'Nhân viên',
-                        UserRole::MANAGER->value => 'Trưởng phòng',
-                        UserRole::DIRECTOR->value => 'Giám đốc',
-                        UserRole::CEO->value => 'Tổng giám đốc',
-                    ])
+                    ->options(Role::whereIn('name', ['employee', 'tp_kd', 'gdkd', 'ceo'])->pluck('label', 'name'))
                     ->columns(2)
                     ->helperText('Nếu không chọn vai trò nào -> tất cả mọi người đều làm được')
                     ->columnSpanFull(),
@@ -71,8 +66,9 @@ class CourseResource extends Resource
                 ->formatStateUsing(function ($state): string {
                     $roles = is_string($state) ? json_decode($state, true) : $state;
                     $roles = is_array($roles) ? $roles : [];
+                    $roleNames = Role::whereIn('name', $roles)->pluck('label', 'name');
                     $labels = collect($roles)
-                        ->map(fn ($role) => UserRole::tryFrom((int) $role)?->label())
+                        ->map(fn ($role) => $roleNames[$role] ?? $role)
                         ->filter()
                         ->implode(', ');
                     return $labels !== '' ? $labels : 'Tất cả';

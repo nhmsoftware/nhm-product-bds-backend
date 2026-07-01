@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\NewsResource\Pages;
 use App\Modules\News\Models\News;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminOptions;
 use App\Filament\Support\AdminUploads;
@@ -83,7 +82,7 @@ class NewsResource extends Resource
                 ->label('Chi nhánh')
                 ->relationship('branch', 'name', function (Builder $query) {
                     $user = auth()->user();
-                    if ($user && $user->role === UserRole::DIRECTOR && $user->branch_id) {
+                    if ($user && $user->role?->name === 'gdkd' && $user->branch_id) {
                         $query->where('id', $user->branch_id);
                     }
                     return $query;
@@ -193,7 +192,7 @@ class NewsResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if ($user && $user->role === UserRole::DIRECTOR && $user->branch_id) {
+        if ($user && $user->role?->name === 'gdkd' && $user->branch_id) {
             $query->where('branch_id', $user->branch_id);
         }
 

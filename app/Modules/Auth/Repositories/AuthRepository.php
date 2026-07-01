@@ -35,7 +35,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     public function getActiveEmployeesByDepartment(string $departmentName): Collection
     {
         return $this->model->where('is_active', true)
-            ->where('role', UserRole::EMPLOYEE->value)
+            ->whereHas('role', fn($q) => $q->where('name', 'employee'))
             ->whereNotNull('job_position_id')
             ->where('department_id', function ($q) use ($departmentName) {
                 $q->select('id')->from('departments')->where('name', $departmentName);
@@ -48,7 +48,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     {
         $query = $this->applyTeamScope(
             $this->model->where('is_active', true)
-                ->where('role', UserRole::EMPLOYEE->value)
+                ->whereHas('role', fn($q) => $q->where('name', 'employee'))
                 ->whereNotNull('job_position_id'),
             $user
         );
@@ -68,7 +68,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     ): Collection {
         $query = $this->applyTeamScope(
             $this->model->where('is_active', true)
-                ->where('role', UserRole::EMPLOYEE->value)
+                ->whereHas('role', fn($q) => $q->where('name', 'employee'))
                 ->whereNotNull('job_position_id'),
             $user
         );
@@ -100,7 +100,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     public function hasActiveEmployeesWithDepartment(): bool
     {
         return $this->model->where('is_active', true)
-            ->where('role', UserRole::EMPLOYEE->value)
+            ->whereHas('role', fn($q) => $q->where('name', 'employee'))
             ->whereNotNull('job_position_id')
             ->whereNotNull('department_id')
             ->exists();
@@ -109,7 +109,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     public function getActiveEmployeesWithDepartment(?string $branchId = null): Collection
     {
         $query = $this->model->where('is_active', true)
-            ->where('role', UserRole::EMPLOYEE->value)
+            ->whereHas('role', fn($q) => $q->where('name', 'employee'))
             ->whereNotNull('job_position_id')
             ->whereNotNull('department_id')
             ->with('employeeProfile');
@@ -254,13 +254,13 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
     {
         $query->where('id', '!=', $user->id)
             ->where('role', '<', $user->role->value)
-            ->where('role', '!=', UserRole::BUYER->value);
+            ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'buyer')->value('id'));
 
-        if ($user->role === UserRole::MANAGER) {
+        if ($user->role?->name === 'tp_kd') {
             return $query->where('department_id', $user->department_id);
         }
 
-        if ($user->role === UserRole::DIRECTOR) {
+        if ($user->role?->name === 'gdkd') {
             return $query->where('branch_id', $user->branch_id);
         }
 
@@ -427,9 +427,9 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
      */
     public function countEmployees(?string $branchId): int
     {
-        $query = $this->model->whereIn('role', [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value])
+        $query = $this->model->whereHas('role', fn($q) => $q->whereIn('name', ['employee', 'tp_kd', 'gdkd']))
             ->where('is_active', true)
-            ->where(fn ($q) => $q->where('role', '!=', UserRole::EMPLOYEE->value)->orWhere(fn ($sub) => $sub->whereNotNull('job_position_id')));
+            ->where(fn ($q) => $q->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'employee')->value('id'))->orWhere(fn ($sub) => $sub->whereNotNull('job_position_id')));
         if (!empty($branchId)) $query->where('branch_id', $branchId);
         return $query->count();
     }
@@ -462,7 +462,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
      */
     public function countCustomers(?string $branchId, ?int $month, ?int $quarter, ?int $year): int
     {
-        $query = $this->model->where('role', UserRole::BUYER->value);
+        $query = $this->model->whereHas('role', fn($q) => $q->where('name', 'buyer'));
         if (!empty($branchId)) $query->where('branch_id', $branchId);
 
         if ($year) {
@@ -492,7 +492,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
             ->whereNotIn('department_id', function ($q) {
                 $q->select('id')->from('departments')->whereIn('code', ['ALL', 'SYSTEM']);
             })
-            ->whereIn('role', [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value]);
+            ->whereHas('role', fn($q) => $q->whereIn('name', ['employee', 'tp_kd', 'gdkd']));
 
         if (!empty($branchId)) {
             $deptUsersQuery->where('branch_id', $branchId);
@@ -552,11 +552,7 @@ final class AuthRepository extends BaseRepository implements AuthRepositoryInter
             ->where('branch_id', $branchId)
             ->where('is_active', true)
             ->where('id', '!=', $excludeUserId)
-            ->whereIn('role', [
-                UserRole::MANAGER->value,
-                UserRole::DIRECTOR->value,
-                UserRole::SUPER_ADMIN->value,
-            ])
+            ->whereHas('role', fn($q) => $q->whereIn('name', ['tp_kd', 'gdkd', 'super_admin']))
             ->get();
     }
 }

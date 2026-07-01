@@ -28,7 +28,11 @@ class NewsCommentSeeder extends Seeder
         $users = DB::table('users')
             ->whereNull('deleted_at')
             ->where('is_active', true)
-            ->whereNotIn('role', [UserRole::BUYER->value, UserRole::SUPER_ADMIN->value])
+            ->whereNotIn('role_id', function ($query) {
+                $query->select('id')
+                    ->from('roles')
+                    ->whereIn('name', ['buyer', 'super_admin']);
+            })
             ->whereNotNull('job_position_id')
             ->get();
 

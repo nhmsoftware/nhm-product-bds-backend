@@ -32,7 +32,7 @@ final class CompanyDashboardService extends BaseService implements CompanyDashbo
     {
         return $this->execute(function () use ($dto) {
             $ceo = $this->authRepository->findById($dto->userId);
-            $this->validate($ceo !== null && $ceo->role === UserRole::CEO, 'Bạn không có quyền truy cập chức năng này.', 403);
+            $this->validate($ceo !== null && $ceo->role?->name === 'ceo', 'Bạn không có quyền truy cập chức năng này.', 403);
 
             // Lọc thời gian
             $month = $dto->month;

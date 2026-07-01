@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\DepartmentTransferRequestResource\Pages;
 use App\Modules\Auth\Models\Department;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Auth\Models\User;
 use App\Modules\DepartmentTransfer\Interfaces\DepartmentTransferServiceInterface;
 use App\Modules\DepartmentTransfer\Models\DepartmentTransferRequest;
@@ -39,19 +38,19 @@ class DepartmentTransferRequestResource extends Resource
                         if (!$currentUser) return $query;
 
                         $query->where('id', '!=', $currentUser->id)
-                            ->where('role', '!=', UserRole::BUYER->value)
-                            ->where('role', '!=', UserRole::SUPER_ADMIN->value)
+                            ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'buyer')->value('id'))
+                            ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'super_admin')->value('id'))
                             ->whereNotNull('job_position_id');
 
-                        if ($currentUser->role !== UserRole::SUPER_ADMIN) {
-                            $query->where('role', '<=', $currentUser->role->value);
-                        }
+                        if (!$currentUser->hasAnyPermission(['manage_all', 'approve_transfer'])) {
+                        $query->whereHas('role', fn($q) => $q->where('level', '>=', $currentUser->role?->level ?? 999));
+                    }
 
-                        if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                        if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                             $query->where('branch_id', $currentUser->branch_id);
                         }
 
-                        if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                        if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                             $query->where('department_id', $currentUser->department_id);
                         }
 

@@ -60,7 +60,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 3. Kiểm tra A1: Quyền truy cập bảng hàng (phải là ADMIN, AGENT hoặc BROKER)
             $this->validate(
-                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
+                in_array($user->role?->name, ['super_admin', 'ceo', 'gdkd', 'tp_kd', 'employee'], true),
                 'Bạn không có quyền xem bảng hàng.',
                 403
             );
@@ -121,7 +121,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền xem bảng hàng
             $this->validate(
-                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
+                in_array($user->role?->name, ['super_admin', 'ceo', 'gdkd', 'tp_kd', 'employee'], true),
                 'Bạn không có quyền xem bảng hàng.',
                 403
             );
@@ -132,7 +132,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 5. Kiểm tra A1: Quyền truy cập khu đất (phải được cấp quyền hoặc là admin)
             $this->validate(
-                in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true) || $this->areaRepository->hasAssignment($userId, $areaId),
+                in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true) || $this->areaRepository->hasAssignment($userId, $areaId),
                 'Bạn không có quyền truy cập khu đất này.',
                 403
             );
@@ -220,7 +220,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền xem bảng hàng
             $this->validate(
-                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
+                in_array($user->role?->name, ['super_admin', 'ceo', 'gdkd', 'tp_kd', 'employee'], true),
                 'Bạn không có quyền xem bảng hàng.',
                 403
             );
@@ -231,7 +231,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 5. Kiểm tra A1: Quyền truy cập khu đất của lô đất này
             $this->validate(
-                in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true) || $this->areaRepository->hasAssignment($userId, $lot->area_id),
+                in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true) || $this->areaRepository->hasAssignment($userId, $lot->area_id),
                 'Bạn không có quyền truy cập khu đất này.',
                 403
             );
@@ -326,7 +326,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền xem bảng hàng
             $this->validate(
-                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
+                in_array($user->role?->name, ['super_admin', 'ceo', 'gdkd', 'tp_kd', 'employee'], true),
                 'Bạn không có quyền truy cập bảng hàng.',
                 403
             );
@@ -342,7 +342,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 5. Kiểm tra Quyền truy cập khu đất này
             $this->validate(
-                in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true) || $this->areaRepository->hasAssignment($dto->userId, $area->id),
+                in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true) || $this->areaRepository->hasAssignment($dto->userId, $area->id),
                 'Bạn không có quyền truy cập khu đất này.',
                 403
             );
@@ -401,7 +401,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 3. Kiểm tra Preconditions: Quyền lock lô (chỉ cho phép AGENT hoặc ADMIN)
             $this->validate(
-                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::EMPLOYEE], true),
+                in_array($user->role?->name, ['super_admin', 'ceo', 'gdkd', 'employee'], true),
                 'Bạn không có quyền thực hiện chức năng này.',
                 403
             );
@@ -445,7 +445,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 5. Kiểm tra Quyền truy cập khu đất của lô đất này
             $this->validate(
-                in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true) || $this->areaRepository->hasAssignment($dto->userId, $lot->area_id),
+                in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true) || $this->areaRepository->hasAssignment($dto->userId, $lot->area_id),
                 'Bạn không có quyền thực hiện chức năng này.',
                 403
             );
@@ -547,12 +547,12 @@ final class AreaService extends BaseService implements AreaServiceInterface
 
             // 3. Kiểm tra A3: Quyền xem bảng hàng (phải là ADMIN, AGENT hoặc BROKER)
             $this->validate(
-                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
+                in_array($user->role?->name, ['super_admin', 'ceo', 'gdkd', 'tp_kd', 'employee'], true),
                 'Bạn không có quyền truy cập dữ liệu này.',
                 403
             );
 
-            $isAdmin = in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true);
+            $isAdmin = in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true);
             $keyword = trim($dto->keyword);
 
             // Tìm kiếm khu đất và lô đất
@@ -659,7 +659,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             $lot->load('area');
 
             // General Director chỉ được Lock/Unlock Lot chi nhánh của bản thân
-            if ($user->role === UserRole::DIRECTOR && $lot->area) {
+            if ($user->role?->name === 'gdkd' && $lot->area) {
                 $this->validate($lot->area->branch_id === $user->branch_id, 'Bạn không có quyền thực hiện chức năng này trên lô đất của chi nhánh khác.', 403);
             }
 

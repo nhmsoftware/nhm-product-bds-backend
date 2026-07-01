@@ -29,7 +29,7 @@ Route::prefix('v1/news')->group(function () {
     Route::get('/{idOrSlug}', [NewsController::class, 'show'])->name('news.show');
 });
 
-Route::prefix('v1/admin/news')->middleware(['auth:api', 'role:5'])->group(function () {
+Route::prefix('v1/admin/news')->middleware(['auth:api', 'role:permission:manage_all'])->group(function () {
     Route::get('/', [AdminNewsController::class, 'index'])->name('admin.news.index');
     Route::post('/', [AdminNewsController::class, 'store'])->name('admin.news.store');
     Route::get('/{id}', [AdminNewsController::class, 'show'])->name('admin.news.show');

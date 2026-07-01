@@ -3,7 +3,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AreaCommentResource\Pages;
 use App\Modules\Area\Models\AreaComment;
-use App\Modules\Auth\Models\Enums\UserRole;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -28,7 +27,7 @@ class AreaCommentResource extends Resource
                 ->label('Khu đất')
                 ->relationship('area', 'name', function (Builder $query) {
                     $user = auth()->user();
-                    if ($user && $user->role === UserRole::DIRECTOR && $user->branch_id) {
+                    if ($user && $user->role?->name === 'gdkd' && $user->branch_id) {
                         $query->where('branch_id', $user->branch_id);
                     }
                     return $query;
@@ -42,17 +41,17 @@ class AreaCommentResource extends Resource
                     $currentUser = auth()->user();
                     if (!$currentUser) return $query;
                     $query->where('id', '!=', $currentUser->id)
-                          ->where('role', '!=', UserRole::BUYER->value)
-                          ->where('role', '!=', UserRole::SUPER_ADMIN->value)
+                          ->whereHas('role', fn($q) => $q->where('name', '!=', 'buyer'))
+                          ->whereHas('role', fn($q) => $q->where('name', '!=', 'super_admin'))
                           ->whereNotNull('job_position_id');
-                    
-                    if ($currentUser->role !== UserRole::SUPER_ADMIN) {
-                        $query->where('role', '<=', $currentUser->role->value);
+
+                    if (!$currentUser->hasAnyPermission(['manage_all', 'manage_branch'])) {
+                        $query->whereHas('role', fn($q) => $q->where('name', '!=', 'super_admin'));
                     }
-                    if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                    if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                         $query->where('branch_id', $currentUser->branch_id);
                     }
-                    if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                    if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                         $query->where('department_id', $currentUser->department_id);
                     }
                     return $query;
@@ -90,7 +89,7 @@ class AreaCommentResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if ($user && $user->role === UserRole::DIRECTOR && $user->branch_id) {
+        if ($user && $user->role?->name === 'gdkd' && $user->branch_id) {
             $query->whereHas('area', function ($q) use ($user) {
                 $q->where('branch_id', $user->branch_id);
             });

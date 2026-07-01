@@ -48,7 +48,9 @@ final class EmployeeLearningService extends BaseService
             }
 
             $mapCourse = function ($course) use ($dto): array {
-                $course->load('lessons');
+                $course->load(['lessons' => function ($q) {
+                    $q->where('is_active', true)->orderBy('order', 'asc');
+                }]);
                 $enrollment = $course->enrollments->first();
 
                 $lessonProgressMap = collect();
@@ -134,23 +136,28 @@ final class EmployeeLearningService extends BaseService
                     $totalQuestionsCount = $quizQuestions->count();
                     $canStart = ($completedCount === $totalLessons);
 
-                    $attemptsCount = $this->quizAttemptRepository->countAttemptsByUserAndQuizIds($dto->userId, $questionIds);
-                    if ($attemptsCount > 0 && $totalQuestionsCount > 0) {
-                        $hasUngraded = $this->quizAttemptRepository->hasUngradedAttempts($dto->userId, $questionIds);
-                        if ($hasUngraded) {
-                            $quizStatus = 'grading';
-                            $quizActionText = 'Đang chấm bài';
-                        } else {
-                            $correctAttemptsCount = $this->quizAttemptRepository->countCorrectByUserAndQuizIds($dto->userId, $questionIds);
-                            $lastScore = round(($correctAttemptsCount / $totalQuestionsCount) * 10, 1);
-                            $isPassed = $lastScore >= $passingScore;
-
-                            if ($isPassed) {
-                                $quizStatus = 'passed';
-                                $quizActionText = 'Xem lại';
+                    if ($enrollment && $enrollment->quiz_status === 'in_progress') {
+                        $quizStatus = 'in_progress';
+                        $quizActionText = 'Tiếp tục bài kiểm tra';
+                    } else {
+                        $attemptsCount = $this->quizAttemptRepository->countAttemptsByUserAndQuizIds($dto->userId, $questionIds);
+                        if ($attemptsCount > 0 && $totalQuestionsCount > 0) {
+                            $hasUngraded = $this->quizAttemptRepository->hasUngradedAttempts($dto->userId, $questionIds);
+                            if ($hasUngraded) {
+                                $quizStatus = 'grading';
+                                $quizActionText = 'Đang chấm bài';
                             } else {
-                                $quizStatus = 'failed';
-                                $quizActionText = 'Chưa đạt';
+                                $correctAttemptsCount = $this->quizAttemptRepository->countCorrectByUserAndQuizIds($dto->userId, $questionIds);
+                                $lastScore = round(($correctAttemptsCount / $totalQuestionsCount) * 10, 1);
+                                $isPassed = $lastScore >= $passingScore;
+
+                                if ($isPassed) {
+                                    $quizStatus = 'passed';
+                                    $quizActionText = 'Xem lại';
+                                } else {
+                                    $quizStatus = 'failed';
+                                    $quizActionText = 'Chưa đạt';
+                                }
                             }
                         }
                     }
@@ -621,6 +628,112 @@ final class EmployeeLearningService extends BaseService
             }
 
             $enrollment->save();
+
+            if ($course->is_required) {
+                $role = $user->role?->value;
+                $requiredCourseIds = \App\Modules\Learning\Models\Course::query()
+                    ->where('is_active', true)
+                    ->where('is_required', true)
+                    ->where(function ($query) use ($role) {
+                        $query->whereNull('allowed_roles')
+                            ->orWhereJsonLength('allowed_roles', 0);
+
+                        if ($role !== null) {
+                            $query->orWhereJsonContains('allowed_roles', $role);
+                        }
+                    })
+                    ->pluck('id');
+
+                if ($requiredCourseIds->isNotEmpty()) {
+                    $completedCount = \App\Modules\Learning\Models\CourseEnrollment::where('user_id', $userId)
+                        ->whereIn('course_id', $requiredCourseIds)
+                        ->whereIn('status', [
+                            CourseEnrollmentStatus::PENDING_ONBOARDING,
+                            CourseEnrollmentStatus::COMPLETED
+                        ])
+                        ->distinct('course_id')
+                        ->count('course_id');
+
+                    if ($completedCount === $requiredCourseIds->count()) {
+                        // Send notification to admins
+                        $adminUsers = \App\Modules\Auth\Models\User::query()
+                            ->where('is_active', true)
+                            ->whereHas('role', fn($q) => $q->whereIn('name', ['super_admin', 'ceo']))
+                            ->get();
+
+                        if ($user->branch_id) {
+                            $directors = \App\Modules\Auth\Models\User::query()
+                                ->where('is_active', true)
+                                ->whereHas('role', fn($q) => $q->where('name', 'gdkd'))
+                                ->where('branch_id', $user->branch_id)
+                                ->get();
+                            $adminUsers = $adminUsers->concat($directors);
+                        }
+
+                        if ($user->department_id) {
+                            $managers = \App\Modules\Auth\Models\User::query()
+                                ->where('is_active', true)
+                                ->whereHas('role', fn($q) => $q->where('name', 'tp_kd'))
+                                ->where('department_id', $user->department_id)
+                                ->get();
+                            $adminUsers = $adminUsers->concat($managers);
+                        }
+
+                        $adminUsers = $adminUsers->unique('id');
+
+                        foreach ($adminUsers as $admin) {
+                            $notified = \App\Modules\Notification\Models\Notification::query()
+                                ->where('notifiable_id', $admin->id)
+                                ->whereRaw("data::json->>'action_type' = 'onboarding_approval'")
+                                ->whereRaw("data::json->>'action_id' = ?", [$userId])
+                                ->exists();
+
+                            if (!$notified) {
+                                \App\Modules\Notification\Models\Notification::create([
+                                    'id' => (string) \Illuminate\Support\Str::uuid(),
+                                    'type' => 'App\\Notifications\\OnboardingCompletedNotification',
+                                    'notifiable_type' => \App\Modules\Auth\Models\User::class,
+                                    'notifiable_id' => $admin->id,
+                                    'data' => [
+                                        'title' => 'Duyệt onboarding nhân sự',
+                                        'body' => "Nhân viên {$user->name} đã hoàn thành toàn bộ {$completedCount}/{$requiredCourseIds->count()} khóa học bắt buộc. Vui lòng duyệt onboarding.",
+                                        'action_type' => 'onboarding_approval',
+                                        'action_id' => $userId,
+                                    ],
+                                ]);
+
+                                if ($admin->email) {
+                                    try {
+                                        $adminUrl = rtrim(config('app.url'), '/') . '/admin/course-progresses';
+                                        $branchName = $user->branch?->name ?? 'Chưa xác định';
+                                        $deptName = $user->departmentRel?->name ?? 'Chưa xác định';
+                                        $emailContent = "
+                                            <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                                                <h2 style='color: #d97706;'>Yêu cầu duyệt Onboarding nhân sự</h2>
+                                                <p>Xin chào <strong>{$admin->name}</strong>,</p>
+                                                <p>Nhân viên <strong>{$user->name}</strong> (Mã NV: <code>{$user->staff_code}</code>) thuộc chi nhánh <strong>{$branchName}</strong>, phòng ban <strong>{$deptName}</strong> đã hoàn thành toàn bộ <strong>{$completedCount}/{$requiredCourseIds->count()}</strong> khóa học bắt buộc.</p>
+                                                <p>Vui lòng đăng nhập hệ thống để duyệt Onboarding cho nhân sự này.</p>
+                                                <p style='margin: 30px 0;'>
+                                                    <a href='{$adminUrl}' style='background-color: #d97706; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Đi tới trang duyệt Onboarding</a>
+                                                </p>
+                                                <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;' />
+                                                <p style='font-size: 12px; color: #777;'>Đây là email tự động từ hệ thống quản lý Đào tạo NHM BĐS. Vui lòng không trả lời email này.</p>
+                                            </div>
+                                        ";
+
+                                        \Illuminate\Support\Facades\Mail::html($emailContent, function ($message) use ($admin, $user) {
+                                            $message->to($admin->email)
+                                                ->subject("[NHM BĐS] Yêu cầu duyệt Onboarding - Nhân viên: {$user->name}");
+                                        });
+                                    } catch (\Throwable $mailEx) {
+                                        \Illuminate\Support\Facades\Log::error("Failed to send onboarding email to {$admin->email}: " . $mailEx->getMessage());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             $message = $course->is_required
                 ? 'Bạn đã hoàn thành bài quiz. Vui lòng chờ quản lý duyệt hoàn thành khóa học.'

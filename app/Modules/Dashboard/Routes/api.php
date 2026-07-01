@@ -20,22 +20,22 @@ Route::prefix('v1/dashboard')->middleware(['auth:api'])->group(function () {
 
     // UC-109: View Employee Reports (Director)
     Route::get('/employee-reports', [EmployeeReportController::class, 'index'])
-        ->middleware('role:' . UserRole::DIRECTOR->value)
+        ->middleware('role:gdkd')
         ->name('dashboard.employee-reports.index');
 
     // UC-110: View Department Reports (Director)
     Route::get('/department-reports', [EmployeeReportController::class, 'departmentReports'])
-        ->middleware('role:' . UserRole::DIRECTOR->value)
+        ->middleware('role:gdkd')
         ->name('dashboard.department-reports.index');
 
     // UC-111: View Company Dashboard (CEO)
     Route::get('/company', [CompanyDashboardController::class, 'index'])
-        ->middleware('role:' . UserRole::CEO->value)
+        ->middleware('role:ceo')
         ->name('dashboard.company.index');
 
     // UC-112: View Revenue Reports (CEO)
     Route::get('/revenue-reports', [RevenueReportController::class, 'index'])
-        ->middleware('role:' . UserRole::CEO->value)
+        ->middleware('role:ceo')
         ->name('dashboard.revenue-reports.index');
 
     // UC-095: Manage Comment

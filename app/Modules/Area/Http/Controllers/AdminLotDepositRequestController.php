@@ -41,12 +41,11 @@ final class AdminLotDepositRequestController extends BaseController
     {
         // Xử lý logic General Director chỉ xem chi nhánh của mình
         $user = $request->user();
-        $role = $user->role->value;
+        $roleName = $user->role?->name;
         $branch = $request->input('branch');
 
-        // Nếu không phải SUPER_ADMIN (5) thì ép branch theo area của User (nếu role là Giám đốc/CEO)
-        // Giả sử role CEO (4) hoặc DIRECTOR (3)
-        if ($role !== UserRole::SUPER_ADMIN->value) {
+        // Nếu không phải super_admin thì ép branch theo area của User (nếu role là Giám đốc/CEO)
+        if ($roleName !== 'super_admin') {
             $branch = $user->area;
             $request->merge(['branch' => $branch]);
         }

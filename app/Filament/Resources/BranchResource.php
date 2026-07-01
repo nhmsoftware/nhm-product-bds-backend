@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\BranchResource\Pages;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Branch\Models\Branch;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -50,7 +49,7 @@ class BranchResource extends Resource
             Forms\Components\Select::make('director_id')
                 ->label('Giám đốc phụ trách')
                 ->relationship('director', 'name', function (Builder $query) {
-                    $query->where('role', UserRole::DIRECTOR)
+                    $query->whereHas('role', fn($q) => $q->where('name', 'gdkd'))
                         ->where('is_active', true);
                 })
                 ->searchable()

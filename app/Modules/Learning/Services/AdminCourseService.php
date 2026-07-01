@@ -41,11 +41,7 @@ final class AdminCourseService extends BaseService
         $this->validate($admin !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
         $this->validate($admin->is_active === true, 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.', 403);
         $this->validate(
-            in_array($admin->role, [
-                \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN,
-                \App\Modules\Auth\Models\Enums\UserRole::CEO,
-                \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR
-            ], true),
+            in_array($admin->role?->name, ['super_admin', 'ceo', 'gdkd'], true),
             'Bạn không có quyền thực hiện chức năng này.',
             403
         );

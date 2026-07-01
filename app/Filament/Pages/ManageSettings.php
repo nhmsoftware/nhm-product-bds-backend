@@ -5,7 +5,6 @@ namespace App\Filament\Pages;
 use App\Filament\Support\GoongLocationInput;
 use App\Modules\Area\Models\InventorySetting;
 use App\Modules\Attendance\Models\Attendance;
-use App\Modules\Auth\Models\Enums\UserRole;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Placeholder;
@@ -45,13 +44,13 @@ class ManageSettings extends Page implements HasForms
             return false;
         }
 
-        return in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO]);
+        return $user->hasPermission('manage_all');
     }
 
     public function mount(): void
     {
         $user = Filament::auth()->user();
-        if (! $user || ! in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO])) {
+        if (! $user || ! $user->hasPermission('manage_all')) {
             abort(403);
         }
 

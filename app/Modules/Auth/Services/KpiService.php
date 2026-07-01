@@ -36,9 +36,9 @@ final class KpiService extends BaseService
 
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
 
-            $allowedRoles = [UserRole::MANAGER->value, UserRole::DIRECTOR->value];
+            $allowedRoles = ['tp_kd', 'gdkd'];
             $this->validate(
-                in_array($user->role->value, $allowedRoles),
+                $user->role && in_array($user->role->name, $allowedRoles, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -105,9 +105,9 @@ final class KpiService extends BaseService
 
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
 
-            $allowedRoles = [UserRole::MANAGER->value, UserRole::DIRECTOR->value];
+            $allowedRoles = ['tp_kd', 'gdkd'];
             $this->validate(
-                in_array($user->role->value, $allowedRoles),
+                $user->role && in_array($user->role->name, $allowedRoles, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -150,9 +150,9 @@ final class KpiService extends BaseService
             $manager = $this->authRepository->findById($dto->managerId);
             $this->validate($manager !== null, 'Không tìm thấy thông tin người quản lý.', 404);
 
-            $allowedRoles = [UserRole::MANAGER->value, UserRole::DIRECTOR->value];
+            $allowedRoles = ['tp_kd', 'gdkd'];
             $this->validate(
-                in_array($manager->role->value, $allowedRoles),
+                $manager->role && in_array($manager->role->name, $allowedRoles, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -160,13 +160,13 @@ final class KpiService extends BaseService
             $employee = $this->authRepository->findById($dto->employeeId);
             $this->validate($employee !== null, 'Không tìm thấy thông tin nhân viên.', 404);
 
-            if ($manager->role === UserRole::MANAGER) {
+            if ($manager->role?->name === 'tp_kd') {
                 $this->validate(
                     $employee->department_id === $manager->department_id,
                     'Bạn không có quyền truy cập chức năng này.',
                     403
                 );
-            } elseif ($manager->role === UserRole::DIRECTOR) {
+            } elseif ($manager->role?->name === 'gdkd') {
                 $this->validate(
                     $employee->branch_id === $manager->branch_id,
                     'Bạn không có quyền truy cập chức năng này.',
@@ -227,9 +227,9 @@ final class KpiService extends BaseService
             $user = $this->authRepository->findById($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
 
-            $allowedRoles = [UserRole::MANAGER->value, UserRole::DIRECTOR->value, UserRole::CEO->value];
+            $allowedRoles = ['tp_kd', 'gdkd', 'ceo'];
             $this->validate(
-                in_array($user->role->value, $allowedRoles),
+                $user->role && in_array($user->role->name, $allowedRoles, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -325,9 +325,9 @@ final class KpiService extends BaseService
             $user = $this->authRepository->findById($dto->userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
 
-            $allowedRoles = [UserRole::MANAGER->value, UserRole::DIRECTOR->value, UserRole::CEO->value];
+            $allowedRoles = ['tp_kd', 'gdkd', 'ceo'];
             $this->validate(
-                in_array($user->role->value, $allowedRoles),
+                $user->role && in_array($user->role->name, $allowedRoles, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );

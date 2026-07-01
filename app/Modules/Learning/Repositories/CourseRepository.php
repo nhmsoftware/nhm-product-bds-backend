@@ -84,7 +84,7 @@ final class CourseRepository extends BaseRepository implements CourseRepositoryI
             ->where('is_active', true)
             ->with([
                 'lessons' => function ($q) {
-                    $q->orderBy('order', 'asc');
+                    $q->where('is_active', true)->orderBy('order', 'asc');
                 },
                 'enrollments' => function ($q) use ($userId) {
                     $q->where('user_id', $userId);

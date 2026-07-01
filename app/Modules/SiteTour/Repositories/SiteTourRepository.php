@@ -37,11 +37,11 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
             return $query->where('user_id', $userId);
         }
 
-        if ($user->role === UserRole::SUPER_ADMIN || $user->role === UserRole::CEO) {
+        if ($user->role?->name === 'super_admin' || $user->role?->name === 'ceo') {
             return $query;
         }
 
-        if ($user->role === UserRole::DIRECTOR) {
+        if ($user->role?->name === 'gdkd') {
             if ($user->branch_id) {
                 $userIds = User::where('branch_id', $user->branch_id)->pluck('id')->all();
                 return $query->whereIn('user_id', $userIds);
@@ -49,7 +49,7 @@ final class SiteTourRepository extends BaseRepository implements SiteTourReposit
             return $query->where('user_id', $userId);
         }
 
-        if ($user->role === UserRole::MANAGER) {
+        if ($user->role?->name === 'tp_kd') {
             if ($user->department_id) {
                 $userIds = User::where('department_id', $user->department_id)->pluck('id')->all();
                 return $query->whereIn('user_id', $userIds);

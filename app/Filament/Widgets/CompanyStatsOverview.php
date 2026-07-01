@@ -3,7 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Modules\Area\Models\Enums\LotDepositRequestStatus;
-use App\Modules\Auth\Models\Enums\UserRole;
 use Filament\Facades\Filament;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Filament\Widgets\StatsOverviewWidget;
@@ -69,14 +68,12 @@ class CompanyStatsOverview extends StatsOverviewWidget
     private function employeeQuery(): Builder
     {
         return DB::table('users')
-            ->whereIn('role', [
-                UserRole::EMPLOYEE->value,
-                UserRole::MANAGER->value,
-                UserRole::DIRECTOR->value,
-            ])
+            ->whereIn('role_id', function ($q) {
+                $q->select('id')->from('roles')->whereIn('name', ['employee', 'tp_kd', 'gdkd']);
+            })
             ->where('is_active', true)
             ->whereNull('deleted_at')
-            ->where(fn (Builder $query) => $query->where('role', '!=', UserRole::EMPLOYEE->value)->orWhereNotNull('job_position_id'))
+            ->where(fn (Builder $query) => $query->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'employee')->value('id'))->orWhereNotNull('job_position_id'))
             ->when($this->scopeArea(), function (Builder $query, string $area) {
                 if (\Illuminate\Support\Str::isUuid($area)) {
                     return $query->where('branch_id', $area);
@@ -90,7 +87,9 @@ class CompanyStatsOverview extends StatsOverviewWidget
     private function customerQuery(): Builder
     {
         return $this->applyDateFilters(DB::table('users')
-            ->where('role', UserRole::BUYER->value)
+            ->whereIn('role_id', function ($q) {
+                $q->select('id')->from('roles')->where('name', 'buyer');
+            })
             ->whereNull('deleted_at')
             // No department check needed for customers as they shouldn't have departments
             ->when($this->scopeArea(), function (Builder $query, string $area) {
@@ -151,7 +150,7 @@ class CompanyStatsOverview extends StatsOverviewWidget
     {
         $user = Filament::auth()->user();
 
-        if ($user?->role === UserRole::DIRECTOR) {
+        if ($user->role?->name === 'gdkd') {
             return filled($user->branch_id) ? (string) $user->branch_id : '__director_without_area__';
         }
 

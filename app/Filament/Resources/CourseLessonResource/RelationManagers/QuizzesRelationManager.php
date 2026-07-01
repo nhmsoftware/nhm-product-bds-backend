@@ -28,11 +28,11 @@ class QuizzesRelationManager extends RelationManager
             ->recordTitleAttribute('question')
             ->columns([
                 Tables\Columns\TextColumn::make('lesson.title')->label('Bài học')->limit(30),
-                Tables\Columns\TextColumn::make('order')->label('Thứ tự')->sortable(),
+                Tables\Columns\TextColumn::make('order')->label('Thứ tự')->sortable()->alignment('center'),
                 Tables\Columns\TextColumn::make('type')->label('Loại')->formatStateUsing(fn (?string $state) => $state === 'essay' ? 'Tự luận' : 'Trắc nghiệm')->badge(),
                 Tables\Columns\TextColumn::make('title')->label('Tiêu đề')->limit(30),
                 Tables\Columns\TextColumn::make('question')->label('Câu hỏi')->searchable()->limit(70),
-                Tables\Columns\TextColumn::make('correct_option')->label('Đáp án đúng'),
+                Tables\Columns\TextColumn::make('correct_option')->label('Đáp án đúng')->alignment('center'),
             ])
             ->defaultSort('order')
             ->headerActions([

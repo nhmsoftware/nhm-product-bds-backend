@@ -49,7 +49,7 @@ final class CustomerMeetingService extends BaseService implements CustomerMeetin
 
             // Kiểm tra role: Nhân viên có quyền sử dụng chức năng (admin, agent, broker)
             $this->validate(
-                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
+                in_array($user->role?->name, ['super_admin', 'ceo', 'gdkd', 'tp_kd', 'employee'], true),
                 'Bạn không có quyền thực hiện chức năng này.',
                 403
             );

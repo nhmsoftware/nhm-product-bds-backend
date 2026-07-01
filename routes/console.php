@@ -14,7 +14,6 @@ use App\Modules\Attendance\Models\Attendance;
 use App\Modules\Attendance\Models\Enums\AttendanceStatus;
 use App\Modules\Area\Models\InventorySetting;
 use App\Modules\Auth\Models\User;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Auth\Models\RewardPointHistory;
 use Illuminate\Support\Facades\Schedule;
 
@@ -118,7 +117,8 @@ Schedule::call(function () {
     $weekEnd = $now->copy()->endOfWeek();       // CN
 
     // Lấy tất cả employees active
-    $employees = User::where('role', UserRole::EMPLOYEE->value)
+    $employeeRoleId = \Illuminate\Support\Facades\DB::table('roles')->where('name', 'employee')->value('id');
+    $employees = User::where('role_id', $employeeRoleId)
         ->where('is_active', true)
         ->get();
 

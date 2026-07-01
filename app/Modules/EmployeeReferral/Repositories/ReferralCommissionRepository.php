@@ -102,7 +102,7 @@ final class ReferralCommissionRepository extends BaseRepository implements Refer
             ->groupBy('users.id', 'users.name', 'referral_histories.referral_type');
 
         // Phân quyền: DIRECTOR chỉ xem dữ liệu trong chi nhánh (area) của mình
-        if ($actor->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR) {
+        if ($actor->role?->name === 'gdkd') {
             $query->where('users.area', $actor->area);
         }
 

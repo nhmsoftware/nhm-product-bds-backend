@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\NotificationResource\Pages;
 use App\Modules\Notification\Models\Notification;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Filament\Support\AdminOptions;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -55,7 +54,7 @@ class NotificationResource extends Resource
 
                     Forms\Components\Select::make('target_role')
                         ->label('Chọn vai trò')
-                        ->options(collect(UserRole::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->toArray())
+                        ->options(\App\Modules\Auth\Models\Role::query()->ordered()->pluck('label', 'name')->toArray())
                         ->visible(fn (Forms\Get $get): bool => $get('target_type') === 'role')
                         ->required(fn (Forms\Get $get): bool => $get('target_type') === 'role'),
 
@@ -114,19 +113,19 @@ class NotificationResource extends Resource
                             $query = \App\Modules\Auth\Models\User::query()
                                 ->where('is_active', true)
                                 ->where('id', '!=', $currentUser->id)
-                                ->where('role', '!=', UserRole::BUYER->value)
-                                ->where('role', '!=', UserRole::SUPER_ADMIN->value)
+                                ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'buyer')->value('id'))
+                                ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'super_admin')->value('id'))
                                 ->whereNotNull('job_position_id');
 
-                            if ($currentUser->role !== UserRole::SUPER_ADMIN) {
-                                $query->where('role', '<=', $currentUser->role->value);
-                            }
+                            if (!$currentUser->hasAnyPermission(['manage_all'])) {
+                        $query->whereHas('role', fn($q) => $q->where('level', '>=', $currentUser->role?->level ?? 999));
+                    }
 
-                            if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                            if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                                 $query->where('branch_id', $currentUser->branch_id);
                             }
 
-                            if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                            if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                                 $query->where('department_id', $currentUser->department_id);
                             }
 

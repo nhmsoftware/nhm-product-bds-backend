@@ -16,10 +16,10 @@ use App\Modules\Auth\Models\Enums\UserRole;
 final class TeamService extends BaseService
 {
     private const TEAM_ALLOWED_ROLES = [
-        UserRole::MANAGER->value,
-        UserRole::DIRECTOR->value,
-        UserRole::CEO->value,
-        UserRole::SUPER_ADMIN->value,
+        'tp_kd',
+        'gdkd',
+        'ceo',
+        'super_admin',
     ];
 
     public function __construct(
@@ -34,16 +34,16 @@ final class TeamService extends BaseService
 
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
             $this->validate(
-                in_array($user->role->value, self::TEAM_ALLOWED_ROLES),
+                $user->role && in_array($user->role->name, self::TEAM_ALLOWED_ROLES, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
 
-            $teamName = match ($user->role) {
-                UserRole::MANAGER => $user->department,
-                UserRole::DIRECTOR => $user->area,
-                UserRole::CEO => 'Toàn công ty',
-                UserRole::SUPER_ADMIN => 'Toàn hệ thống',
+            $teamName = match ($user->role?->name) {
+                'tp_kd' => $user->department,
+                'gdkd' => $user->area,
+                'ceo' => 'Toàn công ty',
+                'super_admin' => 'Toàn hệ thống',
                 default => '',
             };
 
@@ -67,7 +67,7 @@ final class TeamService extends BaseService
 
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
             $this->validate(
-                in_array($user->role->value, self::TEAM_ALLOWED_ROLES),
+                $user->role && in_array($user->role->name, self::TEAM_ALLOWED_ROLES, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );

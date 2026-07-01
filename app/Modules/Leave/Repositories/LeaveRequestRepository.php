@@ -98,7 +98,7 @@ final class LeaveRequestRepository extends BaseRepository implements LeaveReques
     {
         $query = $this->query()
             ->whereHas('user', function ($q) {
-                $q->where('role', UserRole::EMPLOYEE->value);
+                $q->whereHas('role', fn($q) => $q->where('name', 'employee'));
             })
             ->with(['user.employeeProfile']);
 

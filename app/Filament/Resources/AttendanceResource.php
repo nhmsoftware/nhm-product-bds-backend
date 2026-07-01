@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AttendanceResource\Pages;
 use App\Modules\Attendance\Models\Attendance;
 use App\Modules\Attendance\Models\Enums\AttendanceStatus;
-use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\Role;
 use App\Filament\Support\GoongLocationInput;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms;
@@ -33,16 +33,16 @@ class AttendanceResource extends Resource
                     $currentUser = auth()->user();
                     if (!$currentUser) return $query;
                     $query->where('id', '!=', $currentUser->id)
-                          ->where('role', '!=', UserRole::BUYER->value)
-                          ->where('role', '!=', UserRole::SUPER_ADMIN->value)
+                          ->where('role_id', '!=', Role::where('name', 'buyer')->value('id'))
+                          ->where('role_id', '!=', Role::where('name', 'super_admin')->value('id'))
                           ->whereNotNull('job_position_id');
-                    if ($currentUser->role !== UserRole::SUPER_ADMIN) {
-                        $query->where('role', '<=', $currentUser->role->value);
+                    if (!$currentUser->hasAnyPermission(['manage_all', 'checkin_checkout'])) {
+                        $query->whereHas('role', fn($q) => $q->where('level', '>=', $currentUser->role?->level ?? 999));
                     }
-                    if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                    if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                         $query->where('branch_id', $currentUser->branch_id);
                     }
-                    if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                    if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                         $query->where('department_id', $currentUser->department_id);
                     }
                     return $query;
@@ -212,7 +212,7 @@ class AttendanceResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if ($user && $user->role === UserRole::DIRECTOR && $user->branch_id) {
+        if ($user && $user->role?->name === 'gdkd' && $user->branch_id) {
             $query->whereHas('user', function (Builder $q) use ($user) {
                 $q->where('branch_id', $user->branch_id);
             });

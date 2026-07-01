@@ -14,7 +14,6 @@ use App\Modules\Auth\DTO\VerifyOtpDTO;
 use App\Modules\Auth\DTO\UpdateFcmTokenDTO;
 use App\Modules\Auth\Events\UserRegistered;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\EmployeeReferral\Models\Enums\ReferralStatus;
 use App\Modules\EmployeeReferral\Models\Enums\ReferralType;
 use Carbon\Carbon;
@@ -69,7 +68,9 @@ final class AuthCoreService extends BaseService
             unset($data['account_type']);
             $data['password']   = Hash::make($dto->password);
             $data['staff_code'] = $this->generateStaffCode();
-            $data['role']       = $dto->account_type === 'broker' ? UserRole::EMPLOYEE : UserRole::BUYER;
+            $roleName           = $dto->account_type === 'broker' ? 'employee' : 'buyer';
+            $role               = \App\Modules\Auth\Models\Role::where('name', $roleName)->first();
+            $data['role_id']    = $role?->id;
             $data['is_active']  = true;
 
             $user = $this->authRepository->create($data);
@@ -151,15 +152,7 @@ final class AuthCoreService extends BaseService
 
             $this->validate((bool) $user->is_active, 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.', 403);
 
-            $allowedRoles = [
-                UserRole::EMPLOYEE->value,
-                UserRole::MANAGER->value,
-                UserRole::DIRECTOR->value,
-                UserRole::CEO->value,
-                UserRole::SUPER_ADMIN->value,
-                UserRole::BUYER->value,
-            ];
-            $this->validate(in_array($user->role->value, $allowedRoles), 'Bạn không có quyền truy cập.', 403);
+            $this->validate($user->role !== null, 'Bạn không có quyền truy cập.', 403);
 
             $token = auth('api')->login($user);
             $this->validate($token !== false, 'Không thể tạo phiên đăng nhập.', 500);

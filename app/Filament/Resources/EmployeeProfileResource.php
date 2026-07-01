@@ -45,24 +45,20 @@ class EmployeeProfileResource extends Resource
 
                             // Chỉ cho phép EMPLOYEE, MANAGER, DIRECTOR
                             $query->where('id', '!=', $currentUser->id)
-                                ->whereIn('role', [
-                                    UserRole::EMPLOYEE->value,
-                                    UserRole::MANAGER->value,
-                                    UserRole::DIRECTOR->value,
-                                ]);
+                                ->whereHas('role', fn($q) => $q->whereIn('name', ['employee', 'tp_kd', 'gdkd']));
 
                             // Không cho phép quản lý tài khoản cấp cao hơn mình
-                            if ($currentUser->role !== UserRole::SUPER_ADMIN) {
-                                $query->where('role', '<=', $currentUser->role->value);
-                            }
+                            if (!$currentUser->hasAnyPermission(['manage_all', 'manage_employees'])) {
+                        $query->whereHas('role', fn($q) => $q->where('level', '>=', $currentUser->role?->level ?? 999));
+                    }
 
                             // Giám đốc chỉ quản lý trong chi nhánh của mình
-                            if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                            if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                                 $query->where('branch_id', $currentUser->branch_id);
                             }
 
                             // Trưởng phòng chỉ quản lý trong phòng ban của mình
-                            if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                            if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                                 $query->where('department_id', $currentUser->department_id);
                             }
 
@@ -354,12 +350,12 @@ class EmployeeProfileResource extends Resource
 
                 Tables\Columns\TextColumn::make('user.role')
                     ->label('Vai trò')
-                    ->formatStateUsing(fn ($state) => $state instanceof UserRole ? $state->label() : ($state ? UserRole::from((int) $state)->label() : '—'))
+                    ->formatStateUsing(fn ($state) => $state?->label ?? '—')
                     ->badge()
-                    ->color(fn ($state): string => match (is_int($state) ? $state : (int) ($state?->value ?? 0)) {
-                        UserRole::EMPLOYEE->value  => 'gray',
-                        UserRole::MANAGER->value   => 'info',
-                        UserRole::DIRECTOR->value  => 'warning',
+                    ->color(fn ($state): string => match ($state?->name) {
+                        'employee'  => 'gray',
+                        'tp_kd'   => 'info',
+                        'gdkd'  => 'warning',
                         default => 'gray',
                     }),
 
@@ -397,7 +393,7 @@ class EmployeeProfileResource extends Resource
                             ->options(function (): array {
                                 $query = Branch::query()->orderBy('sort')->orderBy('name');
                                 $currentUser = auth()->user();
-                                if (in_array($currentUser?->role, [UserRole::DIRECTOR, UserRole::MANAGER], true) && $currentUser->branch_id) {
+                                if (in_array($currentUser->role?->name, ['gdkd', 'tp_kd'], true) && $currentUser->branch_id) {
                                     $query->where('id', $currentUser->branch_id);
                                 }
                                 return $query->pluck('name', 'id')->all();
@@ -430,9 +426,9 @@ class EmployeeProfileResource extends Resource
                                 $query = Department::query()->where('is_active', true)->orderBy('name');
                                 $currentUser = auth()->user();
                                 
-                                if ($currentUser?->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                                if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                                     $query->where('branch_id', $currentUser->branch_id);
-                                } elseif ($currentUser?->role === UserRole::MANAGER && $currentUser->department_id) {
+                                } elseif ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                                     $query->where('id', $currentUser->department_id);
                                 } else {
                                     $branchId = $get('../branch_id.value');
@@ -478,14 +474,10 @@ class EmployeeProfileResource extends Resource
                 Tables\Filters\SelectFilter::make('role')
                     ->columnSpan(1)
                     ->label('Vai trò')
-                    ->options([
-                        UserRole::EMPLOYEE->value  => UserRole::EMPLOYEE->label(),
-                        UserRole::MANAGER->value   => UserRole::MANAGER->label(),
-                        UserRole::DIRECTOR->value  => UserRole::DIRECTOR->label(),
-                    ])
+                    ->options(fn () => \App\Modules\Auth\Models\Role::whereIn('name', ['employee', 'tp_kd', 'gdkd'])->pluck('label', 'id')->all())
                     ->query(fn (Builder $query, array $data): Builder =>
                         $query->when($data['value'] ?? null, fn (Builder $q, string $v) =>
-                            $q->whereHas('user', fn (Builder $u) => $u->where('role', $v))
+                            $q->whereHas('user', fn (Builder $u) => $u->where('role_id', $v))
                         )
                     ),
             ], layout: FiltersLayout::AboveContent)
@@ -506,11 +498,9 @@ class EmployeeProfileResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $allowedRoles = [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value];
-
         $query = parent::getEloquentQuery()
             ->with(['user.branch', 'user.departmentRel', 'user.jobPosition'])
-            ->whereHas('user', fn (Builder $userQuery) => $userQuery->whereIn('role', $allowedRoles));
+            ->whereHas('user', fn (Builder $userQuery) => $userQuery->whereHas('role', fn ($q) => $q->whereIn('name', ['employee', 'tp_kd', 'gdkd'])));
 
         $currentUser = auth()->user();
 
@@ -518,11 +508,11 @@ class EmployeeProfileResource extends Resource
             return $query;
         }
 
-        if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+        if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
             return $query->whereHas('user', fn (Builder $userQuery) => $userQuery->where('branch_id', $currentUser->branch_id));
         }
 
-        if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+        if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
             return $query->whereHas('user', fn (Builder $userQuery) => $userQuery->where('department_id', $currentUser->department_id));
         }
 

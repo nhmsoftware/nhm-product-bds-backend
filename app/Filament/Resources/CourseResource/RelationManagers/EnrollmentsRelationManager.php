@@ -34,16 +34,16 @@ class EnrollmentsRelationManager extends RelationManager
                     $currentUser = auth()->user();
                     if (!$currentUser) return $query;
                     $query->where('id', '!=', $currentUser->id)
-                          ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::BUYER->value)
-                          ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value)
+                          ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'buyer')->value('id'))
+                          ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'super_admin')->value('id'))
                           ->whereNotNull('job_position_id');
-                    if ($currentUser->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
-                        $query->where('role', '<=', $currentUser->role->value);
+                    if (!$currentUser->hasAnyPermission(['manage_all'])) {
+                        $query->whereHas('role', fn($q) => $q->where('level', '>=', $currentUser->role?->level ?? 999));
                     }
-                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $currentUser->branch_id) {
+                    if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                         $query->where('branch_id', $currentUser->branch_id);
                     }
-                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER && $currentUser->department_id) {
+                    if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                         $query->where('department_id', $currentUser->department_id);
                     }
                     return $query;
@@ -133,14 +133,14 @@ class EnrollmentsRelationManager extends RelationManager
                         $enrollmentsByRole = $this->getEnrollmentsByRole($courseId);
 
                         $roleOptions = [
-                            UserRole::EMPLOYEE->value => 'Nhân viên',
-                            UserRole::MANAGER->value => 'Trưởng phòng',
-                            UserRole::DIRECTOR->value => 'Giám đốc',
-                            UserRole::CEO->value => 'Tổng giám đốc',
+                            'employee' => 'Nhân viên',
+                            'tp_kd' => 'Trưởng phòng',
+                            'gdkd' => 'Giám đốc',
+                            'ceo' => 'Tổng giám đốc',
                         ];
 
                         $helperLines = collect($roleOptions)
-                            ->map(fn (string $label, int $value) => [
+                            ->map(fn (string $label, string $value) => [
                                 'label' => $label,
                                 'count' => $enrollmentsByRole[$value] ?? 0,
                             ])
@@ -156,7 +156,7 @@ class EnrollmentsRelationManager extends RelationManager
                                 ->columns(2)
                                 ->required()
                                 ->validationMessages([
-                                    'required' => 'Vui lòng chọn ít nhất một vai trò.',
+                                     'required' => 'Vui lòng chọn ít nhất một vai trò.',
                                 ]),
                             Forms\Components\Placeholder::make('enrollment_info')
                                 ->label('Tình trạng nhân viên theo vai trò')
@@ -167,9 +167,8 @@ class EnrollmentsRelationManager extends RelationManager
                         $courseId = $this->getOwnerRecord()->id;
 
                         $newRoles = collect($data['allowed_roles'] ?? [])
-                            ->map(fn ($role) => (int) $role)
-                            ->filter(fn ($role) => UserRole::tryFrom($role) !== null
-                                && !in_array($role, [UserRole::SUPER_ADMIN->value, UserRole::BUYER->value], true))
+                            ->map(fn ($role) => (string) $role)
+                            ->filter(fn ($role) => in_array($role, ['employee', 'tp_kd', 'gdkd', 'ceo'], true))
                             ->unique()
                             ->values()
                             ->all();
@@ -187,14 +186,13 @@ class EnrollmentsRelationManager extends RelationManager
                         if (!empty($removedRoles)) {
                             $affectedEnrollments = CourseEnrollment::query()
                                 ->where('course_id', $courseId)
-                                ->whereHas('user', fn ($q) => $q->whereIn('role', $removedRoles))
+                                ->whereHas('user.role', fn ($q) => $q->whereIn('name', $removedRoles))
                                 ->whereNot('status', CourseEnrollmentStatus::COMPLETED)
                                 ->get();
 
                             if ($affectedEnrollments->isNotEmpty()) {
-                                $removedLabels = collect($removedRoles)
-                                    ->map(fn ($r) => UserRole::tryFrom((int) $r)?->label())
-                                    ->filter()
+                                $removedLabels = \App\Modules\Auth\Models\Role::whereIn('name', $removedRoles)
+                                    ->pluck('label')
                                     ->implode(', ');
 
                                 Notification::make()
@@ -210,7 +208,7 @@ class EnrollmentsRelationManager extends RelationManager
                         }
 
                         $users = User::query()
-                            ->whereIn('role', $newRoles)
+                            ->whereHas('role', fn ($q) => $q->whereIn('name', $newRoles))
                             ->where('is_active', true)
                             ->whereNotNull('job_position_id')
                             ->get(['id']);
@@ -237,36 +235,6 @@ class EnrollmentsRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('confirmOnboarding')
-                    ->label('Duyệt onboarding')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(fn ($record) => $isRequiredCourse
-                        && $record->status === CourseEnrollmentStatus::PENDING_ONBOARDING
-                        && $this->countUngradedEssays($record) === 0)
-                    ->tooltip(fn ($record): ?string => $record->status === CourseEnrollmentStatus::PENDING_ONBOARDING
-                        ? "Còn câu tự luận chưa chấm — vào mục Chấm bài quiz để chấm trước."
-                        : null)
-                    ->requiresConfirmation()
-                    ->action(function ($record) {
-                        $learningService = app(\App\Modules\Learning\Interfaces\LearningServiceInterface::class);
-                        $result = $learningService->adminConfirmOnboarding(
-                            (string) $record->course_id,
-                            (string) $record->user_id,
-                            (string) auth()->user()?->getAuthIdentifier()
-                        );
-                        if ($result->isError()) {
-                            \Filament\Notifications\Notification::make()
-                                ->title($result->getMessage())
-                                ->danger()
-                                ->send();
-                        } else {
-                            \Filament\Notifications\Notification::make()
-                                ->title('Duyệt hoàn thành onboarding cho nhân viên thành công.')
-                                ->success()
-                                ->send();
-                        }
-                    }),
                 Tables\Actions\EditAction::make()->label('Cập nhật tiến độ'),
                 Tables\Actions\DeleteAction::make()->label('Xóa lượt học'),
             ]);
@@ -343,10 +311,10 @@ class EnrollmentsRelationManager extends RelationManager
     {
         $results = CourseEnrollment::query()
             ->join('users', 'users.id', '=', 'course_enrollments.user_id')
+            ->join('roles', 'roles.id', '=', 'users.role_id')
             ->where('course_enrollments.course_id', $courseId)
-            ->whereNotNull('users.role')
-            ->groupBy('users.role')
-            ->pluck(\Illuminate\Support\Facades\DB::raw('COUNT(*)'), 'users.role')
+            ->groupBy('roles.name')
+            ->pluck(\Illuminate\Support\Facades\DB::raw('COUNT(*)'), 'roles.name')
             ->all();
 
         return array_map('intval', $results);

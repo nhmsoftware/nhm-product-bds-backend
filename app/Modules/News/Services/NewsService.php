@@ -21,7 +21,7 @@ use App\Modules\News\Interfaces\NewsServiceInterface;
 use App\Modules\Auth\Interfaces\AuthRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use App\Modules\Auth\Models\Enums\UserRole;
+
 
 final class NewsService extends BaseService implements NewsServiceInterface
 {
@@ -326,11 +326,11 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($news !== null, 'Bài viết không tồn tại.', 404);
             $this->validate($news->is_published === true, 'Bài viết không tồn tại.', 404);
 
-            if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
+            if (in_array($user->role?->name, ['employee', 'tp_kd'], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền truy cập bài viết này.', 403);
-            } elseif ($user->role === UserRole::DIRECTOR) {
+            } elseif ($user->role?->name === 'gdkd') {
                 $this->validate($news->branch_id === $user->branch_id, 'Bạn không có quyền truy cập bài viết này.', 403);
-            } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+            } elseif (in_array($user->role?->name, ['ceo', 'super_admin'], true)) {
                 // Toàn quyền
             } else {
                 $this->throw('Bạn không có quyền truy cập bài viết này.', 403);
@@ -421,11 +421,11 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($news !== null, 'Bài viết không tồn tại.', 404);
             $this->validate($news->is_published === true, 'Bài viết không tồn tại.', 404);
 
-            if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
+            if (in_array($user->role?->name, ['employee', 'tp_kd'], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền bình luận bài viết này.', 403);
-            } elseif ($user->role === UserRole::DIRECTOR) {
+            } elseif ($user->role?->name === 'gdkd') {
                 $this->validate($news->branch_id === $user->branch_id, 'Bạn không có quyền bình luận bài viết này.', 403);
-            } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+            } elseif (in_array($user->role?->name, ['ceo', 'super_admin'], true)) {
                 // Toàn quyền
             } else {
                 $this->throw('Bạn không có quyền bình luận bài viết này.', 403);
@@ -525,10 +525,10 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $department = null;
             $branchId = null;
 
-            if (in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+            if (in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true)) {
                 // Director, CEO, SuperAdmin: Xem bài viết của chi nhánh hoặc toàn bộ
                 $branchId = $user->branch_id;
-                if ($user->role === UserRole::DIRECTOR) {
+                if ($user->role?->name === 'gdkd') {
                     $this->validate(!empty($branchId), 'Chi nhánh quản lý của giám đốc không xác định.', 400);
                 }
             } else {
@@ -671,11 +671,11 @@ final class NewsService extends BaseService implements NewsServiceInterface
             $this->validate($news !== null && $news->is_published === true, 'Bài viết không tồn tại.', 404);
 
             // 3. Kiểm tra phân quyền truy cập bài viết nội bộ (A1)
-            if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
+            if (in_array($user->role?->name, ['employee', 'tp_kd'], true)) {
                 $this->validate($news->department === $user->department, 'Bạn không có quyền tương tác bài viết này.', 403);
-            } elseif ($user->role === UserRole::DIRECTOR) {
+            } elseif ($user->role?->name === 'gdkd') {
                 $this->validate($news->branch_id === $user->branch_id, 'Bạn không có quyền tương tác bài viết này.', 403);
-            } elseif (in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+            } elseif (in_array($user->role?->name, ['ceo', 'super_admin'], true)) {
                 // Toàn quyền
             } else {
                 $this->throw('Bạn không có quyền tương tác bài viết này.', 403);
@@ -759,9 +759,9 @@ final class NewsService extends BaseService implements NewsServiceInterface
         });
     }
 
-    private function canManageInternalPosts(UserRole $role): bool
+    private function canManageInternalPosts(?object $role): bool
     {
-        return in_array($role, [UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true);
+        return $role && in_array($role->name, ['tp_kd', 'gdkd', 'ceo', 'super_admin'], true);
     }
 
     /**

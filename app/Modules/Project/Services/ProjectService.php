@@ -233,7 +233,7 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
     {
         return $this->execute(function () use ($dto) {
             $branch = null;
-            if ($dto->userRole === UserRole::DIRECTOR) {
+            if ($dto->userRole === 'gdkd') {
                 $branch = $dto->userBranch; // General Director chỉ xem dự án của chi nhánh mình
             }
 
@@ -315,7 +315,7 @@ final class ProjectService extends BaseService implements ProjectServiceInterfac
             $this->validate($project !== null, 'Dự án không tồn tại.', 404);
 
             // General Director chỉ được Lock/Unlock Project chi nhánh của bản thân
-            if ($user->role === UserRole::DIRECTOR) {
+            if ($user->role?->name === 'gdkd') {
                 $this->validate($project->branch === $user->department, 'Bạn không có quyền thực hiện chức năng này trên dự án của chi nhánh khác.', 403);
             }
 

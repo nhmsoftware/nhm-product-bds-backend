@@ -76,7 +76,7 @@ class DepartmentSeeder extends Seeder
             foreach (self::BRANCH_DEPARTMENTS as $dept) {
                 $code = $dept['code'] . '_' . $branchCode;
 
-                $manager = User::where('role', UserRole::MANAGER->value)
+                $manager = User::whereHas('role', fn ($q) => $q->where('name', 'tp_kd'))
                     ->where('branch_id', $branchId)
                     ->whereHas('departmentRel', fn ($q) => $q->where('name', $dept['name']))
                     ->first();
@@ -108,7 +108,7 @@ class DepartmentSeeder extends Seeder
     private function seedHqDepartments(string $hnBranchId): void
     {
         foreach (self::HQ_DEPARTMENTS as $dept) {
-            $manager = User::where('role', UserRole::MANAGER->value)
+            $manager = User::whereHas('role', fn ($q) => $q->where('name', 'tp_kd'))
                 ->where('branch_id', $hnBranchId)
                 ->whereHas('departmentRel', fn ($q) => $q->where('name', $dept['name']))
                 ->first();

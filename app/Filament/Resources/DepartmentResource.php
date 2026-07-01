@@ -62,9 +62,9 @@ class DepartmentResource extends Resource
                         $currentUser = auth()->user();
                         $query = User::query()
                             ->where('is_active', true)
-                            ->where('role', UserRole::MANAGER->value)
+                            ->whereHas('role', fn($q) => $q->where('name', 'tp_kd'))
                             ->whereNotNull('job_position_id');
-                        if ($currentUser && $currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                        if ($currentUser && $currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                             $query->where('branch_id', $currentUser->branch_id);
                         }
                         return $query->pluck('name', 'id');

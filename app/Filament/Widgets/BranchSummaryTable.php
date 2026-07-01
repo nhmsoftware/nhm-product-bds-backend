@@ -3,7 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Modules\Area\Models\Enums\LotDepositRequestStatus;
-use App\Modules\Auth\Models\Enums\UserRole;
 use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -61,14 +60,14 @@ class BranchSummaryTable extends TableWidget
 
         $employeeSubquery = DB::table('users')
             ->leftJoin('employee_profiles', 'employee_profiles.user_id', '=', 'users.id')
-            ->whereIn('users.role', [
-                UserRole::EMPLOYEE->value,
-                UserRole::MANAGER->value,
-                UserRole::DIRECTOR->value,
-            ])
+            ->whereIn('users.role_id', function ($q) {
+                $q->select('id')->from('roles')->whereIn('name', ['employee', 'tp_kd', 'gdkd']);
+            })
             ->where('users.is_active', true)
             ->whereNull('users.deleted_at')
-            ->where(fn ($query) => $query->where('users.role', '!=', UserRole::EMPLOYEE->value)->orWhereNotNull('users.job_position_id'))
+            ->where(fn ($query) => $query->whereIn('users.role_id', function ($q) {
+                $q->select('id')->from('roles')->where('name', '!=', 'employee');
+            })->orWhereNotNull('users.job_position_id'))
             ->selectRaw('users.branch_id as branch_id')
             ->selectRaw('COUNT(users.id) as employee_count')
             ->selectRaw("COUNT(DISTINCT users.department_id) as department_count")
@@ -119,7 +118,7 @@ class BranchSummaryTable extends TableWidget
     {
         $user = Filament::auth()->user();
 
-        if ($user?->role === UserRole::DIRECTOR) {
+        if ($user->role?->name === 'gdkd') {
             return filled($user->branch_id) ? (string) $user->branch_id : '__director_without_branch__';
         }
 

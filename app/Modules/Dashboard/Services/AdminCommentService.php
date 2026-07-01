@@ -28,13 +28,13 @@ final class AdminCommentService extends BaseService implements AdminCommentServi
             $this->validate($user, 'Người dùng không tồn tại.', 404);
             
             // Phân quyền
-            $allowedRoles = [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR];
-            $this->validate(in_array($user->role, $allowedRoles, true), 'Bạn không có quyền truy cập chức năng này.', 403);
+            $allowedRoles = ['super_admin', 'ceo', 'gdkd'];
+            $this->validate($user->role && in_array($user->role->name, $allowedRoles, true), 'Bạn không có quyền truy cập chức năng này.', 403);
 
             $filters = $dto->toArray();
             
             // Giám đốc chi nhánh chỉ xem được comment thuộc khu vực của họ
-            if ($user->role === UserRole::DIRECTOR) {
+            if ($user->role?->name === 'gdkd') {
                 if ($user->branch_id) {
                     $filters['area_id'] = $user->branch_id;
                 } else {
@@ -94,8 +94,8 @@ final class AdminCommentService extends BaseService implements AdminCommentServi
             $user = $this->authRepository->findById($userId);
             $this->validate($user, 'Người dùng không tồn tại.', 404);
             
-            $allowedRoles = [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR];
-            $this->validate(in_array($user->role, $allowedRoles, true), 'Bạn không có quyền truy cập chức năng này.', 403);
+            $allowedRoles = ['super_admin', 'ceo', 'gdkd'];
+            $this->validate($user->role && in_array($user->role->name, $allowedRoles, true), 'Bạn không có quyền truy cập chức năng này.', 403);
 
             // Delete based on source type
             if ($sourceType === 'area_internal') {

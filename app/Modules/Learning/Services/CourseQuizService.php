@@ -56,10 +56,17 @@ final class CourseQuizService extends BaseService
                 $draft = $draftAttempts->get($item->id);
                 $mappedOptions = [];
                 foreach ($item->options ?? [] as $idx => $content) {
-                    $mappedOptions[] = [
-                        'value' => $idx,
-                        'label' => $content
-                    ];
+                    if (is_array($content)) {
+                        $mappedOptions[] = [
+                            'value' => isset($content['value']) ? (int) $content['value'] : $idx + 1,
+                            'label' => $content['label'] ?? ''
+                        ];
+                    } else {
+                        $mappedOptions[] = [
+                            'value' => $idx + 1,
+                            'label' => (string) $content
+                        ];
+                    }
                 }
 
                 return [

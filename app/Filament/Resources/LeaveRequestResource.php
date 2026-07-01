@@ -19,19 +19,19 @@ class LeaveRequestResource extends Resource
                     if (!$currentUser) return $query;
 
                     $query->where('id', '!=', $currentUser->id)
-                        ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::BUYER->value)
-                        ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value)
+                        ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'buyer')->value('id'))
+                        ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'super_admin')->value('id'))
                         ->whereNotNull('job_position_id');
 
-                    if ($currentUser->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
-                        $query->where('role', '<=', $currentUser->role->value);
+                    if (!$currentUser->hasAnyPermission(['manage_all', 'approve_leave'])) {
+                        $query->whereHas('role', fn($q) => $q->where('level', '>=', $currentUser->role?->level ?? 999));
                     }
 
-                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $currentUser->branch_id) {
+                    if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                         $query->where('branch_id', $currentUser->branch_id);
                     }
 
-                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER && $currentUser->department_id) {
+                    if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                         $query->where('department_id', $currentUser->department_id);
                     }
 
@@ -46,20 +46,20 @@ class LeaveRequestResource extends Resource
                     $currentUser = auth()->user();
                     if (!$currentUser) return $query;
 
-                    $query->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::BUYER->value)
-                        ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::EMPLOYEE->value)
-                        ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value)
+                    $query->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'buyer')->value('id'))
+                        ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'employee')->value('id'))
+                        ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'super_admin')->value('id'))
                         ->whereNotNull('job_position_id');
 
-                    if ($currentUser->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
-                        $query->where('role', '<=', $currentUser->role->value);
+                    if (!$currentUser->hasAnyPermission(['manage_all', 'approve_leave'])) {
+                        $query->whereHas('role', fn($q) => $q->where('level', '>=', $currentUser->role?->level ?? 999));
                     }
 
-                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $currentUser->branch_id) {
+                    if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                         $query->where('branch_id', $currentUser->branch_id);
                     }
 
-                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER && $currentUser->department_id) {
+                    if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                         $query->where('department_id', $currentUser->department_id);
                     }
 
@@ -196,13 +196,13 @@ class LeaveRequestResource extends Resource
             return $query;
         }
 
-        if ($user->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER) {
+        if ($user->role?->name === 'tp_kd') {
             return $query->whereHas('user', function ($q) use ($user) {
                 $q->where('department_id', $user->department_id);
             });
         }
 
-        if ($user->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR) {
+        if ($user->role?->name === 'gdkd') {
             return $query->whereHas('user', function ($q) use ($user) {
                 $q->where('branch_id', $user->branch_id);
             });

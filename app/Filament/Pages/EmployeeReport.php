@@ -3,7 +3,6 @@
 namespace App\Filament\Pages;
 
 use App\Modules\Auth\Models\User;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Filament\Support\AdminOptions;
 use App\Modules\Area\Models\Enums\LotDepositRequestStatus;
 use Filament\Pages\Page;
@@ -27,27 +26,27 @@ class EmployeeReport extends Page implements HasForms
     protected static string $view = 'filament.pages.employee-report';
 
     public ?array $data = [];
-    public ?array $selectedEmployeeDetail = null;
+    public ?array $selectedEmployeeDetails = null;
 
     public static function shouldRegisterNavigation(): bool
     {
         $user = Filament::auth()->user();
         if (!$user) return false;
-        return in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER]);
+        return $user->hasAnyPermission(['manage_all', 'manage_employees']);
     }
 
     public function mount(): void
     {
         $user = Filament::auth()->user();
-        if (!$user || !in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER])) {
+        if (!$user || !$user->hasAnyPermission(['manage_all', 'manage_employees'])) {
             abort(403);
         }
 
         $this->form->fill([
             'start_date' => now()->startOfMonth()->format('Y-m-d'),
             'end_date' => now()->endOfMonth()->format('Y-m-d'),
-            'department' => $user->role === UserRole::MANAGER ? $user->department : null,
-            'area' => $user->role === UserRole::DIRECTOR ? $user->area : null,
+            'department' => $user->role?->name === 'tp_kd' ? $user->department : null,
+            'area' => $user->role?->name === 'gdkd' ? $user->area : null,
         ]);
     }
 
@@ -76,13 +75,13 @@ class EmployeeReport extends Page implements HasForms
                     ->label('Phòng ban')
                     ->options(AdminOptions::departments())
                     ->placeholder('Tất cả phòng ban')
-                    ->disabled($user && $user->role === UserRole::MANAGER)
+                    ->disabled($user && $user->role?->name === 'tp_kd')
                     ->native(false),
                 Select::make('area')
                     ->label('Khu vực / Chi nhánh')
                     ->options(AdminOptions::areas())
                     ->placeholder('Tất cả khu vực')
-                    ->disabled($user && $user->role === UserRole::DIRECTOR)
+                    ->disabled($user && $user->role?->name === 'gdkd')
                     ->native(false),
                 Select::make('employee_id')
                     ->label('Nhân viên')
@@ -92,14 +91,14 @@ class EmployeeReport extends Page implements HasForms
 
                         $query = User::query()
                             ->where('is_active', true)
-                            ->where('role', UserRole::EMPLOYEE->value)
+                            ->whereHas('role', fn($q) => $q->where('name', 'employee'))
                             ->whereNotNull('job_position_id');
 
-                        if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                        if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                             $query->where('branch_id', $currentUser->branch_id);
                         }
 
-                        if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                        if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                             $query->where('department_id', $currentUser->department_id);
                         }
 
@@ -120,19 +119,19 @@ class EmployeeReport extends Page implements HasForms
 
         $emp = User::query()
             ->where('id', $employeeId)
-            ->where('role', UserRole::EMPLOYEE->value)
+            ->whereHas('role', fn($q) => $q->where('name', 'employee'))
             ->whereNotNull('job_position_id')
             ->first();
 
         if (!$emp) {
-            $this->selectedEmployeeDetail = null;
+            $this->selectedEmployeeDetails = null;
             return;
         }
 
         try {
             $filter = $this->form->getState();
         } catch (\Illuminate\Validation\ValidationException $e) {
-            $this->selectedEmployeeDetail = null;
+            $this->selectedEmployeeDetails = null;
             return;
         }
         $startDate = $filter['start_date'] ?? null;
@@ -175,7 +174,7 @@ class EmployeeReport extends Page implements HasForms
             + (floor($workingDaysCount / 5) * 1)
             - ($absencesCount * 0.5);
 
-        $this->selectedEmployeeDetail = [
+        $this->selectedEmployeeDetails = [
             'name' => $emp->name,
             'staff_code' => $emp->staff_code ?: '-',
             'department' => $emp->department ?: '-',
@@ -220,7 +219,7 @@ class EmployeeReport extends Page implements HasForms
 
     public function closeEmployeeDetail(): void
     {
-        $this->selectedEmployeeDetail = null;
+        $this->selectedEmployeeDetails = null;
     }
 
     public function applyFilters(): void
@@ -243,14 +242,14 @@ class EmployeeReport extends Page implements HasForms
         $user = Filament::auth()->user();
 
         $query = User::query()
-            ->where('role', UserRole::EMPLOYEE->value)
+            ->whereHas('role', fn($q) => $q->where('name', 'employee'))
             ->where('is_active', true)
             ->whereNotNull('job_position_id');
 
         // Apply Role Restriction
-        if ($user->role === UserRole::MANAGER) {
+        if ($user->role?->name === 'tp_kd') {
             $query->where('department_id', $user->department_id);
-        } elseif ($user->role === UserRole::DIRECTOR) {
+        } elseif ($user->role?->name === 'gdkd') {
             $query->where('area', $user->area);
         }
 

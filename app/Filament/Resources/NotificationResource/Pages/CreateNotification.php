@@ -6,7 +6,7 @@ use App\Filament\Resources\NotificationResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Validation\ValidationException;
 use App\Modules\Auth\Models\User;
-use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\Role;
 
 class CreateNotification extends CreateRecord
 {
@@ -16,11 +16,14 @@ class CreateNotification extends CreateRecord
     {
         $usersQuery = User::query()
             ->where('is_active', true)
-            ->where('role', '!=', UserRole::BUYER->value)
-            ->where(fn ($query) => $query->where('role', '!=', UserRole::EMPLOYEE->value)->orWhere(fn ($sub) => $sub->whereNotNull('job_position_id')));
+            ->whereHas('role', fn($q) => $q->where('name', '!=', 'buyer'))
+            ->where(fn ($query) => $query->whereHas('role', fn($q) => $q->where('name', '!=', 'employee'))->orWhere(fn ($sub) => $sub->whereNotNull('job_position_id')));
 
         if ($data['target_type'] === 'role') {
-            $usersQuery->where('role', (int) $data['target_role']);
+            $role = Role::where('name', $data['target_role'])->first();
+            if ($role) {
+                $usersQuery->where('role_id', $role->id);
+            }
         } elseif ($data['target_type'] === 'department') {
             $usersQuery->where('department_id', $data['target_department']);
         } elseif ($data['target_type'] === 'area') {
@@ -40,7 +43,7 @@ class CreateNotification extends CreateRecord
 
         $targetLabel = match ($data['target_type']) {
             'all' => 'Tất cả nhân sự',
-            'role' => 'Vai trò: ' . (UserRole::from((int) $data['target_role'])->label()),
+            'role' => 'Vai trò: ' . (Role::where('name', $data['target_role'])->first()?->display_name ?? $data['target_role']),
             'department' => 'Phòng ban: ' . (function () use ($data) {
                 $dept = \App\Modules\Auth\Models\Department::with('branch')->find($data['target_department']);
                 return $dept ? "{$dept->name} ({$dept->branch?->name})" : 'Không xác định';

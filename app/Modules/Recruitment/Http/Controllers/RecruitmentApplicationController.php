@@ -3,7 +3,7 @@
 namespace App\Modules\Recruitment\Http\Controllers;
 
 use App\Core\Controller\BaseController;
-use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\Role;
 use App\Modules\Branch\Models\Branch;
 use App\Modules\Recruitment\Models\RecruitmentApplication;
 use Illuminate\Http\JsonResponse;
@@ -23,26 +23,23 @@ class RecruitmentApplicationController extends BaseController
         ]);
     }
 
+    private const POSITION_MAP = [
+        1 => ['role_name' => 'employee',       'label' => 'Nhân viên'],
+        2 => ['role_name' => 'tp_kd',           'label' => 'Trưởng phòng'],
+        3 => ['role_name' => 'gdkd',            'label' => 'Giám đốc'],
+        4 => ['role_name' => 'ceo',             'label' => 'Tổng giám đốc (CEO)'],
+    ];
+
     /**
      * Lấy danh sách vị trí ứng tuyển.
      */
     public function getPositions(): JsonResponse
     {
         return response()->json([
-            'data' => [
-                [
-                    'value' => UserRole::EMPLOYEE->value,
-                    'label' => 'Nhân viên'
-                ],
-                [
-                    'value' => UserRole::MANAGER->value,
-                    'label' => 'Trưởng phòng'
-                ],
-                [
-                    'value' => UserRole::DIRECTOR->value,
-                    'label' => 'Giám đốc'
-                ]
-            ]
+            'data' => collect(self::POSITION_MAP)
+                ->map(fn (array $pos, int $value) => ['value' => $value, 'label' => $pos['label']])
+                ->values()
+                ->all(),
         ]);
     }
 
@@ -119,12 +116,12 @@ class RecruitmentApplicationController extends BaseController
         $query = RecruitmentApplication::with(['user', 'appliedBranch']);
 
         // Nếu là Director, chỉ lấy đơn ứng tuyển của chi nhánh mình quản lý
-        if ($currentUser->role === UserRole::DIRECTOR) {
+        if ($currentUser->role?->name === 'gdkd') {
             if (!$currentUser->branch_id) {
                 return response()->json(['data' => []]);
             }
             $query->where('applied_branch_id', $currentUser->branch_id);
-        } elseif ($currentUser->role === UserRole::MANAGER) {
+        } elseif ($currentUser->role?->name === 'tp_kd') {
             // Manager không có quyền xem
             return response()->json(['data' => []], 403);
         }
@@ -148,11 +145,11 @@ class RecruitmentApplicationController extends BaseController
             return response()->json(['message' => 'Không tìm thấy đơn ứng tuyển.'], 404);
         }
 
-        if ($currentUser->role === UserRole::DIRECTOR) {
+        if ($currentUser->role?->name === 'gdkd') {
             if ($application->applied_branch_id !== $currentUser->branch_id) {
                 return response()->json(['message' => 'Không có quyền truy cập đơn ứng tuyển này.'], 403);
             }
-        } elseif ($currentUser->role === UserRole::MANAGER) {
+        } elseif ($currentUser->role?->name === 'tp_kd') {
             return response()->json(['message' => 'Không có quyền truy cập.'], 403);
         }
 
@@ -173,11 +170,11 @@ class RecruitmentApplicationController extends BaseController
             return response()->json(['message' => 'Không tìm thấy đơn ứng tuyển.'], 404);
         }
 
-        if ($currentUser->role === UserRole::DIRECTOR) {
+        if ($currentUser->role?->name === 'gdkd') {
             if ($application->applied_branch_id !== $currentUser->branch_id) {
                 return response()->json(['message' => 'Không có quyền xử lý đơn ứng tuyển này.'], 403);
             }
-        } elseif ($currentUser->role !== UserRole::SUPER_ADMIN && $currentUser->role !== UserRole::CEO) {
+        } elseif ($currentUser->role?->name !== 'super_admin' && $currentUser->role?->name !== 'ceo') {
             return response()->json(['message' => 'Không có quyền xử lý đơn ứng tuyển.'], 403);
         }
 
@@ -204,13 +201,17 @@ class RecruitmentApplicationController extends BaseController
 
         if ($status === 'approved') {
             $application->status = 'approved';
-            
+
             // Cập nhật vai trò và chi nhánh cho ứng viên
             $user = $application->user;
             if ($user) {
-                $user->role = $application->applied_position;
-                $user->branch_id = $application->applied_branch_id;
-                $user->save();
+                $positionInt = (int) $application->applied_position;
+                $roleName = self::POSITION_MAP[$positionInt]['role_name'] ?? 'employee';
+                $roleId = Role::where('name', $roleName)->value('id');
+                $user->update([
+                    'role_id' => $roleId,
+                    'branch_id' => $application->applied_branch_id,
+                ]);
             }
         } else {
             $application->status = 'rejected';

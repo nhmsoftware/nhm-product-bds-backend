@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\NewsCommentResource\Pages;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\News\Models\NewsComment;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -45,17 +44,17 @@ class NewsCommentResource extends Resource
                     if (!$currentUser) return $query;
 
                     $query->where('id', '!=', $currentUser->id)
-                        ->where('role', '!=', UserRole::BUYER->value)
-                        ->where('role', '!=', UserRole::SUPER_ADMIN->value)
+                        ->whereHas('role', fn($q) => $q->where('name', '!=', 'buyer'))
+                        ->whereHas('role', fn($q) => $q->where('name', '!=', 'super_admin'))
                         ->whereNotNull('job_position_id');
 
-                    if ($currentUser->role !== UserRole::SUPER_ADMIN) {
-                        $query->where('role', '<=', $currentUser->role->value);
+                    if (!$currentUser->hasAnyPermission(['manage_all'])) {
+                        $query->whereHas('role', fn($q) => $q->whereRaw('weight >= (SELECT weight FROM roles WHERE id = ?)', [$currentUser->role_id]));
                     }
-                    if ($currentUser->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                    if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                         $query->where('branch_id', $currentUser->branch_id);
                     }
-                    if ($currentUser->role === UserRole::MANAGER && $currentUser->department_id) {
+                    if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                         $query->where('department_id', $currentUser->department_id);
                     }
 

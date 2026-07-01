@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\RecruitmentApplicationResource\Pages;
 use App\Modules\Auth\Models\Department;
 use App\Modules\Auth\Models\EmployeeProfile;
-use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\Role;
 use App\Modules\Auth\Models\JobPosition;
 use App\Modules\Auth\Models\User;
 use App\Modules\Branch\Models\Branch;
@@ -20,14 +20,23 @@ use Filament\Tables\Table;
 class RecruitmentApplicationResource extends Resource
 {
     protected static ?string $model = RecruitmentApplication::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-document-check';
-
     protected static ?string $navigationGroup = 'Nhân sự';
-
     protected static ?string $modelLabel = 'Duyệt đơn ứng tuyển';
-
     protected static ?string $pluralModelLabel = 'Duyệt đơn ứng tuyển';
+
+    private const POSITION_OPTIONS = [
+        1 => ['role_name' => 'employee', 'label' => 'Nhân viên'],
+        2 => ['role_name' => 'tp_kd',    'label' => 'Quản lý'],
+        3 => ['role_name' => 'gdkd',     'label' => 'Giám đốc'],
+        4 => ['role_name' => 'ceo',      'label' => 'Tổng giám đốc (CEO)'],
+    ];
+
+    private const POSITION_FORM_OPTIONS = [
+        1 => 'Nhân viên',
+        2 => 'Trưởng phòng',
+        3 => 'Giám đốc',
+    ];
 
     public static function canCreate(): bool
     {
@@ -49,11 +58,7 @@ class RecruitmentApplicationResource extends Resource
 
                     Forms\Components\Select::make('applied_position')
                         ->label('Vị trí ứng tuyển')
-                        ->options([
-                            UserRole::EMPLOYEE->value => 'Nhân viên',
-                            UserRole::MANAGER->value => 'Trưởng phòng',
-                            UserRole::DIRECTOR->value => 'Giám đốc',
-                        ])
+                        ->options(self::POSITION_FORM_OPTIONS)
                         ->required()
                         ->disabled(),
 
@@ -66,7 +71,7 @@ class RecruitmentApplicationResource extends Resource
                     Forms\Components\Select::make('status')
                         ->label('Trạng thái')
                         ->options([
-                            'pending' => 'Chờ duyệt',
+                            'pending'  => 'Chờ duyệt',
                             'approved' => 'Đã duyệt',
                             'rejected' => 'Từ chối',
                         ])
@@ -121,6 +126,8 @@ class RecruitmentApplicationResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $positionLabels = array_column(self::POSITION_OPTIONS, 'label');
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
@@ -139,7 +146,7 @@ class RecruitmentApplicationResource extends Resource
 
                 Tables\Columns\TextColumn::make('applied_position')
                     ->label('Vị trí ứng tuyển')
-                    ->formatStateUsing(fn ($state) => $state instanceof UserRole ? $state->label() : (UserRole::tryFrom((int)$state)?->label() ?? '—')),
+                    ->formatStateUsing(fn ($state) => $positionLabels[(int) $state] ?? '—'),
 
                 Tables\Columns\TextColumn::make('cv_url')
                     ->label('CV / Tài liệu')
@@ -151,16 +158,16 @@ class RecruitmentApplicationResource extends Resource
                     ->label('Trạng thái')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
+                        'pending'  => 'warning',
                         'approved' => 'success',
                         'rejected' => 'danger',
-                        default => 'gray',
+                        default    => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'pending' => 'Chờ duyệt',
+                        'pending'  => 'Chờ duyệt',
                         'approved' => 'Đã duyệt',
                         'rejected' => 'Từ chối',
-                        default => $state,
+                        default    => $state,
                     }),
 
                 Tables\Columns\TextColumn::make('processed_at')
@@ -176,30 +183,28 @@ class RecruitmentApplicationResource extends Resource
                     ->color('success')
                     ->visible(fn (RecruitmentApplication $record): bool => $record->status === 'pending')
                     ->fillForm(fn (RecruitmentApplication $record): array => [
-                        'role' => $record->applied_position?->value ?? UserRole::EMPLOYEE->value,
-                        'branch_id' => $record->applied_branch_id,
-                        'department_id' => $record->user?->department_id,
-                        'job_position_id' => self::defaultJobPositionId($record->applied_position),
+                        'role'             => (int) ($record->applied_position ?? 1),
+                        'branch_id'        => $record->applied_branch_id,
+                        'department_id'    => $record->user?->department_id,
+                        'job_position_id'  => self::defaultJobPositionId((int) ($record->applied_position ?? 1)),
                     ])
                     ->form([
                         Forms\Components\Select::make('role')
                             ->label('Vai trò sau duyệt')
-                            ->options([
-                                UserRole::EMPLOYEE->value => 'Nhân viên',
-                                UserRole::MANAGER->value => 'Quản lý',
-                                UserRole::DIRECTOR->value => 'Giám đốc',
-                                UserRole::CEO->value => 'Tổng giám đốc (CEO)',
-                            ])
+                            ->options(array_column(self::POSITION_OPTIONS, 'label'))
                             ->required()
                             ->live()
-                            ->afterStateUpdated(fn (Forms\Set $set, $state) => $set('job_position_id', self::defaultJobPositionId(UserRole::tryFrom((int) $state)))),
+                            ->afterStateUpdated(fn (Forms\Set $set, $state) => $set(
+                                'job_position_id',
+                                self::defaultJobPositionId((int) $state),
+                            )),
 
                         Forms\Components\Select::make('branch_id')
                             ->label('Chi nhánh')
                             ->options(function (): array {
                                 $query = Branch::query()->where('is_active', true)->orderBy('sort')->orderBy('name');
                                 $currentUser = auth()->user();
-                                if ($currentUser?->role === UserRole::DIRECTOR && $currentUser->branch_id) {
+                                if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                                     $query->where('id', $currentUser->branch_id);
                                 }
                                 return $query->pluck('name', 'id')->all();
@@ -248,36 +253,38 @@ class RecruitmentApplicationResource extends Resource
                             return;
                         }
 
-                        $role = UserRole::tryFrom((int) $data['role']) ?? UserRole::EMPLOYEE;
+                        $positionInt = (int) $data['role'];
+                        $roleName = self::POSITION_OPTIONS[$positionInt]['role_name'] ?? 'employee';
+                        $roleId = Role::where('name', $roleName)->value('id');
 
                         $user->forceFill([
-                            'role' => $role,
-                            'branch_id' => $data['branch_id'],
-                            'department_id' => $data['department_id'],
-                            'job_position_id' => (int) $data['job_position_id'],
-                            'is_active' => true,
+                            'role_id'          => $roleId,
+                            'branch_id'        => $data['branch_id'],
+                            'department_id'    => $data['department_id'],
+                            'job_position_id'  => (int) $data['job_position_id'],
+                            'is_active'        => true,
                         ])->save();
 
                         EmployeeProfile::updateOrCreate(
                             ['user_id' => $user->id],
                             [
                                 'employee_title' => JobPosition::find($data['job_position_id'])?->name,
-                                'education' => $record->education,
-                                'experience' => $record->experience,
-                                'attachments' => $record->cv_url ? [[
+                                'education'      => $record->education,
+                                'experience'     => $record->experience,
+                                'attachments'    => $record->cv_url ? [[
                                     'type' => 'CV ứng tuyển',
                                     'name' => 'CV ứng tuyển',
-                                    'url' => $record->cv_url,
+                                    'url'  => $record->cv_url,
                                 ]] : null,
                             ]
                         );
 
                         $record->update([
-                            'applied_position' => $role,
+                            'applied_position'  => $positionInt,
                             'applied_branch_id' => $data['branch_id'],
-                            'status' => 'approved',
-                            'approved_by' => auth()->id(),
-                            'processed_at' => now(),
+                            'status'            => 'approved',
+                            'approved_by'       => auth()->id(),
+                            'processed_at'      => now(),
                         ]);
 
                         Notification::make()
@@ -302,10 +309,10 @@ class RecruitmentApplicationResource extends Resource
                     ])
                     ->action(function (RecruitmentApplication $record, array $data): void {
                         $record->update([
-                            'status' => 'rejected',
-                            'rejected_reason' => $data['rejected_reason'],
-                            'approved_by' => auth()->id(),
-                            'processed_at' => now(),
+                            'status'           => 'rejected',
+                            'rejected_reason'  => $data['rejected_reason'],
+                            'approved_by'      => auth()->id(),
+                            'processed_at'     => now(),
                         ]);
 
                         Notification::make()
@@ -324,13 +331,12 @@ class RecruitmentApplicationResource extends Resource
             ]);
     }
 
-
-    private static function defaultJobPositionId(?UserRole $role): int
+    private static function defaultJobPositionId(int $position): int
     {
-        return match ($role) {
-            UserRole::MANAGER => JobPosition::BUSINESS_MANAGER,
-            UserRole::DIRECTOR => JobPosition::BUSINESS_DIRECTOR,
-            UserRole::CEO => JobPosition::CEO,
+        return match ($position) {
+            2       => JobPosition::BUSINESS_MANAGER,
+            3       => JobPosition::BUSINESS_DIRECTOR,
+            4       => JobPosition::CEO,
             default => JobPosition::BUSINESS_SPECIALIST,
         };
     }
@@ -343,22 +349,22 @@ class RecruitmentApplicationResource extends Resource
             return $query;
         }
 
-        if ($user->role === UserRole::DIRECTOR && $user->branch_id) {
+        if ($user->hasAnyPermission(['manage_all', 'manage_employees'])) {
+            return $query;
+        }
+
+        if ($user->role?->name === 'gdkd' && $user->branch_id) {
             return $query->where('applied_branch_id', $user->branch_id);
         }
 
-        if ($user->role === UserRole::MANAGER) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query;
+        return $query->whereRaw('1 = 0');
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListRecruitmentApplications::route('/'),
-            'edit' => Pages\EditRecruitmentApplication::route('/{record}/edit'),
+            'edit'  => Pages\EditRecruitmentApplication::route('/{record}/edit'),
         ];
     }
 }

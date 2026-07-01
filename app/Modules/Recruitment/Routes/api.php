@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 | UC-126: Manage Recruitment Posts
 */
 
-Route::prefix('v1/admin/recruitment/posts')->middleware(['auth:api', 'role:5'])->group(function () {
+Route::prefix('v1/admin/recruitment/posts')->middleware(['auth:api', 'role:permission:manage_all'])->group(function () {
     Route::get('/', [RecruitmentPostController::class, 'index'])->name('admin.recruitment.posts.index');
     Route::post('/', [RecruitmentPostController::class, 'store'])->name('admin.recruitment.posts.store');
     Route::get('/{id}', [RecruitmentPostController::class, 'show'])->name('admin.recruitment.posts.show');

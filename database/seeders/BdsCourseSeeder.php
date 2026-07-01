@@ -55,8 +55,10 @@ class BdsCourseSeeder extends Seeder
         echo "Đang seed dữ liệu cho " . $users->count() . " nhân viên demo.\n";
 
         foreach ($users as $user) {
+            $isEmployee2 = $user->email === 'employee2@test.com';
+
             $enrollment = $this->upsertEnrollment($user, $course, [
-                'status'           => CourseEnrollmentStatus::PENDING_ONBOARDING,
+                'status'           => $isEmployee2 ? CourseEnrollmentStatus::PENDING_GRADING : CourseEnrollmentStatus::PENDING_ONBOARDING,
                 'progress_percent' => 100.00,
                 'completed_at'     => null,
             ]);
@@ -83,7 +85,7 @@ class BdsCourseSeeder extends Seeder
                             'user_id'      => $user->id,
                             'quiz_id'      => $quiz->id,
                             'essay_answer' => self::ESSAY_ANSWER,
-                            'is_correct'   => null,
+                            'is_correct'   => $isEmployee2 ? null : true,
                             'is_draft'     => false,
                         ]);
                     }

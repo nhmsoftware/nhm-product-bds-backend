@@ -16,6 +16,9 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Điều kiện pass: không có khóa học bắt buộc (is_required = true),
  * HOẶC có enrollment COMPLETED cho khóa học đó.
+ *
+ * Lưu ý: Cột allowed_roles trong courses chuyển từ lưu integer (role value)
+ * sang lưu string (role name). VD: [4] → ["ceo"], [1] → ["employee"]
  */
 class RequireOnboardingCompleted
 {
@@ -30,16 +33,23 @@ class RequireOnboardingCompleted
             ], 401);
         }
 
-        $role = $user->role?->value;
+        // CTV không cần onboarding - có thể xem kho hàng luôn
+        if ($user->role?->name === 'ctv') {
+            return $next($request);
+        }
+
+        $roleName = $user->role?->name;
+
         $requiredCourseIds = Course::query()
             ->where('is_active', true)
             ->where('is_required', true)
-            ->where(function ($query) use ($role) {
+            ->where(function ($query) use ($roleName) {
                 $query->whereNull('allowed_roles')
                     ->orWhereJsonLength('allowed_roles', 0);
 
-                if ($role !== null) {
-                    $query->orWhereJsonContains('allowed_roles', $role);
+                if ($roleName !== null) {
+                    // Hỗ trợ cả format cũ (integer) và mới (string role name)
+                    $query->orWhereJsonContains('allowed_roles', $roleName);
                 }
             })
             ->pluck('id');

@@ -3,7 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Modules\Auth\Models\EmployeeProfile;
-use App\Modules\Auth\Models\Enums\UserRole;
 use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -26,7 +25,10 @@ class TopEmployeesByKpi extends TableWidget
                 ->with('user')
                 ->whereHas('user', fn (Builder $query) => $query
                     ->whereNull('deleted_at')
-
+                    ->where('is_active', true)
+                    ->whereIn('role_id', function ($q) {
+                        $q->select('id')->from('roles')->whereIn('name', ['employee', 'tp_kd', 'gdkd']);
+                    })
                     ->when($this->scopeArea(), function (Builder $query, string $area) {
                         if (\Illuminate\Support\Str::isUuid($area)) {
                             return $query->where('branch_id', $area);
@@ -51,7 +53,7 @@ class TopEmployeesByKpi extends TableWidget
     {
         $user = Filament::auth()->user();
 
-        if ($user?->role === UserRole::DIRECTOR) {
+        if ($user->role?->name === 'gdkd') {
             return filled($user->branch_id) ? (string) $user->branch_id : '__director_without_area__';
         }
 

@@ -211,12 +211,16 @@ class InventoryAreaSeeder extends Seeder
             }
             $jobPosId = $getJobPositionId($data['job_position']);
 
+            $roleEnum = UserRole::tryFrom((int)$data['role']);
+            $roleName = $roleEnum ? $roleEnum->toRoleName() : 'employee';
+            $roleId = DB::table('roles')->where('name', $roleName)->value('id');
+
             $payload = [
                 'staff_code' => $data['staff_code'],
                 'name' => $data['name'],
                 'phone' => $phone,
                 'password' => Hash::make(self::DEMO_PASSWORD),
-                'role' => $data['role'],
+                'role_id' => $roleId,
                 'department_id' => $deptId,
                 'job_position_id' => $jobPosId,
                 'branch_id' => $branchId,

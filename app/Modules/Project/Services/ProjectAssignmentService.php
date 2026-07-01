@@ -31,7 +31,7 @@ class ProjectAssignmentService extends BaseService implements ProjectAssignmentS
             $this->validate($project !== null, 'Dự án không tồn tại.', 404);
 
             // General Director chỉ được phân quyền Project chi nhánh của bản thân
-            if ($user->role === UserRole::DIRECTOR) {
+            if ($user->role?->name === 'gdkd') {
                 $this->validate($project->branch === $user->department, 'Bạn không có quyền thực hiện chức năng này trên dự án của chi nhánh khác.', 403);
             }
 

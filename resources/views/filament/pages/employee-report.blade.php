@@ -9,7 +9,7 @@
              vertical-align: middle !important;
          }
     </style>
-    @if(!$selectedEmployeeDetail)
+    @if(!$selectedEmployeeDetails)
         <form wire:submit.prevent="applyFilters" class="space-y-6">
             {{ $this->form }}
             
@@ -79,9 +79,9 @@
                         Quay lại danh sách
                     </x-filament::button>
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Chi tiết hiệu suất: {{ $selectedEmployeeDetail['name'] }}</h2>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Chi tiết hiệu suất: {{ $selectedEmployeeDetails['name'] }}</h2>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                            Mã nhân viên: <span class="font-mono font-semibold">{{ $selectedEmployeeDetail['staff_code'] }}</span>
+                            Mã nhân viên: <span class="font-mono font-semibold">{{ $selectedEmployeeDetails['staff_code'] }}</span>
                         </p>
                     </div>
                 </div>
@@ -93,19 +93,19 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div>
                         <span class="text-xs text-gray-400 dark:text-gray-500 block">Phòng ban</span>
-                        <span class="text-sm font-semibold text-gray-800 dark:text-white mt-1 block">{{ $selectedEmployeeDetail['department'] }}</span>
+                        <span class="text-sm font-semibold text-gray-800 dark:text-white mt-1 block">{{ $selectedEmployeeDetails['department'] }}</span>
                     </div>
                     <div>
                         <span class="text-xs text-gray-400 dark:text-gray-500 block">Chức danh</span>
-                        <span class="text-sm font-semibold text-gray-800 dark:text-white mt-1 block">{{ $selectedEmployeeDetail['job_position'] }}</span>
+                        <span class="text-sm font-semibold text-gray-800 dark:text-white mt-1 block">{{ $selectedEmployeeDetails['job_position'] }}</span>
                     </div>
                     <div>
                         <span class="text-xs text-gray-400 block">Khu vực / Chi nhánh</span>
-                        <span class="text-sm font-semibold text-gray-800 dark:text-white mt-1 block">{{ $selectedEmployeeDetail['area'] }}</span>
+                        <span class="text-sm font-semibold text-gray-800 dark:text-white mt-1 block">{{ $selectedEmployeeDetails['area'] }}</span>
                     </div>
                     <div>
                         <span class="text-xs text-gray-400 block font-bold text-primary-600 dark:text-primary-400">Tổng điểm KPI</span>
-                        <span class="text-sm font-bold text-primary-600 dark:text-primary-400 mt-1 block">{{ $selectedEmployeeDetail['total_kpi_points'] }}</span>
+                        <span class="text-sm font-bold text-primary-600 dark:text-primary-400 mt-1 block">{{ $selectedEmployeeDetails['total_kpi_points'] }}</span>
                     </div>
                 </div>
             </div>
@@ -114,23 +114,23 @@
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div class="bg-primary-50 dark:bg-primary-950/20 p-5 rounded-2xl border border-primary-100 dark:border-primary-900/30 text-center">
                     <span class="text-xs text-primary-600 dark:text-primary-400 font-semibold uppercase block">Tổng điểm KPI</span>
-                    <span class="text-3xl font-black text-primary-600 dark:text-primary-400 mt-2 block">{{ $selectedEmployeeDetail['total_kpi_points'] }}</span>
+                    <span class="text-3xl font-black text-primary-600 dark:text-primary-400 mt-2 block">{{ $selectedEmployeeDetails['total_kpi_points'] }}</span>
                 </div>
                 <div class="bg-emerald-50 dark:bg-emerald-950/20 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 text-center">
                     <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold uppercase block">Giao dịch thành công</span>
-                    <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-2 block">{{ count($selectedEmployeeDetail['deposits']) }}</span>
+                    <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-2 block">{{ count($selectedEmployeeDetails['deposits']) }}</span>
                 </div>
                 <div class="bg-blue-50 dark:bg-blue-950/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-900/30 text-center">
                     <span class="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase block">Dẫn khách (Tour)</span>
-                    <span class="text-3xl font-black text-blue-600 dark:text-blue-400 mt-2 block">{{ count($selectedEmployeeDetail['tours']) }}</span>
+                    <span class="text-3xl font-black text-blue-600 dark:text-blue-400 mt-2 block">{{ count($selectedEmployeeDetails['tours']) }}</span>
                 </div>
                 <div class="bg-purple-50 dark:bg-purple-950/20 p-5 rounded-2xl border border-purple-100 dark:border-purple-900/30 text-center">
                     <span class="text-xs text-purple-600 dark:text-purple-400 font-semibold uppercase block">Gặp khách</span>
-                    <span class="text-3xl font-black text-purple-600 dark:text-purple-400 mt-2 block">{{ count($selectedEmployeeDetail['meetings']) }}</span>
+                    <span class="text-3xl font-black text-purple-600 dark:text-purple-400 mt-2 block">{{ count($selectedEmployeeDetails['meetings']) }}</span>
                 </div>
                 <div class="bg-rose-50 dark:bg-rose-950/20 p-5 rounded-2xl border border-rose-100 dark:border-rose-900/30 text-center col-span-2 md:col-span-1">
                     <span class="text-xs text-rose-600 dark:text-rose-400 font-semibold uppercase block">Giới thiệu (Ref)</span>
-                    <span class="text-3xl font-black text-rose-600 dark:text-rose-400 mt-2 block">{{ count($selectedEmployeeDetail['referrals']) }}</span>
+                    <span class="text-3xl font-black text-rose-600 dark:text-rose-400 mt-2 block">{{ count($selectedEmployeeDetails['referrals']) }}</span>
                 </div>
             </div>
 
@@ -140,19 +140,19 @@
                 <div class="border-b border-gray-200 dark:border-gray-700">
                     <nav class="-mb-px flex flex-wrap gap-4 sm:space-x-8" aria-label="Tabs">
                         <button @click="tab = 'deposits'" :class="tab === 'deposits' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition">
-                            💼 Giao dịch đặt cọc ({{ count($selectedEmployeeDetail['deposits']) }})
+                            💼 Giao dịch đặt cọc ({{ count($selectedEmployeeDetails['deposits']) }})
                         </button>
                         <button @click="tab = 'tours'" :class="tab === 'tours' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition">
-                            🚗 Lượt dẫn khách ({{ count($selectedEmployeeDetail['tours']) }})
+                            🚗 Lượt dẫn khách ({{ count($selectedEmployeeDetails['tours']) }})
                         </button>
                         <button @click="tab = 'meetings'" :class="tab === 'meetings' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition">
-                            🤝 Lượt gặp khách ({{ count($selectedEmployeeDetail['meetings']) }})
+                            🤝 Lượt gặp khách ({{ count($selectedEmployeeDetails['meetings']) }})
                         </button>
                         <button @click="tab = 'referrals'" :class="tab === 'referrals' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition">
-                            📣 Giới thiệu ({{ count($selectedEmployeeDetail['referrals']) }})
+                            📣 Giới thiệu ({{ count($selectedEmployeeDetails['referrals']) }})
                         </button>
                         <button @click="tab = 'attendances'" :class="tab === 'attendances' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm transition">
-                            ⏰ Chấm công ({{ count($selectedEmployeeDetail['attendances']) }})
+                            ⏰ Chấm công ({{ count($selectedEmployeeDetails['attendances']) }})
                         </button>
                     </nav>
                 </div>
@@ -173,7 +173,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($selectedEmployeeDetail['deposits'] as $dep)
+                                    @forelse($selectedEmployeeDetails['deposits'] as $dep)
                                         <tr class="border-b dark:border-gray-800">
                                             <td class="px-4 py-3 font-mono font-medium text-gray-900 dark:text-white">{{ $dep['lot_code'] }}</td>
                                             <td class="px-4 py-3">{{ $dep['area_name'] }}</td>
@@ -208,7 +208,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($selectedEmployeeDetail['tours'] as $tour)
+                                    @forelse($selectedEmployeeDetails['tours'] as $tour)
                                         <tr class="border-b dark:border-gray-800">
                                             <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ $tour['customer_name'] }}</td>
                                             <td class="px-4 py-3 font-mono">{{ $tour['unit_code'] }}</td>
@@ -238,7 +238,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($selectedEmployeeDetail['meetings'] as $meet)
+                                    @forelse($selectedEmployeeDetails['meetings'] as $meet)
                                         <tr class="border-b dark:border-gray-800">
                                             <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ $meet['customer_name'] }}</td>
                                             <td class="px-4 py-3">{{ $meet['location'] }}</td>
@@ -268,7 +268,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($selectedEmployeeDetail['referrals'] as $ref)
+                                    @forelse($selectedEmployeeDetails['referrals'] as $ref)
                                         <tr class="border-b dark:border-gray-800">
                                             <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ $ref['referred_name'] }}</td>
                                             <td class="px-4 py-3">{{ $ref['referral_type'] }}</td>
@@ -302,7 +302,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($selectedEmployeeDetail['attendances'] as $att)
+                                    @forelse($selectedEmployeeDetails['attendances'] as $att)
                                         <tr class="border-b dark:border-gray-800">
                                             <td class="px-4 py-3 font-mono">{{ $att['work_date'] }}</td>
                                             <td class="px-4 py-3 font-mono text-emerald-600 dark:text-emerald-400">{{ $att['check_in'] }}</td>

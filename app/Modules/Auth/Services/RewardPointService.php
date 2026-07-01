@@ -17,9 +17,9 @@ use App\Modules\Auth\Models\Enums\UserRole;
 final class RewardPointService extends BaseService
 {
     private const REWARD_ALLOWED_ROLES = [
-        UserRole::EMPLOYEE->value,
-        UserRole::MANAGER->value,
-        UserRole::DIRECTOR->value,
+        'employee',
+        'tp_kd',
+        'gdkd',
     ];
 
     public function __construct(
@@ -35,8 +35,8 @@ final class RewardPointService extends BaseService
 
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
             $this->validate(
-                in_array($user->role->value, self::REWARD_ALLOWED_ROLES)
-                    && ($user->role !== UserRole::EMPLOYEE || (!empty($user->job_position))),
+                $user->role && in_array($user->role->name, self::REWARD_ALLOWED_ROLES, true)
+                    && ($user->role->name !== 'employee' || (!empty($user->job_position))),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -81,8 +81,8 @@ final class RewardPointService extends BaseService
 
             $this->validate($user !== null, 'Không tìm thấy thông tin người dùng.', 404);
             $this->validate(
-                in_array($user->role->value, self::REWARD_ALLOWED_ROLES)
-                    && ($user->role !== UserRole::EMPLOYEE || (!empty($user->job_position))),
+                $user->role && in_array($user->role->name, self::REWARD_ALLOWED_ROLES, true)
+                    && ($user->role->name !== 'employee' || (!empty($user->job_position))),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );

@@ -3,7 +3,6 @@
 namespace App\Modules\Recruitment\Models;
 
 use App\Modules\Auth\Models\User;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Branch\Models\Branch;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -32,7 +31,6 @@ class RecruitmentApplication extends Model
     ];
 
     protected $casts = [
-        'applied_position' => UserRole::class,
         'processed_at' => 'datetime',
     ];
 

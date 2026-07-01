@@ -124,7 +124,7 @@ class NewsDemoSeeder extends Seeder
             'email' => $fallback['email'],
             'phone' => $fallback['phone'],
             'password' => Hash::make(self::DEMO_PASSWORD),
-            'role' => $fallback['role'],
+            'role_id' => DB::table('roles')->where('name', UserRole::tryFrom((int)$fallback['role'])->toRoleName())->value('id'),
             'department_id' => $deptId,
             'job_position_id' => $jobPosId,
             'branch_id' => $branchId,

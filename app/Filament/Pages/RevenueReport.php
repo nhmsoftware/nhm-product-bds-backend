@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Modules\Area\Models\LotDepositRequest;
 use App\Modules\Area\Models\Enums\LotDepositRequestStatus;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Modules\Area\Models\Area;
 use App\Filament\Support\AdminOptions;
 use Filament\Pages\Page;
@@ -35,20 +34,20 @@ class RevenueReport extends Page implements HasForms
     {
         $user = Filament::auth()->user();
         if (!$user) return false;
-        return in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR]);
+        return $user->hasAnyPermission(['manage_all', 'manage_branch']);
     }
 
     public function mount(): void
     {
         $user = Filament::auth()->user();
-        if (!$user || !in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR])) {
+        if (!$user || !$user->hasAnyPermission(['manage_all', 'manage_branch'])) {
             abort(403);
         }
 
         $this->form->fill([
             'start_date' => now()->startOfMonth()->format('Y-m-d'),
             'end_date' => now()->endOfMonth()->format('Y-m-d'),
-            'area' => $user->role === UserRole::DIRECTOR ? $user->area : null,
+            'area' => $user->role?->name === 'gdkd' ? $user->area : null,
         ]);
     }
 
@@ -88,7 +87,7 @@ class RevenueReport extends Page implements HasForms
                     ->label('Chi nhánh / Khu vực')
                     ->options(AdminOptions::areas())
                     ->placeholder('Tất cả chi nhánh')
-                    ->disabled($user && $user->role === UserRole::DIRECTOR)
+                    ->disabled($user && $user->role?->name === 'gdkd')
                     ->native(false),
             ])
             ->statePath('data')
@@ -144,7 +143,7 @@ class RevenueReport extends Page implements HasForms
             ->leftJoin('branches', 'branches.id', '=', 'users.branch_id')
             ->whereIn('lot_deposit_requests.status', [LotDepositRequestStatus::APPROVED->value, LotDepositRequestStatus::COMPLETED->value])
             ->where('users.is_active', true)
-            ->where(fn ($q) => $q->where('users.role', '!=', UserRole::EMPLOYEE->value)->orWhereNotNull('users.job_position_id'))
+            ->where(fn ($q) => $q->whereNotIn('users.role_id', fn($sub) => $sub->select('id')->from('roles')->where('name', 'employee'))->orWhereNotNull('users.job_position_id'))
             ->whereNull('lot_deposit_requests.deleted_at');
 
         if ($startDate) {
@@ -208,7 +207,7 @@ class RevenueReport extends Page implements HasForms
 
         foreach ($transactions as $tx) {
             $date = Carbon::parse($tx->created_at);
-            
+
             // Month key: MM/YYYY
             $monthKey = $date->format('m/Y');
             if (!isset($byMonth[$monthKey])) {

@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->cleanOldSeedData();
 
         $this->call([
+            RolePermissionSeeder::class,
             DepartmentSeeder::class,
             AreaTypeSeeder::class,
             InventoryAreaSeeder::class,

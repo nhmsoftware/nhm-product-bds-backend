@@ -57,7 +57,7 @@ final class DashboardService extends BaseService implements DashboardServiceInte
                     'id' => (string) $user->id,
                     'name' => $user->name,
                     'avatar' => $user->avatar,
-                    'role' => $user->role->serialize(),
+                    'role' => $user->role?->name,
                 ],
                 'overview' => [
                     'latest_news' => $latestNews,
@@ -128,10 +128,10 @@ final class DashboardService extends BaseService implements DashboardServiceInte
     /**
      * Lấy danh sách các module mà user được phép truy cập dựa trên role.
      * 
-     * @param UserRole $role
+     * @param \App\Modules\Auth\Models\Role|null $role
      * @return array
      */
-    private function getAuthorizedModules(UserRole $role, array $moduleCounts = []): array
+    private function getAuthorizedModules(?\App\Modules\Auth\Models\Role $role, array $moduleCounts = []): array
     {
         $newsCount = (int) ($moduleCounts['news'] ?? 0);
         $courseCount = (int) ($moduleCounts['courses'] ?? 0);
@@ -175,14 +175,14 @@ final class DashboardService extends BaseService implements DashboardServiceInte
         // Default modules for everyone
         $authorized[] = $allModules['notifications'];
 
-        if (in_array($role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true)) {
+        if ($role && in_array($role->name, ['super_admin', 'ceo', 'gdkd', 'tp_kd', 'employee'], true)) {
             $authorized[] = $allModules['lms'];
             $authorized[] = $allModules['warehouse'];
             $authorized[] = $allModules['kpi'];
             $authorized[] = $allModules['checkin'];
         }
 
-        if ($role === UserRole::BUYER) {
+        if ($role?->name === 'buyer') {
             $authorized[] = $allModules['warehouse'];
         }
 
@@ -193,11 +193,11 @@ final class DashboardService extends BaseService implements DashboardServiceInte
     {
         $query = News::query()->where('is_published', true);
 
-        if (in_array($user->role, [UserRole::EMPLOYEE, UserRole::MANAGER], true)) {
+        if (in_array($user->role?->name, ['employee', 'tp_kd'], true)) {
             $query->where('department', $user->department);
-        } elseif ($user->role === UserRole::DIRECTOR) {
+        } elseif ($user->role?->name === 'gdkd') {
             $query->where('branch_id', $user->branch_id);
-        } elseif (!in_array($user->role, [UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+        } elseif (!in_array($user->role?->name, ['ceo', 'super_admin'], true)) {
             $query->whereRaw('1 = 0');
         }
 
@@ -237,7 +237,7 @@ final class DashboardService extends BaseService implements DashboardServiceInte
         $query = Lot::query()
             ->where('lots.status', LotStatus::AVAILABLE->value);
 
-        if (!in_array($user->role, [UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN], true)) {
+        if (!in_array($user->role?->name, ['gdkd', 'ceo', 'super_admin'], true)) {
             $query
                 ->join('area_assignments', 'lots.area_id', '=', 'area_assignments.area_id')
                 ->where(function ($assignmentQuery) use ($user): void {

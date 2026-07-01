@@ -34,9 +34,9 @@ final class ReferralCommissionService extends BaseService implements ReferralCom
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // A5 - Nhân viên không có quyền truy cập
-            $allowedRoles = [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN];
+            $allowedRoles = ['employee', 'tp_kd', 'gdkd', 'ceo', 'super_admin'];
             $this->validate(
-                in_array($user->role, $allowedRoles, true) && ($user->role !== UserRole::EMPLOYEE || !empty($user->job_position)),
+                $user->role && in_array($user->role->name, $allowedRoles, true) && ($user->role->name !== 'employee' || !empty($user->job_position)),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -82,9 +82,9 @@ final class ReferralCommissionService extends BaseService implements ReferralCom
             $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
-            $allowedRoles = [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN];
+            $allowedRoles = ['employee', 'tp_kd', 'gdkd', 'ceo', 'super_admin'];
             $this->validate(
-                in_array($user->role, $allowedRoles, true) && ($user->role !== UserRole::EMPLOYEE || !empty($user->job_position)),
+                $user->role && in_array($user->role->name, $allowedRoles, true) && ($user->role->name !== 'employee' || !empty($user->job_position)),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -110,9 +110,9 @@ final class ReferralCommissionService extends BaseService implements ReferralCom
     public function getReport(\App\Modules\Auth\Models\User $actor, array $filters): ServiceReturn
     {
         return $this->execute(function () use ($actor, $filters) {
-            $allowedRoles = [UserRole::DIRECTOR, UserRole::SUPER_ADMIN, UserRole::CEO];
+            $allowedRoles = ['gdkd', 'super_admin', 'ceo'];
             $this->validate(
-                in_array($actor->role, $allowedRoles, true),
+                $actor->role && in_array($actor->role->name, $allowedRoles, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );

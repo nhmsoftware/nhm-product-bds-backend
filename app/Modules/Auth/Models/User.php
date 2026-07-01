@@ -7,8 +7,7 @@ namespace App\Modules\Auth\Models;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-
-use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\Role;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Filament\Models\Contracts\FilamentUser;
@@ -31,7 +30,8 @@ use OpenApi\Attributes as OA;
  * @property string $email
  * @property string $phone
  * @property string $password
- * @property UserRole $role
+ * @property string|null $role_id
+ * @property Role|null $role
  * @property string $avatar
  * @property string $address
  * @property string $department
@@ -63,7 +63,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'name', type: 'string', example: 'Nguyen Van A'),
         new OA\Property(property: 'email', type: 'string', format: 'email', example: 'nguyenvana@example.com'),
         new OA\Property(property: 'phone', type: 'string', example: '0901234567'),
-        new OA\Property(property: 'role', type: 'integer', example: \App\Modules\Auth\Models\Enums\UserRole::EMPLOYEE->value),
+        new OA\Property(property: 'role_id', type: 'string', format: 'uuid', nullable: true, description: 'ID vai trò'),
         new OA\Property(property: 'avatar', type: 'string', nullable: true),
         new OA\Property(property: 'address', type: 'string', nullable: true, example: '123 Đường ABC, Quận 1, TP. HCM'),
         new OA\Property(property: 'department', type: 'string', nullable: true, example: 'Kinh doanh', description: 'Phòng ban của nhân viên'),
@@ -84,7 +84,7 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'email',
         'phone',
         'password',
-        'role',
+        'role_id',
         'avatar',
         'address',
         'department',
@@ -110,7 +110,7 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
-        'role' => UserRole::class,
+        'role_id' => 'string',
         'department_id' => 'string',
         'job_position_id' => 'integer',
         'locked_at' => 'datetime',
@@ -118,59 +118,86 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         'lock_expires_at' => 'datetime',
     ];
 
-    /**
-     * Các accessor được tự động thêm vào JSON serialization (toArray / toJson).
-     * Đảm bảo mobile app nhận được tên phòng ban, chi nhánh và vị trí công việc
-     * thay vì chỉ nhận UUID / null.
-     */
     protected $appends = [
-        'department',   // getDepartmentAttribute() → tên phòng ban
-        'branch',       // getBranchAttribute()     → tên chi nhánh
-        'job_position', // getJobPositionAttribute() → tên vị trí
+        'department',
+        'branch',
+        'job_position',
+        'role_name',
     ];
-
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return in_array($this->role, [
-            UserRole::CEO,
-            UserRole::SUPER_ADMIN,
-        ], true);
+        if (!$this->role || !$this->role->is_active) {
+            return false;
+        }
+
+        return ! in_array($this->role->name, ['ctv', 'buyer']);
+    }
+
+    // ─── Role & Permission Helpers ────────────────────────────────
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        if ($this->role->hasManageAll()) {
+            return true;
+        }
+
+        return $this->role->hasPermission($permission);
+    }
+
+    public function hasAnyPermission(array $permissions): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        if ($this->role->hasManageAll()) {
+            return true;
+        }
+
+        return $this->role->hasAnyPermission($permissions);
+    }
+
+    public function getRoleNameAttribute(): ?string
+    {
+        return $this->role?->label;
+    }
+
+    /**
+     * Backward-compatible accessor: $user->role returns Role model.
+     * Code checking $user->role->name or $user->role?->name will work.
+     */
+    public function getRoleAttribute(): ?Role
+    {
+        return $this->getRelationValue('role') ?: $this->role()->first();
     }
 
     // ─── Relationships ───────────────────────────────────────────
 
-    /**
-     * Get the identifier that will be stored in the subject claim of the JWT.
-     *
-     * @return mixed
-     */
     public function getJWTIdentifier()
     {
         return $this->getKey();
     }
 
-    /**
-     * Return a key value array, containing any custom claims to be added to the JWT.
-     *
-     * @return array
-     */
-    public function getJWTCustomClaims()
+    public function getJWTCustomClaims(): array
     {
         return [];
     }
 
-    /**
-     * Chi nhánh làm việc của nhân sự.
-     */
     public function branch(): BelongsTo
     {
         return $this->belongsTo(\App\Modules\Branch\Models\Branch::class, 'branch_id');
     }
 
-    /**
-     * Accessor trả về tên chi nhánh dưới dạng chuỗi để tương thích ngược.
-     */
     public function getBranchAttribute(): ?string
     {
         $branchModel = $this->getRelationValue('branch');
@@ -183,19 +210,11 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         return $branchModel?->name;
     }
 
-
-    /**
-     * Quan hệ tới chi tiết hồ sơ nhân sự.
-     */
-    public function employeeProfile()
-
-    : HasOne {
+    public function employeeProfile(): HasOne
+    {
         return $this->hasOne(EmployeeProfile::class, 'user_id');
     }
 
-    /**
-     * Danh sách khu đất được phân quyền cho người dùng.
-     */
     public function assignedAreas(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(
@@ -206,41 +225,26 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         )->withTimestamps()->whereNull('area_assignments.deleted_at');
     }
 
-    /**
-     * Danh sách yêu cầu đặt cọc (giao dịch) của nhân viên.
-     */
     public function lotDepositRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Modules\Area\Models\LotDepositRequest::class, 'user_id');
     }
 
-    /**
-     * Danh sách lượt dẫn khách tham quan dự án.
-     */
     public function siteTours(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Modules\SiteTour\Models\SiteTour::class, 'user_id');
     }
 
-    /**
-     * Danh sách lượt gặp khách hàng.
-     */
     public function customerMeetings(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Modules\CustomerMeeting\Models\CustomerMeeting::class, 'user_id');
     }
 
-    /**
-     * Danh sách lịch sử giới thiệu (tuyển dụng/khách hàng) của nhân viên này (với vai trò người giới thiệu).
-     */
     public function referrals(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Modules\EmployeeReferral\Models\ReferralHistory::class, 'referrer_id');
     }
 
-    /**
-     * Danh sách chấm công của nhân viên.
-     */
     public function attendances(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Modules\Attendance\Models\Attendance::class, 'user_id');
@@ -314,15 +318,6 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
         }
     }
 
-    public function setRoleAttribute($value)
-    {
-        if ($value === null) {
-            $this->attributes['role'] = null;
-            return;
-        }
-        $this->attributes['role'] = $value instanceof UserRole ? $value->value : UserRole::deserialize($value)->value;
-    }
-
     // ─── Lock / Unlock ──────────────────────────────────────────
 
     public function isLocked(): bool
@@ -373,9 +368,9 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
     public function toArray()
     {
         $array = parent::toArray();
-        if (isset($array['role']) && $this->role instanceof UserRole) {
-            $array['role'] = $this->role->serialize();
-        }
+        $array['role'] = $this->role?->name;
+        $array['role_label'] = $this->role?->label;
+        $array['role_id'] = $this->role_id;
         $array['branch'] = $this->branch;
         $array['branch_name'] = $this->branch;
         $array['branch_id'] = $this->branch_id;

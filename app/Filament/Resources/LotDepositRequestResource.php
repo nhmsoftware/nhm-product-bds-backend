@@ -14,7 +14,7 @@ class LotDepositRequestResource extends Resource
                 ->options(function () {
                     $user = auth()->user();
                     $query = \App\Modules\Area\Models\Area::query();
-                    if ($user && $user->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $user->branch_id) {
+                    if ($user && $user->role?->name === 'gdkd' && $user->branch_id) {
                         $query->where('branch_id', $user->branch_id);
                     }
                     return $query->orderBy('name')->pluck('name', 'id');
@@ -84,19 +84,19 @@ class LotDepositRequestResource extends Resource
                     if (!$currentUser) return $query;
 
                     $query->where('id', '!=', $currentUser->id)
-                          ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::BUYER->value)
-                          ->where('role', '!=', \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN->value)
+                          ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'buyer')->value('id'))
+                          ->where('role_id', '!=', \App\Modules\Auth\Models\Role::where('name', 'super_admin')->value('id'))
                           ->whereNotNull('job_position_id');
 
-                    if ($currentUser->role !== \App\Modules\Auth\Models\Enums\UserRole::SUPER_ADMIN) {
-                        $query->where('role', '<=', $currentUser->role->value);
+                    if (!$currentUser->hasAnyPermission(['manage_all', 'approve_onboard'])) {
+                        $query->whereHas('role', fn($q) => $q->where('level', '>=', $currentUser->role?->level ?? 999));
                     }
 
-                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::DIRECTOR && $currentUser->branch_id) {
+                    if ($currentUser->role?->name === 'gdkd' && $currentUser->branch_id) {
                         $query->where('branch_id', $currentUser->branch_id);
                     }
 
-                    if ($currentUser->role === \App\Modules\Auth\Models\Enums\UserRole::MANAGER && $currentUser->department_id) {
+                    if ($currentUser->role?->name === 'tp_kd' && $currentUser->department_id) {
                         $query->where('department_id', $currentUser->department_id);
                     }
 
@@ -199,7 +199,7 @@ class LotDepositRequestResource extends Resource
         $user = auth()->user();
 
         // General Director chỉ được xem yêu cầu đặt cọc của chi nhánh bản thân
-        if ($user && $user->role === UserRole::DIRECTOR && $user->branch_id) {
+        if ($user && $user->role?->name === 'gdkd' && $user->branch_id) {
             $query->whereHas('lot.area', function (Builder $q) use ($user) {
                 $q->where('branch_id', $user->branch_id);
             });

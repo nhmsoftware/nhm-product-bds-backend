@@ -80,9 +80,9 @@ final class ReferralHistoryService extends BaseService implements ReferralHistor
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // A5 - Nhân viên không có quyền truy cập
-            $allowedRoles = [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN];
+            $allowedRoles = ['employee', 'tp_kd', 'gdkd', 'ceo', 'super_admin'];
             $this->validate(
-                in_array($user->role, $allowedRoles, true) && ($user->role !== UserRole::EMPLOYEE || !empty($user->job_position)),
+                $user->role && in_array($user->role->name, $allowedRoles, true) && ($user->role->name !== 'employee' || !empty($user->job_position)),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -122,9 +122,9 @@ final class ReferralHistoryService extends BaseService implements ReferralHistor
             $user = $this->authRepository->find($userId);
             $this->validate($user !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
-            $allowedRoles = [UserRole::EMPLOYEE, UserRole::MANAGER, UserRole::DIRECTOR, UserRole::CEO, UserRole::SUPER_ADMIN];
+            $allowedRoles = ['employee', 'tp_kd', 'gdkd', 'ceo', 'super_admin'];
             $this->validate(
-                in_array($user->role, $allowedRoles, true) && ($user->role !== UserRole::EMPLOYEE || !empty($user->job_position)),
+                $user->role && in_array($user->role->name, $allowedRoles, true) && ($user->role->name !== 'employee' || !empty($user->job_position)),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -136,7 +136,7 @@ final class ReferralHistoryService extends BaseService implements ReferralHistor
             $this->validate($referral !== null, 'Thông tin referral không tồn tại.', 404);
 
             // Kiểm tra sở hữu (chỉ cho phép chính nhân viên đó hoặc admin xem)
-            if ($user->role !== UserRole::SUPER_ADMIN) {
+            if ($user->role?->name !== 'super_admin') {
                 $this->validate(
                     $referral->referrer_id === $userId,
                     'Bạn không có quyền truy cập chức năng này.',

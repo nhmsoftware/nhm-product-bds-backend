@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Modules\Area\Models\Area;
 use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\Role;
 use App\Modules\Auth\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -48,26 +49,23 @@ class UserResource extends Resource
                     ->revealable()
                     ->required(fn (string $operation): bool => $operation === 'create')
                     ->dehydrated(fn (?string $state): bool => filled($state)),
-                Forms\Components\Select::make('role')
+                Forms\Components\Select::make('role_id')
                     ->label('Vai trò')
                     ->options(function () {
                         $currentUser = auth()->user();
-                        $options = self::enumOptions(UserRole::class);
-                        if (!$currentUser) {
-                            return $options;
+                        if (!$currentUser) return [];
+
+                        $query = Role::query()->where('is_active', true)->ordered();
+
+                        // Chỉ cho phép gán role có level >= level của bản thân
+                        if ($currentUser->role && !$currentUser->hasAnyPermission(['manage_all', 'manage_employees'])) {
+                            $query->where('level', '>=', $currentUser->role->level);
                         }
-                        $currentRoleVal = $currentUser->role instanceof UserRole ? $currentUser->role->value : (int) $currentUser->role;
-                        
-                        return collect(UserRole::cases())
-                            ->filter(function ($case) use ($currentRoleVal) {
-                                if ($case === UserRole::BUYER) {
-                                    return true;
-                                }
-                                return $case->value <= $currentRoleVal;
-                            })
-                            ->mapWithKeys(fn ($case) => [$case->value => $case->label()])
-                            ->all();
+
+                        return $query->pluck('label', 'id')->toArray();
                     })
+                    ->searchable()
+                    ->preload()
                     ->required()
                     ->live(),
                 Forms\Components\Toggle::make('is_active')->label('Đang hoạt động')->default(true),
@@ -79,8 +77,7 @@ class UserResource extends Resource
                     ->searchable()
                     ->preload()
                     ->live()
-                    ->afterStateUpdated(fn (Forms\Set $set) => $set('department_id', null))
-                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
+                    ->afterStateUpdated(fn (Forms\Set $set) => $set('department_id', null)),
                 Forms\Components\Select::make('department_id')
                     ->label('Phòng ban')
                     ->relationship(
@@ -92,14 +89,12 @@ class UserResource extends Resource
                     )
                     ->searchable()
                     ->preload()
-                    ->disabled(fn (Forms\Get $get): bool => !$get('branch_id'))
-                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
+                    ->disabled(fn (Forms\Get $get): bool => !$get('branch_id')),
                 Forms\Components\Select::make('job_position_id')
                     ->label('Chức danh')
                     ->relationship('jobPosition', 'name')
                     ->searchable()
-                    ->preload()
-                    ->required(fn (Forms\Get $get): bool => in_array((int) $get('role'), [UserRole::EMPLOYEE->value, UserRole::MANAGER->value, UserRole::DIRECTOR->value])),
+                    ->preload(),
                 Forms\Components\Select::make('assigned_area_ids')
                     ->label('Khu đất được cấp quyền')
                     ->multiple()
@@ -126,9 +121,12 @@ class UserResource extends Resource
             Tables\Columns\TextColumn::make('staff_code')->label('Mã NV')->searchable(),
             Tables\Columns\TextColumn::make('name')->label('Họ tên')->searchable()->sortable(),
             Tables\Columns\TextColumn::make('email')->label('Email')->searchable(),
-            Tables\Columns\TextColumn::make('role')
+            Tables\Columns\TextColumn::make('role.label')
                 ->label('Vai trò')
-                ->formatStateUsing(fn ($state) => $state instanceof UserRole ? $state->label() : UserRole::tryFrom((int) $state)?->label()),
+                ->badge()
+                ->sortable(query: fn (Builder $query, string $direction) => $query
+                    ->join('roles', 'users.role_id', '=', 'roles.id')
+                    ->orderBy('roles.level', $direction)),
             Tables\Columns\IconColumn::make('is_active')->label('Hoạt động')->boolean(),
             Tables\Columns\TextColumn::make('departmentRel.name')->label('Phòng ban')->toggleable()->placeholder('-'),
             Tables\Columns\TextColumn::make('branch.name')->label('Chi nhánh')->toggleable()->placeholder('-'),
@@ -144,7 +142,9 @@ class UserResource extends Resource
                     ? $record->lock_expires_at->format('d/m/Y H:i')
                     : null),
         ])->filters([
-            Tables\Filters\SelectFilter::make('role')->label('Vai trò')->options(self::enumOptions(UserRole::class)),
+            Tables\Filters\SelectFilter::make('role_id')
+                ->label('Vai trò')
+                ->relationship('role', 'label'),
             Tables\Filters\TernaryFilter::make('is_active')->label('Hoạt động'),
             Tables\Filters\SelectFilter::make('locked_at')
                 ->label('Trạng thái khóa')
@@ -233,16 +233,13 @@ class UserResource extends Resource
         $currentUser = auth()->user();
 
         if ($currentUser) {
-            // 1. Ẩn tài khoản của chính mình
             $query->where('id', '!=', $currentUser->id);
 
-            // 2. Ẩn các tài khoản có vai trò cao hơn vai trò của bản thân
-            $currentRoleVal = $currentUser->role instanceof UserRole ? $currentUser->role->value : (int) $currentUser->role;
-
-            if ($currentRoleVal !== UserRole::SUPER_ADMIN->value) {
-                $query->where(function ($q) use ($currentRoleVal) {
-                    $q->where('role', '<=', $currentRoleVal)
-                      ->orWhere('role', UserRole::BUYER->value);
+            if (!$currentUser->hasAnyPermission(['manage_all', 'manage_employees'])) {
+                // Chỉ xem user có role level >= level của bản thân
+                $currentUserLevel = $currentUser->role?->level ?? 999;
+                $query->whereHas('role', function ($q) use ($currentUserLevel) {
+                    $q->where('level', '>=', $currentUserLevel);
                 });
             }
         }
@@ -257,10 +254,5 @@ class UserResource extends Resource
             'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
-    }
-
-    private static function enumOptions(string $enum): array
-    {
-        return collect($enum::cases())->mapWithKeys(fn ($case) => [$case->value => $case->label()])->all();
     }
 }

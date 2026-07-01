@@ -20,7 +20,7 @@ class RevenueReportSeeder extends Seeder
     {
         DB::transaction(function () {
             $now = Carbon::now();
-            $employees = User::where('role', UserRole::EMPLOYEE->value)
+            $employees = User::whereHas('role', fn ($q) => $q->where('name', 'employee'))
                 ->whereNotNull('department_id')
                 ->whereNotNull('job_position_id')
                 ->get();

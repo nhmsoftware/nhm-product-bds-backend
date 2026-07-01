@@ -3,7 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Modules\Area\Models\Enums\LotDepositRequestStatus;
-use App\Modules\Auth\Models\Enums\UserRole;
 use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -110,7 +109,7 @@ class DepartmentPerformance extends TableWidget
     {
         $user = Filament::auth()->user();
 
-        if ($user?->role === UserRole::DIRECTOR) {
+        if ($user->role?->name === 'gdkd') {
             return filled($user->branch_id) ? (string) $user->branch_id : '__director_without_area__';
         }
 

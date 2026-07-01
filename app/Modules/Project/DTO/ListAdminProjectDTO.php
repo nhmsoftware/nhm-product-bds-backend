@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Project\DTO;
 
 use Illuminate\Http\Request;
-use App\Modules\Auth\Models\Enums\UserRole;
 
 final class ListAdminProjectDTO
 {
@@ -16,7 +15,7 @@ final class ListAdminProjectDTO
         public readonly ?array $filters = null,
         public readonly string $sortBy = 'created_at',
         public readonly string $direction = 'desc',
-        public readonly ?UserRole $userRole = null,
+        public readonly ?string $userRole = null,
         public readonly ?string $userBranch = null
     ) {}
 
@@ -30,7 +29,7 @@ final class ListAdminProjectDTO
             filters: $request->input('filters'),
             sortBy: $request->input('sort_by', 'created_at'),
             direction: $request->input('direction', 'desc'),
-            userRole: $user ? $user->role : null,
+            userRole: $user && $user->role ? $user->role->name : null,
             userBranch: $user ? $user->department : null
         );
     }

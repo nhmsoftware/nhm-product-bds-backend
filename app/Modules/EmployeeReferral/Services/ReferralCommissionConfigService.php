@@ -32,9 +32,9 @@ final class ReferralCommissionConfigService extends BaseService implements Refer
             $this->validate($actor !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // Kiểm tra quyền (Chỉ General Director và Super Admin)
-            $allowedRoles = [UserRole::CEO, UserRole::SUPER_ADMIN];
+            $allowedRoles = ['ceo', 'super_admin'];
             $this->validate(
-                in_array($actor->role, $allowedRoles, true),
+                $actor->role && in_array($actor->role->name, $allowedRoles, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );
@@ -65,9 +65,9 @@ final class ReferralCommissionConfigService extends BaseService implements Refer
             $this->validate($actor !== null, 'Không tìm thấy thông tin tài khoản người dùng.', 404);
 
             // Kiểm tra quyền (Chỉ General Director và Super Admin)
-            $allowedRoles = [UserRole::CEO, UserRole::SUPER_ADMIN];
+            $allowedRoles = ['ceo', 'super_admin'];
             $this->validate(
-                in_array($actor->role, $allowedRoles, true),
+                $actor->role && in_array($actor->role->name, $allowedRoles, true),
                 'Bạn không có quyền truy cập chức năng này.',
                 403
             );

@@ -3,7 +3,6 @@
 namespace App\Filament\Pages;
 
 use App\Modules\Auth\Models\User;
-use App\Modules\Auth\Models\Enums\UserRole;
 use App\Filament\Support\AdminOptions;
 use Filament\Pages\Page;
 use Filament\Forms\Components\DatePicker;
@@ -12,7 +11,6 @@ use Filament\Forms\Form;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Facades\Filament;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DepartmentReport extends Page implements HasForms
@@ -35,20 +33,20 @@ class DepartmentReport extends Page implements HasForms
     {
         $user = Filament::auth()->user();
         if (!$user) return false;
-        return in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR]);
+        return $user->hasAnyPermission(['manage_all', 'manage_branch']);
     }
 
     public function mount(): void
     {
         $user = Filament::auth()->user();
-        if (!$user || !in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR])) {
+        if (!$user || !$user->hasAnyPermission(['manage_all', 'manage_branch'])) {
             abort(403);
         }
 
         $this->form->fill([
             'start_date' => now()->startOfMonth()->format('Y-m-d'),
             'end_date'   => now()->endOfMonth()->format('Y-m-d'),
-            'area'       => $user->role === UserRole::DIRECTOR ? $user->area : null,
+            'area'       => $user->role?->name === 'gdkd' ? $user->area : null,
         ]);
     }
 
@@ -82,7 +80,7 @@ class DepartmentReport extends Page implements HasForms
                     ->label('Chi nhánh / Khu vực')
                     ->options(AdminOptions::areas())
                     ->placeholder('Tất cả chi nhánh')
-                    ->disabled($user && $user->role === UserRole::DIRECTOR)
+                    ->disabled($user && $user->role?->name === 'gdkd')
                     ->native(false),
             ])
             ->statePath('data')
@@ -138,14 +136,14 @@ class DepartmentReport extends Page implements HasForms
         $area      = $filter['area'] ?? null;
 
         $empQuery = User::query()
-            ->where('role', UserRole::EMPLOYEE->value)
+            ->whereHas('role', fn($q) => $q->where('name', 'employee'))
             ->where('is_active', true)
             ->whereIn('department_id', function ($q) use ($departmentName) {
                 $q->select('id')->from('departments')->where('name', $departmentName);
             })
             ->whereNotNull('job_position_id');
 
-        if ($user->role === UserRole::DIRECTOR) {
+        if ($user->role?->name === 'gdkd') {
             $empQuery->where('area', $user->area);
         } elseif ($area) {
             $empQuery->where('area', $area);
@@ -233,12 +231,12 @@ class DepartmentReport extends Page implements HasForms
         $user = Filament::auth()->user();
 
         $query = User::query()
-            ->where('role', UserRole::EMPLOYEE->value)
+            ->whereHas('role', fn($q) => $q->where('name', 'employee'))
             ->where('is_active', true)
             ->whereNotNull('department_id')
             ->whereNotNull('job_position_id');
 
-        if ($user->role === UserRole::DIRECTOR) {
+        if ($user->role?->name === 'gdkd') {
             $query->where('area', $user->area);
         }
 

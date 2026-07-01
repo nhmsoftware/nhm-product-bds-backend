@@ -46,7 +46,7 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             
             // Employee check-in: Chỉ cho phép vai trò admin, agent, broker check-in
             $this->validate(
-                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
+                in_array($user->role?->name, ['super_admin', 'ceo', 'gdkd', 'tp_kd', 'employee'], true),
                 'Tài khoản không được cấp quyền sử dụng chức năng Check-in.',
                 403
             );
@@ -170,7 +170,7 @@ final class AttendanceService extends BaseService implements AttendanceServiceIn
             
             // Employee check-out: Chỉ cho phép vai trò admin, agent, broker check-out
             $this->validate(
-                in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::CEO, UserRole::DIRECTOR, UserRole::MANAGER, UserRole::EMPLOYEE], true),
+                in_array($user->role?->name, ['super_admin', 'ceo', 'gdkd', 'tp_kd', 'employee'], true),
                 'Tài khoản không được cấp quyền sử dụng chức năng Check-out.',
                 403
             );

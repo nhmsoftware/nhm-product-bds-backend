@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AreaResource\Pages;
 use App\Modules\Area\Models\Area;
 use App\Modules\Area\Models\Enums\AreaStatus;
-use App\Modules\Auth\Models\Enums\UserRole;
+use App\Modules\Auth\Models\Role;
 use App\Filament\Support\AdminImageColumn;
 use App\Filament\Support\AdminUploads;
 use App\Filament\Support\AdminOptions;
@@ -99,14 +99,14 @@ class AreaResource extends Resource
                             ->helperText('Nếu không chọn vai trò nào → tất cả mọi người đều xem được')
                             ->options(function (): array {
                                 $currentUser = Filament::auth()->user();
-                                $currentRoleValue = $currentUser?->role instanceof UserRole
-                                    ? $currentUser->role->value
-                                    : (int) ($currentUser?->role ?? 0);
+                                $currentRoleLevel = $currentUser?->role?->level ?? 999;
 
-                                return collect(UserRole::cases())
-                                    ->filter(fn ($r) => $r !== UserRole::BUYER && $r !== UserRole::SUPER_ADMIN)
-                                    ->filter(fn ($r) => $r->value < $currentRoleValue)
-                                    ->mapWithKeys(fn ($r) => [$r->value => $r->label()])
+                                return Role::where('is_active', true)
+                                    ->where('name', '!=', 'buyer')
+                                    ->where('name', '!=', 'super_admin')
+                                    ->where('level', '>', $currentRoleLevel)
+                                    ->orderBy('level')
+                                    ->pluck('label', 'id')
                                     ->all();
                             })
                             ->columns(2)
@@ -172,10 +172,11 @@ class AreaResource extends Resource
             Tables\Columns\TextColumn::make('role_permissions')
                 ->label('Phân quyền')
                 ->getStateUsing(function (Area $record): string {
-                    $roles = $record->roleAssignments()
+                    $roleIds = $record->roleAssignments()
                         ->pluck('assignable_id')
-                        ->map(fn ($v) => UserRole::tryFrom((int) $v)?->label())
-                        ->filter()
+                        ->all();
+                    $roles = Role::whereIn('id', $roleIds)
+                        ->pluck('label')
                         ->implode(', ');
                     return $roles ?: 'Tất cả';
                 })
@@ -201,8 +202,8 @@ class AreaResource extends Resource
                 ->visible(function (Area $record): bool {
                     $currentUser = auth()->user();
                     if (!$currentUser) return false;
-                    if ($currentUser->role === UserRole::SUPER_ADMIN) return true;
-                    if ($currentUser->role === UserRole::DIRECTOR) {
+                    if ($currentUser->hasPermission('manage_all')) return true;
+                    if ($currentUser->role?->name === 'gdkd') {
                         return $currentUser->branch_id && $record->branch_id === $currentUser->branch_id;
                     }
                     return false;
@@ -250,14 +251,14 @@ class AreaResource extends Resource
                         ->helperText('Nếu không chọn vai trò nào → tất cả mọi người đều xem được')
                         ->options(function (): array {
                             $currentUser = Filament::auth()->user();
-                            $currentRoleValue = $currentUser?->role instanceof UserRole
-                                ? $currentUser->role->value
-                                : (int) ($currentUser?->role ?? 0);
+                            $currentRoleLevel = $currentUser?->role?->level ?? 999;
 
-                            return collect(UserRole::cases())
-                                ->filter(fn ($r) => $r !== UserRole::BUYER && $r !== UserRole::SUPER_ADMIN)
-                                ->filter(fn ($r) => $r->value < $currentRoleValue)
-                                ->mapWithKeys(fn ($r) => [$r->value => $r->label()])
+                            return Role::where('is_active', true)
+                                ->where('name', '!=', 'buyer')
+                                ->where('name', '!=', 'super_admin')
+                                ->where('level', '>', $currentRoleLevel)
+                                ->orderBy('level')
+                                ->pluck('label', 'id')
                                 ->all();
                         })
                         ->columns(2),
@@ -297,7 +298,7 @@ class AreaResource extends Resource
         $user = auth()->user();
 
         // General Director của chi nhánh nào thì chỉ hiển thị dự án của chi nhánh đó
-        if ($user && $user->role === UserRole::DIRECTOR && $user->branch_id) {
+        if ($user && $user->role?->name === 'gdkd' && $user->branch_id) {
             $query->where('branch_id', $user->branch_id);
         }
 
