@@ -99,7 +99,9 @@ class LotResource extends Resource
             Tables\Columns\TextColumn::make('status')->label('Trạng thái')->formatStateUsing(fn($state)=>$state instanceof LotStatus?$state->label():LotStatus::tryFrom((int)$state)?->label())->badge(),
             Tables\Columns\TextColumn::make('price')->label('Giá')->money('VND')->sortable(),
             Tables\Columns\IconColumn::make('is_locked')->label('Lock')->boolean(),
+            Tables\Columns\TextColumn::make('created_at')->label('Ngày tạo')->dateTime('d/m/Y H:i')->sortable(),
         ])
+        ->defaultSort('created_at', 'desc')
         ->filters([
             Tables\Filters\SelectFilter::make('area')
                 ->relationship('area', 'name')

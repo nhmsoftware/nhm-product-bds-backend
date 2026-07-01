@@ -293,7 +293,7 @@ final class AreaService extends BaseService implements AreaServiceInterface
             $data['is_deposit_by_me'] = $isDepositedByMe;
             $data['is_deposit_by_other'] = $isDepositedByOther;
             $data['can_lock'] = !$lot->is_locked && $lot->status === LotStatus::AVAILABLE && $activeLockRequest === null && $activeDepositRequest === null;
-            $data['can_deposit'] = !$lot->is_locked && !$isLockedByOther && !$isDepositedByOther && $activeDepositRequest === null;
+            $data['can_deposit'] = (!$lot->is_locked || $isLockedByMe) && !$isLockedByOther && !$isDepositedByOther && $activeDepositRequest === null;
 
             return $this->success($data, 'Tải chi tiết lô đất thành công.');
         }, useTransaction: false, returnCatchCallback: function (\Throwable $e) {

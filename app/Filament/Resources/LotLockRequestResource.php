@@ -122,6 +122,9 @@ class LotLockRequestResource extends Resource
                 ->searchable()
                 ->preload()
                 ->required(),
+            Forms\Components\TextInput::make('customer_name')
+                ->label('Tên khách hàng')
+                ->maxLength(255),
             Forms\Components\Select::make('status')->label('Trạng thái')->options(self::enumOptions(LotLockRequestStatus::class))->required(),
             Forms\Components\DateTimePicker::make('expires_at')
                 ->label('Hết hạn lock')
@@ -133,6 +136,10 @@ class LotLockRequestResource extends Resource
                 ]),
             Forms\Components\DateTimePicker::make('approved_at')->label('Duyệt lúc')->disabled(),
             Forms\Components\DateTimePicker::make('rejected_at')->label('Từ chối lúc')->disabled(),
+            Forms\Components\Textarea::make('reason')
+                ->label('Lý do lock lô')
+                ->columnSpanFull()
+                ->maxLength(1000),
             Forms\Components\Textarea::make('reject_reason')->label('Lý do từ chối')->columnSpanFull(),
         ])->columns(2);
     }
@@ -152,6 +159,14 @@ class LotLockRequestResource extends Resource
                 ->label('Nhân viên yêu cầu')
                 ->searchable()
                 ->sortable(),
+            Tables\Columns\TextColumn::make('customer_name')
+                ->label('Tên khách hàng')
+                ->searchable()
+                ->sortable(),
+            Tables\Columns\TextColumn::make('reason')
+                ->label('Lý do lock lô')
+                ->limit(30)
+                ->searchable(),
             Tables\Columns\TextColumn::make('status')
                 ->label('Trạng thái')
                 ->formatStateUsing(fn ($state) => $state instanceof LotLockRequestStatus ? $state->label() : LotLockRequestStatus::tryFrom((int) $state)?->label())

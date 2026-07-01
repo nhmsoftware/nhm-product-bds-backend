@@ -190,6 +190,7 @@ class ListLots extends ListRecords
                         }
                         
                         $errors = [];
+                        $seenCodes = [];
                         $count = 0;
                         $areaId = $data['area_id'];
                         
@@ -215,6 +216,12 @@ class ListLots extends ListRecords
                             $code = isset($row[$codeIdx]) ? trim((string) $row[$codeIdx]) : '';
                             if (empty($code)) {
                                 $errors[] = "Dòng {$rowNum}: Mã lô không được để trống.";
+                            } else {
+                                if (isset($seenCodes[$code])) {
+                                    $errors[] = "Dòng {$rowNum}: Mã lô '{$code}' bị trùng lặp với dòng {$seenCodes[$code]} trong file Excel.";
+                                } else {
+                                    $seenCodes[$code] = $rowNum;
+                                }
                             }
                             
                             $statusVal = isset($row[$statusIdx]) ? trim((string) $row[$statusIdx]) : '';
@@ -257,12 +264,14 @@ class ListLots extends ListRecords
                             $description = ($descriptionIdx !== -1 && isset($row[$descriptionIdx])) ? trim((string) $row[$descriptionIdx]) : null;
                             
                             if (count($errors) === 0) {
-                                Lot::updateOrCreate(
-                                    [
-                                        'area_id' => $areaId,
-                                        'code' => $code,
-                                    ],
-                                    [
+                                // Tìm cả bản ghi đã xóa mềm (soft deleted) để tránh lỗi UNIQUE CONSTRAINT của DB
+                                $lot = Lot::withTrashed()
+                                    ->where('area_id', $areaId)
+                                    ->where('code', $code)
+                                    ->first();
+
+                                if ($lot) {
+                                    $lot->update([
                                         'status' => $status,
                                         'price' => $price,
                                         'unit_price' => $unitPrice,
@@ -272,8 +281,25 @@ class ListLots extends ListRecords
                                         'frontage' => $frontage,
                                         'is_corner' => $isCorner,
                                         'description' => $description,
-                                    ]
-                                );
+                                    ]);
+                                    if ($lot->trashed()) {
+                                        $lot->restore();
+                                    }
+                                } else {
+                                    Lot::create([
+                                        'area_id' => $areaId,
+                                        'code' => $code,
+                                        'status' => $status,
+                                        'price' => $price,
+                                        'unit_price' => $unitPrice,
+                                        'area_size' => $areaSize,
+                                        'direction' => $direction,
+                                        'legal' => $legal,
+                                        'frontage' => $frontage,
+                                        'is_corner' => $isCorner,
+                                        'description' => $description,
+                                    ]);
+                                }
                                 $count++;
                             }
                         }
@@ -314,9 +340,15 @@ class ListLots extends ListRecords
                             
                     } catch (\Exception $e) {
                         \Illuminate\Support\Facades\DB::rollBack();
+                        
+                        $message = $e->getMessage();
+                        if (str_contains($message, 'Duplicate entry') || str_contains($message, '23000')) {
+                            $message = 'Mã lô đất đã tồn tại trong hệ thống (có thể ở trạng thái đã xóa tạm thời hoặc thuộc khu đất khác). Vui lòng kiểm tra lại.';
+                        }
+                        
                         Notification::make()
                             ->title('Lỗi khi đọc file Excel')
-                            ->body($e->getMessage())
+                            ->body($message)
                             ->danger()
                             ->send();
                     }
