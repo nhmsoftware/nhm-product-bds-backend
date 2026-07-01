@@ -136,6 +136,7 @@ class RoleResource extends Resource
                                 ])
                         ]),
                     Forms\Components\Tabs\Tab::make('Mobile')
+                        ->hidden(fn ($record) => $record?->level === 99 || $record?->name === 'buyer' || $record?->level === '99')
                         ->schema([
                             Forms\Components\Section::make('Phân quyền mobile')
                                 ->schema([

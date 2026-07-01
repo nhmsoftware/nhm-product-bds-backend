@@ -32,13 +32,15 @@ class CreateRole extends CreateRecord
         }
         
         // Mobile Permissions
-        if ($data['manage_all_mobile'] ?? false) {
-            $manageAllMobilePerm = \App\Modules\Auth\Models\Permission::where('name', 'manage_all_mobile')->first();
-            if ($manageAllMobilePerm) {
-                $permIds[] = $manageAllMobilePerm->id;
+        if ($role->level !== 99 && $role->name !== 'buyer' && $role->level !== '99') {
+            if ($data['manage_all_mobile'] ?? false) {
+                $manageAllMobilePerm = \App\Modules\Auth\Models\Permission::where('name', 'manage_all_mobile')->first();
+                if ($manageAllMobilePerm) {
+                    $permIds[] = $manageAllMobilePerm->id;
+                }
+            } else {
+                $permIds = array_merge($permIds, $data['mobile_permissions'] ?? []);
             }
-        } else {
-            $permIds = array_merge($permIds, $data['mobile_permissions'] ?? []);
         }
         
         $role->permissions()->sync($permIds);
